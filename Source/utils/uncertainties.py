@@ -1,6 +1,9 @@
 import re
 import numpy as np
 import pandas as pd
+
+# Source files
+from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
 
 
@@ -130,102 +133,74 @@ class unc_management:
         return True
 
     @staticmethod
-    def interpUncertainties_Class(node):
-
+    def interpUncertainties_Class(node: HDFRoot):
+        """
+        ensure uncertainties are spectrally interpolated to match instrument pixels
+        
+        :param node: HDF root containing uncertainties group
+        """
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorList = ['ES', 'LI', 'LT']
+        sensorList = ['ES', 'LI', 'LT']  # TODO: move sensor list into config, depending on Nils implementation of ES only regime - Ashley
 
         for sensor in sensorList:
-
             ## retrieve dataset from corresponding instrument
-            data = None
+            grp_name = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
-                data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
+                grp_name = f"{sensor}_LIGHT"
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
-                data = node.getGroup(sensor).getDataset(sensor)
+                grp_name = sensor
+            else:
+                return False
 
             # Retrieve hyper-spectral wavelengths from dataset
-            x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
+            x_new = np.array(pd.DataFrame(node.getGroup(grp_name).getDataset(sensor).data).columns, dtype=float)
+            # RADCAL data does not need interpolation, just removing the first line
+            ds = grp.getDataset(f"{sensor}_RADCAL_CAL")
+            ds.datasetToColumns()
+            for indx in range(len(ds.columns)):
+                indx_name = str(indx)
+                if indx_name != '':
+                    y = np.array(ds.columns[indx_name])
+                    if len(y)==255:
+                        ds.columns[indx_name] = y
+                    elif len(y)==256:  # drop 1st line from TARTU file if required
+                        ds.columns[indx_name] = y[1:]
+            ds.columnsToDataset()
 
-
-            # RADCAL data do not need interpolation, just removing the first line
-            for data_type in ["_RADCAL_CAL"]:
-
-                ds = grp.getDataset(sensor+data_type)
-                try:
-                    ds.datasetToColumns()
-                except:
-                    print('erk')
-                for indx in range(len(ds.columns)):
-                    indx_name = str(indx)
-                    if indx_name != '':
-                        y = np.array(ds.columns[indx_name])
-                        if len(y)==255:
-                            ds.columns[indx_name] = y
-                        elif len(y)==256:
-                            # drop 1st line from TARTU file
-                            ds.columns[indx_name] = y[1:]
-                ds.columnsToDataset()
-
-            ## Interpolate for initial class-based file, in use at the moment
-            for data_type in ["_TEMPDATA_CAL"]:
-                ds = grp.getDataset(sensor + data_type)
-                ds.datasetToColumns()
-                x = ds.columns['1']
-                for indx in range(2, len(ds.columns)):
-                    y = ds.columns[str(indx)]
-                    y_new = np.interp(x_new, x, y)
-                    ds.columns[str(indx)] = y_new
-                # column ['0'] longer than the rest due to interpolation - this is a quick work around
-                ds.columns['0'] = np.array(
-                    range(len(x_new)))  # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
-                ds.columns['1'] = x_new
-                ds.columnsToDataset()
-
-            ## Interpolate for initial class-based file, in use at the moment
-            for data_type in ["_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL"]:
-                ds = grp.getDataset(sensor + data_type)
-                ds.datasetToColumns()
+            def interp_2_col(ds, x_new):
                 x = ds.columns['0']
                 y = ds.columns['1']
                 y_new = np.interp(x_new, x, y)
                 ds.columns['0'] = x_new
                 ds.columns['1'] = y_new
-                ds.columnsToDataset()
 
-            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
-            for data_type in ["_RADCAL_LAMP"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                x = ds.columns['0']
-                for indx in range(1,len(ds.columns)):
+            def interp_radcal(ds, x_new, col='0', idx=1):
+                x = ds.columns[col]
+                for indx in range(idx,len(ds.columns)):
                     y = ds.columns[str(indx)]
                     y_new = np.interp(x_new, x, y)
                     ds.columns[str(indx)] = y_new
-                ds.columns['0'] = x_new
-                ds.columnsToDataset()
 
-            ## RADCAL_PANEL: only for Li & Lt
-            if sensor != "ES":
-                for data_type in ["_RADCAL_PANEL"]:
-                    ds = grp.getDataset(sensor+data_type)
+                if indx > 1:
+                    ds.columns['0'] = np.array(range(len(x_new)))
+                    ds.columns['1'] = x_new
+
+            for dtype in [
+                "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
+                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
+                ]:
+                try:
+                    ds = grp.getDataset(f"{sensor}{dtype}")
                     ds.datasetToColumns()
-                    x = ds.columns['0']
-                    for indx in range(1,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    ds.columns['0'] = x_new
-                    ds.columnsToDataset()
-            else:
-                for data_type in ["_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"]:
-                    ds = grp.getDataset(sensor + data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['0']
-                    y = ds.columns['1']
-                    y_new = np.interp(x_new, x, y)
-                    ds.columns['0'] = x_new
-                    ds.columns['1'] = y_new
+                except AttributeError:
+                    pass
+                else:  # if we find a dataset with the given name then interpolate class based uncertainties
+                    if "RADCAL" in dtype:
+                        interp_radcal(ds, x_new)
+                    elif 'TEMPDATA' in dtype:
+                        interp_radcal(ds, x_new, '1', 2)
+                    else:
+                        interp_2_col(ds, x_new)
                     ds.columnsToDataset()
 
         return True
@@ -266,7 +241,6 @@ class unc_management:
                 print("ERROR: band wavelength not found in calibration file")
                 print(len(bands[valid]))
                 print(len(x_new))
-                # exit()
                 return False
 
             ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
