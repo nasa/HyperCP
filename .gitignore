@@ -15,9 +15,14 @@
 # HyperCP
 # .gitignore
 /Bundled/
-# Data/FidRadDB/
 Data/FidRadDB/SeaBird/*
 Data/FidRadDB/TriOS/*
+!Data/FidRadDB/SeaBird/*488*
+!Data/FidRadDB/SeaBird/*385*
+!Data/FidRadDB/SeaBird/*386*
+!Data/FidRadDB/TriOS/*8166*
+!Data/FidRadDB/TriOS/*8329*
+!Data/FidRadDB/TriOS/*8595*
 Data/Zhang_rho_db.mat
 Data/Zhang_rho_db_expanded.mat
 Data/Zhang_rho_LUT.nc
@@ -26,7 +31,6 @@ Data/Anc/
 Data/L*/
 Data/Reports/
 Data/Photos/
-# zong_plots/
 # The /* is required if you later want to unignore subsets (i.e., to keep the directory itself)
 Data/Sample_Data/DALEC/*
 !Data/Sample_Data/DALEC/RAW
@@ -61,9 +65,6 @@ Data/Sample_Data/SoRad/*
 !Data/Sample_Data/SoRad/*Ancillary.sb
 
 Config/*
-Config/sample_*.cfg
-Config/sample_*.hdr
-Config/sample_*.csv
 # To update sample configurations, uncomment:
 # !Config/sample_*_Calibration/
 # !Config/sample_*.cfg
