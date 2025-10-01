@@ -1,0 +1,67 @@
+#########################################################################################
+# Telemetry Definition File:
+#
+# Type: Satlantic Tilt/Heading Sensor S/N <045>
+# Description: Provides tilt and compass heading information
+# Project: 2014-7006 / SAS
+# Date: April 29, 2014
+# User: NASA Goddard Spacem Flight Ctr
+#
+# Notes:
+#	Variable length, comma-delimited ASCII data.
+#
+#
+#	This tdf file should be named SATTHSxxxx[Rev].tdf, e.g. SATTHS0999A.tdf.
+#	The [Rev] field is the alphabetical revision of the file.
+#
+#
+# Creation Date: September 3, 2009
+# Author: Scott Feener
+#
+# Template History:
+#	2009-09-03, SF: New template created - same fields as previous
+#	2013-09-24, SF: Modifications for new compass sensor
+#
+# File History:
+#   Revision:   Date:       User:       Notes:
+#   A           2014-08-21	JJS	  
+#
+#########################################################################################
+
+#
+# Instrument specific header and SN
+#     Note: replace 'xxxx' with instrument SN
+VLF_INSTRUMENT SATTHS0045 '' 10 AS 0 NONE
+
+#
+# Frame Counter
+#
+FIELD NONE ',' 1 AS 0 DELIMITER
+FRAME COUNTER '' V AI 0 COUNT
+
+#
+# Timer field - Time since commencement of normal operation
+#
+FIELD NONE ',' 1 AS 0 DELIMITER
+TIMER NONE 'sec' V AF 0 COUNT
+
+#
+# Compass heading
+#
+FIELD NONE ',' 1 AS 0 DELIMITER
+COMP NONE 'deg' V AF 0 COUNT
+
+#
+# Pitch data
+#
+FIELD NONE ',' 1 AS 0 DELIMITER
+PITCH NONE 'deg' V AF 0 COUNT
+
+#
+# Roll data
+#
+FIELD NONE ',' 1 AS 0 DELIMITER
+ROLL NONE 'deg' V AF 0 COUNT
+
+
+TERMINATOR NONE '\x0D\x0A' 2 AS 0 DELIMITER

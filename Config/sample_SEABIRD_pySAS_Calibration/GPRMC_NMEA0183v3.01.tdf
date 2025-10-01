@@ -1,0 +1,59 @@
+#########################################################################################
+# Telemetry Definition File:
+#
+# Type: $GPRMC sentences (NMEA 0183 standard version 3.01)
+# Description: Recommended Minimum Specific GPS/Transit Data
+# Version: NMEA 0183 standard, version 3.01
+#
+# Notes:
+#   Version 3.01 differs from version 2.30 in that the Mode field is absent
+#
+# Creation Date: June 30, 2009
+# Author: Scott Feener
+#
+# Template History:
+#   2009-06-30, SF: Template created
+#
+##########################################################################################
+
+
+VLF_INSTRUMENT $GPRMC '' 6 AS 0 NONE
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+UTCPOS NONE '' V AF 0 HHMMSS
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+STATUS NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LATPOS NONE 'degrees' V AF 0 DDMM
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LATHEMI NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LONPOS NONE 'degrees' V AF 0 DDMM
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LONHEMI NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+SPEED NONE 'knots' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+COURSE TRUE 'degrees' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+DATE NONE '' V AI 0 DDMMYY
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+MAGVAR NONE 'degrees' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+MAGHEMI NONE '' V AS 0 COUNT
+
+FIELD NONE '*' 1 AS 0 DELIMITER
+NMEA_CHECKSUM NONE '' V AI 0 COUNT
+
+TERMINATOR NONE '\x0D\x0A' 2 AS 0 DELIMITER
+

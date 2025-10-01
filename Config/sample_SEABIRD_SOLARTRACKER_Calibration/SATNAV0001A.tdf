@@ -1,0 +1,61 @@
+######################################################################################
+# Telemetry Definition File:
+#
+# Type: SAS Solar Tracker Navigation and Orientation Frames
+# Date: Aug 21 2014
+# Version: 1
+# Format:
+# SATNAV,sas_hdg,pitch,roll,ship_hdg,sun_azimuth,sun_elevation,rot_pos,hum,vsupply,temp,yydddHHMMSSss<CR><LF>
+#######################################################################################
+
+# HEADER
+VLF_INSTRUMENT SATNAV0001 '' 10 AS 0 NONE
+
+
+# INSTRUMENT PACKAGE TRUE HEADING
+FIELD NONE ',' 1 AS 0 DELIMITER
+HEADING SAS_TRUE 'degrees' V AF 0 COUNT
+
+# INSTRUMENT PACKAGE PITCH
+FIELD NONE ',' 1 AS 0 DELIMITER
+PITCH SAS 'degrees' V AF 0 COUNT
+
+# INSTRUMENT PACKAGE ROLL
+FIELD NONE ',' 1 AS 0 DELIMITER
+ROLL SAS 'degrees' V AF 0 COUNT
+
+# SHIP HEADING
+FIELD NONE ',' 1 AS 0 DELIMITER
+HEADING SHIP_TRUE 'degrees' V AF 0 COUNT
+
+# SUN AZIMUTH
+FIELD NONE ',' 1 AS 0 DELIMITER
+AZIMUTH SUN 'degrees' V AF 0 COUNT
+
+# SUN ELEVATION
+FIELD NONE ',' 1 AS 0 DELIMITER
+ELEVATION SUN 'degrees' V AF 0 COUNT
+
+# ROTATOR POSITION
+FIELD NONE ',' 1 AS 0 DELIMITER
+POSITION SAS 'degrees' V AF 0 COUNT
+
+# HUMIDITY
+FIELD NONE ',' 1 AS 0 DELIMITER
+HUMIDITY NONE '%' V AF 0 COUNT
+
+# CONTROLLER INPUT VOLTAGE
+FIELD NONE ',' 1 AS 0 DELIMITER
+VOLTAGE SUPPLY 'V' V AF 0 COUNT
+
+# CONTROLLER TEMPERATURE
+FIELD NONE ',' 1 AS 0 DELIMITER
+TEMP CONTROLLER 'V' V AF 0 COUNT
+
+
+# Date and Time in ISO 8601:2004 format
+FIELD NONE ',' 1 AS 0 DELIMITER
+ISO8601 NONE '' V AS 0 COUNT
+
+# TERMINATOR
+TERMINATOR NONE '\x0D\x0A' 2 AS 0 DELIMITER

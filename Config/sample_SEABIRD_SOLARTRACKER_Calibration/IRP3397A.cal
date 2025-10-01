@@ -1,0 +1,44 @@
+# Heitronics IR camera s/n 3397
+#
+# NASA / Project 2014-7006
+
+
+INSTRUMENT SATIRP '' 6 AS 0 NONE
+SN 3397 '' 4 AS 0 NONE
+
+# Time since commencement of normal operation
+TIMER NONE 'sec' 10 AF 0 COUNT
+
+DELAY SAMPLE 'ms' 2 BS 0 COUNT
+
+# Heitronics IR camera KT19.85 s/n 3397
+# Response time: 1s
+# Temperature range: -10C to +50C
+# Analog output: 4-20mA
+# 4mA = 2319442523 counts, 20mA = 3007343070 counts
+T IR 'C' 4 BU 1 POLYF
+8.72219107e-8 2434092614
+
+
+AUX1 NONE '' 4 BU 0 NONE
+AUX2 NONE '' 4 BU 0 NONE
+AUX3 NONE '' 4 BU 0 NONE
+
+#
+# In-head ancillary measurements
+#
+VS NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+T PCB 'C' 2 BU 1 POLYU
+-50.0 0.5
+
+# Frame Counter (Data Integrity)
+FRAME COUNTER '' 1 BU 0 COUNT
+
+# Check Sum (Data Integrity)
+CHECK SUM '' 1 BU 0 COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE
+
