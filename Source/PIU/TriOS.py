@@ -122,8 +122,8 @@ class TriOS(BaseInstrument):
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
-            from Source.PIU.UncPlotting import PlotTools
-            PT = PlotTools(PDS, s_type, prop)
+            from Source.PIU.Breakdown_CB import plottingToolsCB
+            PT = plottingToolsCB(PDS, s_type, prop)
 
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
             UNC = PDS.uncs[s_type]
