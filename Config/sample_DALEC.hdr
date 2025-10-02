@@ -5,7 +5,7 @@
     "contact": "dirk.a.aurin@nasa.gov",
     "experiment": "VIIRS2024",
     "cruise": "sample_DALEC",
-    "platform_id": "",
+    "platform_id": "RV_Nancy_Foster",
     "documents": "README.md,Ancillary_DALEC_VIIRS2024.sb",
     "instrument_manufacturer": "Dalec",
     "instrument_model": "DALEC",
