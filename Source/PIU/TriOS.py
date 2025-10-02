@@ -128,6 +128,21 @@ class TriOS(BaseInstrument):
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
             UNC = PDS.uncs[s_type]
 
+            wvls = DATA['radcal_wvl']
+            def test_plot(x, y_lpu, y_mc, name, ylim=None):
+                import matplotlib.pyplot as plt
+                plt.figure('test_plot')
+                plt.title(f"{name} Uncertainty")
+                plt.plot(x, y_lpu, label='LPU')
+                plt.plot(x, y_mc, linestyle='--', label='MC')
+                plt.grid("both")
+                plt.xlim(350, 800)
+                if ylim is not None:
+                    plt.ylim(*ylim)
+                plt.legend()
+                plt.savefig(f"{name}_unc_test.png")
+                plt.close('test_plot')
+
             # generate samples
             sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
             sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
@@ -273,7 +288,7 @@ class TriOS(BaseInstrument):
                 newWaveBands
                 )
         
-        return output_UNC    
+        return output_UNC, {"ES": {}, "LI": {}, "LT": {}}, {"ES": {}, "LI": {}, "LT": {}}    
 
 
 class TriOSUtils:

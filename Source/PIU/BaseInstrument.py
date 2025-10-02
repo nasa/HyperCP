@@ -147,11 +147,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                          PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200,
                          PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
                          PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
-                         np.array( PDS.uncs['ES']['stray']) / 100,
-                         np.array( PDS.uncs['LI']['stray']) / 100,
-                         np.array( PDS.uncs['LT']['stray']) / 100,
-                         np.array( PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']), np.array( PDS.uncs['LT']['ct']),
-                         np.array( PDS.uncs['LI']['pol']), np.array( PDS.uncs['LT']['pol']), np.array( PDS.uncs['ES']['cos'])
+                         np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
+                         np.array(PDS.uncs['LI']['stray']) / 100,
+                         np.array(PDS.uncs['LT']['stray']) / 100,
+                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']), np.array( PDS.uncs['LT']['ct']),
+                         np.array(PDS.uncs['LI']['pol']), np.array( PDS.uncs['LT']['pol']), np.array( PDS.uncs['ES']['cos'])
                          ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -491,8 +491,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
         sample_Lw = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = UNC_Obj_FRM.MCP.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
-        output_BD_UNCS['Lw'].update(LPU.waterLeaving(output_BD_UNCS, BD_UNCS))
-        output_BD_UNCS['Rrs'].update(LPU.reflectance(output_BD_UNCS, BD_UNCS))
+        # output_BD_UNCS['Lw'].update(LPU.waterLeaving(output_BD_UNCS, BD_UNCS))
+        # output_BD_UNCS['Rrs'].update(LPU.reflectance(output_BD_UNCS, BD_UNCS))
 
         UNCS = {}  # output uncertainties
 

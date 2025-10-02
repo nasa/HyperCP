@@ -147,7 +147,7 @@ def generateTempCoeffs(workingTemp, sigmaT, thermalCoeffDS, sensor):
             # σc(λ)=0.03×10-2 (°C)-1 in the 400-800 nm spectral range for the 10-40°C interval
             # σc(λ)= therm_unc from THERMAL file NOTE: Confirm this.
             # ∆𝑇 = workingT - calTemp
-            sigmaC = therm_unc[i]/2               # NOTE: Confirm this
+            sigmaC = therm_unc[i]/2  # NOTE: Confirm this
             # sigmaC = 0.0003 # See above
             epsC = dT**2 * sigmaC**2
             epsT = therm_coeffi**2 * u_sigmaT**2
@@ -156,9 +156,9 @@ def generateTempCoeffs(workingTemp, sigmaT, thermalCoeffDS, sensor):
             if ConfigFile.settings["fL1bCal"] == 3:
                 # ThermUnc.append(np.abs(therm_unc[i] * (workingTemp - calTemp)) / 2)
                 # div by 2 because uncertainty is k=2
-                ThermUnc.append(ur)         # NOTE: Confirm this
+                ThermUnc.append(ur)  # NOTE: Confirm this
             else:
-                ThermUnc.append(therm_coeffi * dT)
+                ThermUnc.append(np.abs(therm_coeffi * dT))  # take absolute value as comet maths does not like negative uncertainties
         except IndexError as err:
             print(f'{err} in Utilities.generateTempCoeffs')
             ThermCorr.append(1.0)

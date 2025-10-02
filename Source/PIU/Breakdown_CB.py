@@ -85,13 +85,13 @@ class plottingToolsCB:
                 wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
-                the_table = plt.table(cellText=table_vals,
-                                      colWidths=[0.1],
-                                      rowLabels=row_labels,
-                                      colLabels=col_labels,
-                                      loc="best",
-                                      )
-                plt.text(0.1, 0.5, 'Ancillary Data', size=12)
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc="best",
+                #                       )
+                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
 
                 ax.pie(
                     [PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor])[indx] for key in labels[sensor]],
@@ -100,7 +100,7 @@ class plottingToolsCB:
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
-                self.save_figure(fp)
+                self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
             
             return BD_UNCS
@@ -151,12 +151,12 @@ class plottingToolsCB:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
-                the_table = plt.table(cellText=table_vals,
-                                      colWidths=[0.1],
-                                      rowLabels=row_labels,
-                                      colLabels=col_labels,
-                                      loc='best')
-                plt.text(12, 3.4, 'Ancillary Data', size=8)
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc='best')
+                # plt.text(12, 3.4, 'Ancillary Data', size=8)
 
                 try:
                     ax.pie([PlotMaths.getpct(BD_UNCS[product][key], BD_VALS[product])[indx] for key in labels[product]],
@@ -167,7 +167,7 @@ class plottingToolsCB:
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
-                self.save_figure(fp)
+                self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
 
             return BD_UNCS
@@ -202,9 +202,11 @@ class plottingToolsCB:
         plt.xlim(400,800)
         plt.ylim(0,5)
     
-    def save_figure(self, fp: Optional[str]=None):
-        plt.legend()
-        plt.grid()
+    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+        if legend:
+            plt.legend()
+        if grid:
+            plt.grid('both')
 
         if fp is None:
             try:
