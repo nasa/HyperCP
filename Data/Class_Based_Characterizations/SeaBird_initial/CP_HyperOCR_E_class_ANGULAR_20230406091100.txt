@@ -1,6 +1,6 @@
 !FRM4SOC_CP
-!POLDATA
-# polarization sensitivity characterization results
+!ANGDATA
+# angular responsivity characterization results
 
 # comments start with # (ignored by the processor)
 # no empty lines between the parameter signatures in [] and the parameter values
@@ -18,14 +18,32 @@
 [DEVICE]
 CLASS_HYPEROCR_IRRADIANCE
 
-# band wavelength, pol uncertainty (rad k=1),
+[SOLAR_ZENITH_ANGLE_RANGE]
+0-59
+
+# band wavelength, cosine uncertainty (rad k=1),
 # type(s): uint8, single,
-[CALDATA]
-400	0.02
-443	0.02
-490	0.02
-560	0.02
-665	0.02
+[COSERROR]
+400	0.02	
+443	0.02	
+490	0.02	
+560	0.02	
+665	0.02	
 779	0.02
 865	0.02
-[END_OF_CALDATA]
+[END_OF_COSERROR]
+
+[SOLAR_ZENITH_ANGLE_RANGE]
+60-90
+
+# band wavelength, cosine uncertainty (rad k=1),
+# type(s): uint8, single,
+[COSERROR]
+400	0.10	
+443	0.10	
+490	0.10	
+560	0.10	
+665	0.10	
+779	0.10
+865	0.10
+[END_OF_COSERROR]

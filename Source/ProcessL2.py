@@ -243,7 +243,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC=None):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC=None, xBreakdownCORR=None):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es'] # mean
         esXmedian = xSlice['esMedian']
@@ -323,6 +323,19 @@ class ProcessL2:
                 for key in xBreakdownUNC['Rrs'].keys():
                     BDData['Rrs'][key] = newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}")
 
+            if xBreakdownCORR is not None:
+                newBreakdownCORRGroup = node.addGroup("BREAKDOWN_CORRECTIONS")
+                BDCorr = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                for key in xBreakdownCORR['ES'].keys():
+                    BDCorr['ES'][key] = newBreakdownCORRGroup.addDataset(f"ES_{sensor}_{key}")
+                for key in xBreakdownCORR['LI'].keys():
+                    BDCorr['LI'][key] = newBreakdownCORRGroup.addDataset(f"LI_{sensor}_{key}")
+                    BDCorr['LT'][key] = newBreakdownCORRGroup.addDataset(f"LT_{sensor}_{key}")
+                for key in xBreakdownCORR['Lw'].keys():
+                    BDCorr['LW'][key]  = newBreakdownCORRGroup.addDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownCORR['Rrs'].keys():
+                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.addDataset(f"Rrs_{sensor}_{key}")
+
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
                 newRhoUNCHyper = newReflectanceGroup.addDataset(f"rho_{sensor}_unc")
@@ -374,6 +387,20 @@ class ProcessL2:
                     BDData['LW'][key]  = newBreakdownGroup.getDataset(f"LW_{sensor}_{key}")
                 for key in xBreakdownUNC['Rrs'].keys():
                     BDData['Rrs'][key] = newBreakdownGroup.getDataset(f"Rrs_{sensor}_{key}")
+
+            if xBreakdownCORR is not None:
+                newBreakdownCORRGroup = node.addGroup("BREAKDOWN_CORRECTIONS")
+                BDCorr = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                for key in xBreakdownCORR['ES'].keys():
+                    BDCorr['ES'][key] = newBreakdownCORRGroup.getDataset(f"ES_{sensor}_{key}")
+                for key in xBreakdownCORR['LI'].keys():
+                    BDCorr['LI'][key] = newBreakdownCORRGroup.getDataset(f"LI_{sensor}_{key}")
+                    BDCorr['LT'][key] = newBreakdownCORRGroup.getDataset(f"LT_{sensor}_{key}")
+                for key in xBreakdownCORR['Lw'].keys():
+                    BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownCORR['Rrs'].keys():
+                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
+
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
@@ -496,6 +523,17 @@ class ProcessL2:
                         for key in BDData['Rrs']:
                             BDData['Rrs'][key].columns[k] = []
 
+                    if xBreakdownCORR is not None:
+                        for key in BDCorr['ES'].keys():
+                            BDCorr['ES'][key].columns[k] = []
+                        for key in BDCorr['LI'].keys():
+                            BDCorr['LI'][key].columns[k] = []
+                            BDCorr['LT'][key].columns[k] = []
+                        for key in BDCorr['LW']:
+                            BDCorr['LW'][key].columns[k] = []
+                        for key in BDCorr['Rrs']:
+                            BDCorr['Rrs'][key].columns[k] = []
+                            
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         newRhoUNCHyper.columns[k] = []
@@ -584,6 +622,17 @@ class ProcessL2:
                         BDData['LW'][key].columns[k].append(xBreakdownUNC['Lw'][key][i])
                     for key in BDData['Rrs']:
                         BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][i])
+
+                if xBreakdownCORR is not None:
+                    for key in BDCorr['ES'].keys():
+                        BDCorr['ES'][key].columns[k].append(xBreakdownCORR['ES'][key][i])
+                    for key in BDCorr['LI'].keys():
+                        BDCorr['LI'][key].columns[k].append(xBreakdownCORR['LI'][key][i])
+                        BDCorr['LT'][key].columns[k].append(xBreakdownCORR['LT'][key][i])
+                    for key in BDCorr['LW']:
+                        BDCorr['LW'][key].columns[k].append(xBreakdownCORR['Lw'][key][i])
+                    for key in BDCorr['Rrs']:
+                        BDCorr['Rrs'][key].columns[k].append(xBreakdownCORR['Rrs'][key][i])
 
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:  # should be redundant!
@@ -683,6 +732,17 @@ class ProcessL2:
                 BDData['LW'][key].columnsToDataset()
             for key in BDData['Rrs']:
                 BDData['Rrs'][key].columnsToDataset()
+        
+        if xBreakdownCORR is not None:
+            for key in BDCorr['ES'].keys():
+                BDCorr['ES'][key].columnsToDataset()
+            for key in BDCorr['LI'].keys():
+                BDCorr['LI'][key].columnsToDataset()
+                BDCorr['LT'][key].columnsToDataset()
+            for key in BDCorr['LW']:
+                BDCorr['LW'][key].columnsToDataset()
+            for key in BDCorr['Rrs']:
+                BDCorr['Rrs'][key].columnsToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1537,6 +1597,7 @@ class ProcessL2:
         # insert Uncertainties into analysis
         xUNC = {}
         xBreakdownUNC = None
+        xBreakdownCORR = None
 
         tic = time.time()
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal            
@@ -1570,31 +1631,19 @@ class ProcessL2:
                 from Source.PIU.PIUDataStore import PIUDataStore as pds
                 # read uncs and pass to FRM method
                 PDS = pds(
-                        node,
-                        uncGroup, 
-                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                        )  # TODO add helper function to baseinstrument so we don't have to call PDS again
+                    node,
+                    uncGroup, 
+                    dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                    dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                )
                 #logging.writeLogFileAndPrint('Updating sensor-specific instrument uncertainties...')
-                xSlice.update(
-                    instrument.FRM(PDS, stats, np.array(waveSubset, float)))  # instrument_WB
-                xUNC.update(instrument.FRML2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-
-                # NOTE: Block sensor-specific plotting for now
-                if ConfigFile.settings['bL2UncertaintyBreakdownPlot'] and\
-                    ConfigFile.settings['fL1bCal'] == 2:
-                    gui = UncertaintyGUI()
-                    gui.plot_FRM(
-                        node,
-                        uncGroup,
-                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                        stats,
-                        rhoScalar,
-                        rhoVec,
-                        rhoUNC,
-                        waveSubset
-                    )
+                L1B_UNC, xBreakdownCORR, xBreakdownUNC = instrument.FRM(PDS, stats, np.array(waveSubset, float))
+                xSlice.update(L1B_UNC)
+                
+                L2_UNC = instrument.FRML2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice, xBreakdownUNC, xBreakdownCORR)
+                xUNC.update(L2_UNC)
+                # free up memory since info is now stored in dictionaries
+                del L2_UNC
 
         logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.time() - tic:.1f} s')
 
@@ -1612,7 +1661,7 @@ class ProcessL2:
             ltUNCSlice = xUNC["ltUNC_HYPER"]
 
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC)
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC, xBreakdownCORR)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination

@@ -38,6 +38,9 @@ class PIUDataStore:
         self.ind_rad_wvl: dict = {s: {} for s in self.sensors}
         self.nan_mask:    np.array = None
 
+        ancGroup = root.getGroup("ANCILLARY")
+        self.sza = ancGroup.getDataset("SZA").columns["SZA"][0]
+
         try:
             ancGroup = root.getGroup("ANCILLARY")
             self.station = ancGroup.getDataset("STATION").columns["STATION"]
@@ -292,7 +295,25 @@ class PIUDataStore:
         self.uncs[s]['ct'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_TEMPDATA_CAL", col_name=f'{s}_TEMPERATURE_UNCERTAINTIES')
 
         if "ES" in s.upper():
-            self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_POLDATA_CAL", col_name='1')
+            lw = None 
+            up = None
+            sza_range = None
+            for k in inpt.datasets.keys():
+                if "ES_ANGDATA_COSERROR_RANGE" in k:
+                    _, sza_range = k.split('RANGE')
+                    lw, up = sza_range.split('-')
+                    break
+            
+            if sza_range is not None:
+                if float(lw) > self.sza:
+                    self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR", col_name='1')
+                elif float(lw) < self.sza < float(up):
+                    self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR_RANGE{sza_range}", col_name='1')
+                else:
+                    writeLogFileAndPrint(f"SZA out of bound with sza={self.sza} with range={lw}:{up}")
+            else:
+                writeLogFileAndPrint(f"SZA Range information not found, default to SZA < 60 calculation for SZA={self.sza}")
+                self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_CAL", col_name='1')
         else:
             self.uncs[s]['pol'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_POLDATA_CAL", col_name='1')
         

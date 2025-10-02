@@ -19,7 +19,7 @@ from Source.ConfigFile import ConfigFile
 from Source.PIU import PIUDataStore as pds
 
 
-class PlotTools:
+class plottingToolsCB:
 
     def __init__(self, PDS: pds, sensor: str, prop: Optional[MCPropagation]=None):
         self.Data = PDS  # TODO: get vals and uncs from self.Data and not inputs to the class_plotting funcs
@@ -100,7 +100,7 @@ class PlotTools:
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
-                self.save_figure(fp)
+                self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
             
             return BD_UNCS
@@ -167,7 +167,7 @@ class PlotTools:
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
-                self.save_figure(fp)
+                self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
 
             return BD_UNCS
@@ -202,9 +202,11 @@ class PlotTools:
         plt.xlim(400,800)
         plt.ylim(0,5)
     
-    def save_figure(self, fp: Optional=None):
-        plt.legend()
-        plt.grid()
+    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+        if legend:
+            plt.legend()
+        if grid:
+            plt.grid('both')
 
         if fp is None:
             try:

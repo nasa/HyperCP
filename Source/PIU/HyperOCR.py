@@ -5,15 +5,16 @@ import calendar
 from inspect import currentframe, getframeinfo
 
 # typing
-from typing import Union#, Any, Optional
+from typing import Union, Any, Optional
 from collections import OrderedDict
 
 # maths
 import numpy as np
 
 # Source files
-# from Source.HDFRoot import HDFRoot
+from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
+from Source.ConfigFile import ConfigFile
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -121,30 +122,35 @@ class HyperOCR(BaseInstrument):
         """
 
         output_UNC = {}
+        output_BD_UNCS = {k: {} for k in self.sensors}  # breakdown uncertainties
+        output_BD_CORR = {k: {} for k in self.sensors}  # breakdown correction magnitudes
+
         for s_type in self.sensors:
             print(f"FRM Processing, {s_type}")
 
             # set up uncertainty propagation
             import punpy
-            mDraws = 100  # number of monte carlo draws
-            prop = punpy.MCPropagation(mDraws, parallel_cores=1)
-            
-            from Source.PIU.UncPlotting import PlotTools
-            PT = PlotTools(PDS, s_type, prop)
-            
-            DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
-            UNC = PDS.uncs[s_type]
-
-            # generate initial samples with comet maths
             import comet_maths as cm
             from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
+            mDraws = 100  # number of monte carlo draws
+            prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
+            from Source.PIU.Breakdown_FRM import plottingToolsFRM, SolveLPU
+            PT = plottingToolsFRM(s_type, PDS)
+            LPU = SolveLPU(prop)
+            DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
+            UNC = PDS.uncs[s_type]
+            BD_UNCS = output_BD_UNCS[s_type]  # breakdown uncertainties
+            BD_CORR = output_BD_CORR[s_type]  # breakdown correction magnitudes
+            
+            # generate initial samples with comet maths
             sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
             sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
             sample_n_iter =   cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
             
             sample_Ct =   cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
             sample_LAMP = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
+            sample_PANEL = None
             sample_mZ =   cm.generate_sample(mDraws, DATA['mZ'], UNC['mZ'], "rand")
 
             sample_t1 = cm.generate_sample(mDraws, DATA['t1'], None, None)
@@ -155,20 +161,11 @@ class HyperOCR(BaseInstrument):
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
             sample_k = cm.generate_sample(mDraws, k, None, None)
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
-            S12_mag = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
-
-            from Source.PIU.FRM_breakdown import Plotting as pt
-            import matplotlib.pyplot as plt
-            wvls = DATA['radcal_wvl']
             
-            S1_mag = np.mean(sample_S1, axis=0)
-            S2_mag = np.mean(sample_S2, axis=0)
-            S_mag = np.array([np.average([S1_mag[i], S2_mag[i]]) for i in range(len(S1_mag))])
-            S12_mag = np.mean(sample_S12, axis=0)
-
-            #pt.plot(s_type, "S1 S2", wvls, S1_mag, S2_mag, "S1", "S2", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
-            #pt.plot(s_type, "S12", wvls, S_mag, S12_mag, "S Ave", "S12", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
-            #pt.plot(s_type, "S12", wvls, S1_mag, S2_mag, "S1", "S2", 'divided difference (%)', xlim=[320, 800], ylim=[-2.5, 2.5], diff=True)
+            BD_CORR['S1'] = np.mean(sample_S1, axis=0)
+            BD_CORR['S2'] = np.mean(sample_S2, axis=0)
+            BD_CORR['S12'] = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
+            BD_UNCS.update(LPU.S12_alpha(PDS, s_type))
 
             # samples for Straylight correction
             if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
@@ -184,7 +181,8 @@ class HyperOCR(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
-            alpha_mag = np.mean(sample_alpha, axis=0)
+            BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
+
             # direct comparison between Sample_S12 and alpha is useful but only if we're on the same integration time
             # Sample_S12 is integration time of lab, alpha is integration time of measurement
 
@@ -192,8 +190,7 @@ class HyperOCR(BaseInstrument):
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
                                                               [sample_S12_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
                                                               )
-                # maybe it is enough to take the sample mean?
-                # compute cosine error based on lab characterisation and cosine response asymmetry
+
                 sample_zen_ang = cm.generate_sample(mDraws, DATA['zenith_ang'], None, None)
                 sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'], UNC['zenith_ang'], "syst")
                 sample_fhemi_coserr = cm.generate_sample(mDraws, DATA['fhemi'], UNC['fhemi'], "syst")
@@ -204,8 +201,13 @@ class HyperOCR(BaseInstrument):
                                                                sample_cal_int,
                                                                sample_t1])
             
+            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_S12_sl_corr))
+            
             ind_nocal = DATA['ind_nocal']
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
+
+            BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
+            BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
             data = np.mean(DATA['light'], axis=0)
             data[ind_nocal is True] = 0  # 0 out data outside of cal so it doesn't affect statistics
@@ -216,83 +218,48 @@ class HyperOCR(BaseInstrument):
             std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
             sample_light = cm.generate_sample(100, data, std_light, "rand")
-            sample_dark = cm.generate_sample(100, dark, std_dark, "rand")
+            sample_dark  = cm.generate_sample(100, dark, std_dark,  "rand")
 
             # Dark correction
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
-            dark_corr_data = mf.dark_Substitution(data, dark)
 
             # Non-Linearity
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
+            BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
+            BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
 
             # Straylight
             if self.sl_method.upper() == 'ZONG':
                 sample_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_nlin_corr, sample_C_zong])
             else:  # slaper
-                S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
-                alpha = mf.alphafunc(DATA['S1'], S12)
-                nl_corr_signal = mf.non_linearity_corr(dark_corr_data, alpha)
+                dark_corr_data = mf.dark_Substitution(data, dark)
+                nl_corr_signal = mf.non_linearity_corr(dark_corr_data, BD_CORR['alpha_mag'])
                 sample_sl_corr = self.get_Slaper_Sl_unc(
                     nl_corr_signal, sample_nlin_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
                 )
             
-            sample_dark_mag = np.mean(sample_dark_corr, axis=0)
-            nlin_corr_mag    = np.mean(sample_nlin_corr, axis=0)
-            sl_corr_mag      = np.mean(sample_sl_corr, axis=0)
+            BD_UNCS.update(LPU.strayLight(BD_UNCS, BD_CORR['nlin'], sample_C_zong))
+            BD_CORR['sl'] = np.mean(sample_sl_corr, axis=0)
+            BD_CORR['cSl'] = BD_CORR['nlin'] - BD_CORR['sl']
             
-            #pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
-            #pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
-
-            #pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
-            #pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
-
             # Normalise based on integration time
-            sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
-
-            # First slide S1, S2, S12 + same plot zoomed in 
-            # S12 vs SL corrected signal + average of S1 and S2
-            # non linearity correction
-            # strayight
-            # cal vs updated radcal gain + uncertainty (either shaded area or separate plot)
-            # 
+            sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])  # no correction here but must be added to sensitivity coeffs
 
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
-            S12_sl_mag = np.mean(sample_S12_sl_corr, axis=0)
-            LAMP_mag = np.mean(sample_LAMP, axis=0)
-            # updt_cal_mag = 1 / np.mean(sample_updated_radcal_gain, axis=0)
-             
-            if s_type.upper() == "ES":
-                unit = "Irradiance (W.m^-2)"
-                ylim = [0, 150]
-                updt_cal_mag = LAMP_mag / (S12_sl_mag*10)
-            elif s_type.upper() == 'LI':
-                unit = "Radiance (W.sr^-1.m^-2)"
-                ylim = [0, 7]
-                PANEL_mag = np.mean(sample_PANEL, axis=0)
-                updt_cal_mag = (LAMP_mag * PANEL_mag) / (np.pi*S12_sl_mag*10)
-            else:  # LT
-                unit = "Radiance (W.sr^-1.m^-2)"
-                ylim = [0, 2]
-                PANEL_mag = np.mean(sample_PANEL, axis=0)
-                updt_cal_mag = (LAMP_mag * PANEL_mag) / (np.pi*S12_sl_mag*10)
-
-            #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
-            # #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
-            #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Div Diff (%)', xlim=[350, 800], ylim=[-5, 0], diff=True)
+            BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
+            BD_CORR['radcal'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
 
             # Stability correction
+            cal_corr_signal = np.mean(sample_cal_corr, axis=0)
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
             sample_stab_corr = prop.run_samples(mf.apply_CB_corr, [sample_cal_corr, sample_stab])
-            
+            BD_UNCS['stab'] = np.sqrt(cal_corr_signal**2 * UNC['stab']**2)
+
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
-            cal_corr_mag = np.mean(sample_cal_corr, axis=0)
-            ct_corr_mag =  np.mean(sample_ct_corr,  axis=0)
-
-
-            #pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
-            #pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
+            BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
 
             if s_type == "ES":
                 # Cosine correction
@@ -301,7 +268,7 @@ class HyperOCR(BaseInstrument):
                 sample_sol_zen = cm.generate_sample(mDraws, sol_zen, np.asarray([0.05 for i in range(np.size(sol_zen))]), "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, dir_rat, 0.08*dir_rat, "syst")
 
-                sample_cos_corr = prop.run_samples(
+                sample_cos_corr_comp = prop.run_samples(
                     mf.get_cos_corr, [
                         sample_zen_ang,
                         sample_sol_zen,
@@ -309,39 +276,48 @@ class HyperOCR(BaseInstrument):
                         ]
                 )
                 sample_cos_corr = prop.run_samples(
-                    mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
+                    mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
                 )
-                PT.plot_sample(DATA['radcal_wvl'], sample_cos_corr, "cosine")
+                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
                 signal = np.mean(sample_cos_corr, axis=0)
+
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
 
-                cos_corr_mag = np.mean(sample_cos_corr, axis=0)
-                #pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
-                #pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
-
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
-                PT.plot_sample(DATA['radcal_wvl'], sample_pol_corr, "polarisation")
+                ct_corr_signal = np.mean(sample_ct_corr, axis=0)
+                
+                BD_UNCS['pol'] = np.sqrt(ct_corr_signal**2 * UNC['pol']**2)
                 signal = np.mean(sample_pol_corr, axis=0)
+
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
 
-            ## DO PLOTS ##
-            # pre normalisation and cal coeff applied
-            cal_coeffs = np.mean(sample_updated_radcal_gain, axis=0)
-            PT.plot_sample(DATA['radcal_wvl'], sample_dark_corr, "dark",       rel_to=signal, cal=cal_coeffs)  # mf.normalise(sample_dark_corr, DATA['cal_int'], DATA['int_time'])*cal_coeffs
-            PT.plot_sample(DATA['radcal_wvl'], sample_nlin_corr, "nlin",       rel_to=signal, cal=cal_coeffs) # mf.normalise(sample_nlin_corr, DATA['cal_int'], DATA['int_time'])
-            PT.plot_sample(DATA['radcal_wvl'], sample_sl_corr,   "straylight", rel_to=signal, cal=cal_coeffs) # mf.normalise(sample_sl_corr,   DATA['cal_int'], DATA['int_time'])
+            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
+                ## DO PLOTS ##
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "dark corrected",          rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
+
+                # post normalisation
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['stab'], "stability", rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['ct'],   "ct",        rel_to=signal)
+                
+                # plot contributions that vary between sensors
+                if s_type.upper() == 'ES':
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
+                else:
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['pol'], "polarisation", rel_to=signal)
+                
+                PT.save_figure()  # save the figure once all of the contributions have been added to the plot (will close the figure)
             
-            # post normalisation
-            PT.plot_sample(DATA['radcal_wvl'], sample_cal_corr,  "calibration", rel_to=signal)
-            PT.plot_sample(DATA['radcal_wvl'], sample_stab_corr, "stability",   rel_to=signal)
-            PT.plot_sample(DATA['radcal_wvl'], sample_ct_corr,   "Temperature", rel_to=signal)
-            PT.save_figure()
+                PT.plot_pie_FRM(s_type, DATA['wvls'], BD_UNCS, signal)
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
@@ -361,8 +337,8 @@ class HyperOCR(BaseInstrument):
                 wvls,
                 newWaveBands
                 )
-        
-        return output_UNC
+            
+        return output_UNC, output_BD_CORR, output_BD_UNCS
 
 
 class HyperOCRUtils:

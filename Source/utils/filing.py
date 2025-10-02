@@ -235,6 +235,7 @@ def read_char(filepath: str, gp) -> None:
     attrs = {}
     end_count = 0
     Azimuth_angle = None
+    solar_zen_range = None
 
     with open(filepath, 'r', encoding="utf-8") as f:  # open file
         key, ds, name = None, None, None
@@ -266,9 +267,15 @@ def read_char(filepath: str, gp) -> None:
                             if 'AZIMUTH_ANGLE' in attrs:  # reading angular file and has identical identifiers for different az angles
                                 ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_AZ{attrs['AZIMUTH_ANGLE']}")
                                 Azimuth_angle = attrs['AZIMUTH_ANGLE']
+                            elif 'SOLAR_ZENITH_ANGLE_RANGE' in attrs:
+                                ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_RANGE{attrs['SOLAR_ZENITH_ANGLE_RANGE']}")
+                                solar_zen_range = attrs['SOLAR_ZENITH_ANGLE_RANGE']
                             elif Azimuth_angle is not None:  # uncertainty also repeated so save the az angle from earlier to use here
                                 ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_AZ{Azimuth_angle}")
                                 Azimuth_angle = None
+                            elif solar_zen_range is not None:
+                                ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_RANGE{solar_zen_range}")
+                                solar_zen_range = None
                             else:
                                 logging.writeLogFileAndPrint(f"Dataset could not be constructed. Utilties.read_char(file-path, HDFGroup) in {gp.attributes['CHARACTERISATION_FILE_TYPE']}")
                                 raise KeyError
