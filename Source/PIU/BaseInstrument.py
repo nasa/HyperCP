@@ -173,7 +173,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
 
-        from Source.PIU.UncPlotting import PlotTools, PlotMaths
+        from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, False)
         
         # check if negative signal for any pixels
@@ -183,7 +183,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # TODO: when plotting include the UV. start at 350-360 nm
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            PT = PlotTools(PDS, "", UNC_obj_CB)
+            PT = plottingToolsCB(PDS, "", UNC_obj_CB)
             try:
                 PT.pie_plot_class(
                     BD_UNCS,
@@ -340,13 +340,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
-        from Source.PIU.UncPlotting import PlotTools, PlotMaths
+        from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, False)
         
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            PT = PlotTools(PDS, "", UNC_obj_CB)
+            PT = plottingToolsCB(PDS, "", UNC_obj_CB)
             try:
                 breakdown_UNCS = PT.pie_plot_class_l2(
                     BD_UNCS,
@@ -429,7 +429,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         pass
 
     def FRML2(self, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array, waveSubset: np.array,
-               xSlice: dict[str, np.array]) -> dict[str, np.array]:
+               xSlice: dict[str, np.array], BD_UNCS: dict[str: np.array], BD_CORR: dict[str: np.array]
+               ) -> dict[str, np.array]:
         """
         Propagates Lw and Rrs uncertainties if full characterisation available - see D-10 5.3.1
 
@@ -442,6 +443,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         :return: dictionary of output uncertainties that are generated
 
         """
+
+        from Source.PIU.Breakdown_FRM import SolveLPU
+        LPU = SolveLPU()
+
+        output_BD_UNCS = {k: {} for k in ['Lw', 'Rrs']}
+        output_BD_CORR = {k: {} for k in ['Lw', 'Rrs']}
+
         # organise data
         # cut data down to wavelengths where rho values exist -- should be no change for M99
         esSampleXSlice = np.asarray([{key: sample for key, sample in
@@ -464,6 +472,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if not hasattr(rhoDelta, '__len__'):  # Not an array (e.g. list or np.array)
             rhoDelta = np.ones(len(waveSubset)) * rhoDelta  # convert rhoDelta to the same dims as other values/Uncertainties
 
+        output_BD_UNCS['Lw']['rho']  = rhoDelta
+        output_BD_UNCS['Rrs']['rho'] = rhoDelta
+
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
         UNC_Obj_FRM = Propagate(mdraws, cores=1)  # punpy.MCPropagation(mdraws, parallel_cores=1)
@@ -480,6 +491,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
         sample_Lw = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = UNC_Obj_FRM.MCP.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
+        output_BD_UNCS['Lw'].update(LPU.waterLeaving(output_BD_UNCS, BD_UNCS))
+        output_BD_UNCS['Rrs'].update(LPU.reflectance(output_BD_UNCS, BD_UNCS))
 
         UNCS = {}  # output uncertainties
 
@@ -497,6 +510,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
+
+        BD_UNCS.update(output_BD_UNCS)
+        BD_CORR.update(output_BD_CORR)
 
         return UNCS
 

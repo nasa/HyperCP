@@ -19,7 +19,7 @@ from Source.ConfigFile import ConfigFile
 from Source.PIU import PIUDataStore as pds
 
 
-class PlotTools:
+class plottingToolsCB:
 
     def __init__(self, PDS: pds, sensor: str, prop: Optional[MCPropagation]=None):
         self.Data = PDS  # TODO: get vals and uncs from self.Data and not inputs to the class_plotting funcs
@@ -85,13 +85,13 @@ class PlotTools:
                 wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
-                # the_table = plt.table(cellText=table_vals,
-                #                       colWidths=[0.1],
-                #                       rowLabels=row_labels,
-                #                       colLabels=col_labels,
-                #                       loc="best",
-                #                       )
-                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
+                the_table = plt.table(cellText=table_vals,
+                                      colWidths=[0.1],
+                                      rowLabels=row_labels,
+                                      colLabels=col_labels,
+                                      loc="best",
+                                      )
+                plt.text(0.1, 0.5, 'Ancillary Data', size=12)
 
                 ax.pie(
                     [PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor])[indx] for key in labels[sensor]],
@@ -151,12 +151,12 @@ class PlotTools:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
-                # the_table = plt.table(cellText=table_vals,
-                #                       colWidths=[0.1],
-                #                       rowLabels=row_labels,
-                #                       colLabels=col_labels,
-                #                       loc='best')
-                # plt.text(12, 3.4, 'Ancillary Data', size=8)
+                the_table = plt.table(cellText=table_vals,
+                                      colWidths=[0.1],
+                                      rowLabels=row_labels,
+                                      colLabels=col_labels,
+                                      loc='best')
+                plt.text(12, 3.4, 'Ancillary Data', size=8)
 
                 try:
                     ax.pie([PlotMaths.getpct(BD_UNCS[product][key], BD_VALS[product])[indx] for key in labels[product]],
@@ -202,7 +202,7 @@ class PlotTools:
         plt.xlim(400,800)
         plt.ylim(0,5)
     
-    def save_figure(self, fp: Optional=None):
+    def save_figure(self, fp: Optional[str]=None):
         plt.legend()
         plt.grid()
 
