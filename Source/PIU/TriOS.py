@@ -298,9 +298,9 @@ class TriOS(BaseInstrument):
                 
                 # plot contributions that vary between sensors
                 if s_type.upper() == 'ES':
-                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cosine'], "cosine", rel_to=signal)
-                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
-                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
+                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cosine'], "cosine", rel_to=signal)
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
                 else:
                     PT.plot(DATA['radcal_wvl'], BD_UNCS['pol'], "polarisation", rel_to=signal)
                 

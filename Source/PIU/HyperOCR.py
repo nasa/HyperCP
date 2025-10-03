@@ -299,7 +299,7 @@ class HyperOCR(BaseInstrument):
 
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "dark corrected",          rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
