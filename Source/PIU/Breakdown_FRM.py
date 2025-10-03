@@ -40,7 +40,7 @@ class plottingToolsFRM:
             u_rel = (y/y_mean)*100
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")
-            plt.ylim(0,3)
+            plt.ylim(0,5)
         else:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")

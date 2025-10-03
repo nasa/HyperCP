@@ -12,6 +12,7 @@ from typing import Optional, Union, Any
 
 # Source files
 from Source.HDFGroup import HDFGroup
+from Source.ConfigFile import ConfigFile
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -113,35 +114,28 @@ class TriOS(BaseInstrument):
         )
 
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
+        
         output_UNC = {}
+        output_BD_UNCS = {k: {} for k in self.sensors}  # breakdown uncertainties
+        output_BD_CORR = {k: {} for k in self.sensors}  # breakdown correction magnitudes
+        
         for s_type in self.sensors:
             print(f"FRM Processing, {s_type}")
 
             # set up uncertainty propagation
             import punpy
+            import comet_maths as cm
+            from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
-            from Source.PIU.Breakdown_CB import plottingToolsCB
-            PT = plottingToolsCB(PDS, s_type, prop)
-
+            from Source.PIU.Breakdown_FRM import plottingToolsFRM, SolveLPU
+            PT = plottingToolsFRM(s_type, PDS)
+            LPU = SolveLPU(prop)
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
             UNC = PDS.uncs[s_type]
-
-            wvls = DATA['radcal_wvl']
-            def test_plot(x, y_lpu, y_mc, name, ylim=None):
-                import matplotlib.pyplot as plt
-                plt.figure('test_plot')
-                plt.title(f"{name} Uncertainty")
-                plt.plot(x, y_lpu, label='LPU')
-                plt.plot(x, y_mc, linestyle='--', label='MC')
-                plt.grid("both")
-                plt.xlim(350, 800)
-                if ylim is not None:
-                    plt.ylim(*ylim)
-                plt.legend()
-                plt.savefig(f"{name}_unc_test.png")
-                plt.close('test_plot')
+            BD_UNCS = output_BD_UNCS[s_type]  # breakdown uncertainties
+            BD_CORR = output_BD_CORR[s_type]  # breakdown correction magnitudes
 
             # generate samples
             sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
@@ -150,6 +144,7 @@ class TriOS(BaseInstrument):
             
             sample_Ct =   cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
             sample_LAMP = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
+            sample_PANEL = None
             sample_mZ =   cm.generate_sample(mDraws, DATA['mZ'], UNC['mZ'], "rand")
 
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
@@ -158,6 +153,11 @@ class TriOS(BaseInstrument):
             sample_S1 = cm.generate_sample(mDraws, np.asarray(DATA['S1']), UNC['S1'], "rand")
             sample_S2 = cm.generate_sample(mDraws, np.asarray(DATA['S2']), UNC['S2'], "rand")
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
+
+            BD_CORR['S1'] = np.mean(sample_S1, axis=0)
+            BD_CORR['S2'] = np.mean(sample_S2, axis=0)
+            BD_CORR['S12'] = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
+            BD_UNCS.update(LPU.S12_alpha(PDS, s_type))
 
             if self.sl_method.upper() == 'ZONG':  # for internal coding use only, set by default in HCP
                 sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
@@ -172,6 +172,7 @@ class TriOS(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
 
             if s_type.upper() == "ES":
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
@@ -189,8 +190,13 @@ class TriOS(BaseInstrument):
                                                                sample_cal_int,
                                                                sample_t1])
             
+            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_sl_corr))
+
             ind_nocal = DATA['ind_nocal']
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
+
+            BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
+            BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
             std_light = stats[s_type]['std_Light'] / 65535.0 # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
@@ -198,11 +204,13 @@ class TriOS(BaseInstrument):
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
             sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")  # mean of std_dark?
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
-            PT.plot_sample(DATA['radcal_wvl'], sample_dark_corr, "dark")
 
             # Non-Linearity Correction
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
-            PT.plot_sample(DATA['radcal_wvl'], sample_nlin_corr, "nlin")
+            BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
+            BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
+            BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
+            
             # apply cal to absolute uncs at the end of the process to put them all in the same units. then put them relative to final signal
             # Straylight Correction
             if self.sl_method.upper() == 'ZONG':  # for internal use only, Zong set as default in HCP
@@ -210,31 +218,35 @@ class TriOS(BaseInstrument):
                     mf.Zong_SL_correction, [sample_nlin_corr, sample_C_zong]
                 )
             else:
-                S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
-                alpha = mf.alphafunc(DATA['S1'], S12)
-                offset_corr = np.mean(np.asarray([DATA['light'][:, i] - DATA['dark'] for i in range(DATA['nband'])]).transpose(), axis=0)
-                linear_corr = mf.non_linearity_corr(offset_corr, alpha)
+                dark_corr_data = mf.dark_Substitution(
+                    np.mean(sample_back_corr, axis=0), np.mean(sample_offset, axis=0)
+                )
+                nl_corr_signal = mf.non_linearity_corr(dark_corr_data, BD_CORR['alpha_mag'])
                 sample_sl_corr = self.get_Slaper_Sl_unc(
-                    linear_corr, sample_nlin_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
-                )   # simplified code by adding Slaper correction to one fucntion
+                    nl_corr_signal, sample_nlin_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
+                )  # simplified code by adding Slaper correction to one fucntion
 
-            PT.plot_sample(DATA['radcal_wvl'], sample_sl_corr, "straylight")
+            BD_UNCS.update(LPU.strayLight(BD_UNCS, BD_CORR['nlin'], sample_C_zong))
+            BD_CORR['sl'] = np.mean(sample_sl_corr, axis=0)
+            BD_CORR['cSl'] = BD_CORR['nlin'] - BD_CORR['sl']
 
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
             
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
-            PT.plot_sample(DATA['radcal_wvl'], sample_cal_corr, "calibration")
+            cal_corr_signal = np.mean(sample_cal_corr, axis=0)  # calibrated signal for sensitivity coeffs
+            BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
+            BD_CORR['radcal'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
             sample_stab_corr = prop.run_samples(mf.apply_CB_corr, [sample_cal_corr, sample_stab])
-            PT.plot_sample(DATA['radcal_wvl'], sample_stab_corr, "stability")
+            BD_UNCS['stab'] = np.sqrt(cal_corr_signal**2 * UNC['stab']**2)
 
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
-            PT.plot_sample(DATA['radcal_wvl'], sample_ct_corr, "Temperature")
+            BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
 
             if s_type == "ES":
                 # Cosine correction
@@ -243,7 +255,7 @@ class TriOS(BaseInstrument):
                 sample_sol_zen = cm.generate_sample(mDraws, sol_zen, np.asarray([0.05 for i in range(np.size(sol_zen))]), "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, dir_rat, 0.08*dir_rat, "syst")
 
-                sample_cos_corr = prop.run_samples(
+                sample_cos_corr_comp = prop.run_samples(
                     mf.get_cos_corr, [
                         sample_zen_ang,
                         sample_sol_zen,
@@ -251,23 +263,50 @@ class TriOS(BaseInstrument):
                         ]
                 )
                 sample_cos_corr = prop.run_samples(
-                    mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
+                    mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
                 )
-                PT.plot_sample(DATA['radcal_wvl'], sample_cos_corr, "cosine")
+
+                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
+                signal = np.mean(sample_cos_corr, axis=0)
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
-                PT.save_figure()
+            
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
-                PT.plot_sample(DATA['radcal_wvl'], sample_pol_corr, "polarisation")
+                ct_corr_signal = np.mean(sample_ct_corr, axis=0)
+                
+                BD_UNCS['pol'] = np.sqrt(ct_corr_signal**2 * UNC['pol']**2)
+                signal = np.mean(sample_pol_corr, axis=0)
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
-                PT.save_figure()
+            
+            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
+                ## DO PLOTS ##
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "dark corrected",          rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
+
+                # post normalisation
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['stab'], "stability", rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['ct'],   "ct",        rel_to=signal)
+                
+                # plot contributions that vary between sensors
+                if s_type.upper() == 'ES':
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cosine'], "cosine", rel_to=signal)
+                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
+                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
+                else:
+                    PT.plot(DATA['radcal_wvl'], BD_UNCS['pol'], "polarisation", rel_to=signal)
+                
+                PT.save_figure()  # save the figure once all of the contributions have been added to the plot (will close the figure)
+            
+                PT.plot_pie_FRM(s_type, DATA['wvls'], BD_UNCS, signal)
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
@@ -288,7 +327,7 @@ class TriOS(BaseInstrument):
                 newWaveBands
                 )
         
-        return output_UNC, {"ES": {}, "LI": {}, "LT": {}}, {"ES": {}, "LI": {}, "LT": {}}    
+        return output_UNC, output_BD_CORR, output_BD_UNCS   
 
 
 class TriOSUtils:
