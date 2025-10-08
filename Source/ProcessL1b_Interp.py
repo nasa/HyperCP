@@ -28,7 +28,7 @@ class ProcessL1b_Interp:
         print('Interpolating Ancillary data to radiometry timestamps')
         gpsGroup,STGroup,esGroup,liGroup,ltGroup,ancGroup = None,None,None,None,None,None
         for gp in node.groups:
-            if gp.id.startswith("GP"): 
+            if gp.id.startswith("GP"):
                 gpsGroup = gp
                 for ds in gpsGroup.datasets:
                     if ds != 'DATETIME':
@@ -54,8 +54,10 @@ class ProcessL1b_Interp:
         refGroup = node.addGroup("IRRADIANCE_TEMP")
         sasGroup = node.addGroup("RADIANCE_TEMP")
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
-        ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
-        ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+        if liGroup is not None:
+            ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
+        if ltGroup is not None:
+            ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
 
         newGPSGroup = node.addGroup("GPS_TEMP")
         courseData,sogData = None,None
@@ -164,7 +166,7 @@ class ProcessL1b_Interp:
         if "WINDSPEED" in newAncGroup.datasets:
             windData = newAncGroup.getDataset("WINDSPEED")
         if "AIRTEMP" in newAncGroup.datasets:
-            airData = newAncGroup.getDataset("AIRTEMP") 
+            airData = newAncGroup.getDataset("AIRTEMP")
         if "AOD" in newAncGroup.datasets:
             aodData = newAncGroup.getDataset("AOD")
         if "CLOUD" in newAncGroup.datasets:
@@ -183,25 +185,28 @@ class ProcessL1b_Interp:
         # interpolates to the FASTEST. Not much in the literature on this, although
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
         # which makes the most sense for minimizing error.
-        esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
-        liData = sasGroup.getDataset("LI")
-        ltData = sasGroup.getDataset("LT")
-
-        # Interpolate all datasets to the SLOWEST radiometric sampling rate
-        esLength = len(esData.data["Timetag2"].tolist())
-        liLength = len(liData.data["Timetag2"].tolist())
-        ltLength = len(ltData.data["Timetag2"].tolist())
-
-        interpData = None
-        if esLength < liLength and esLength < ltLength:
-            logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
-            interpData = esData
-        elif liLength < ltLength:
-            logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
-            interpData = liData
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            interpData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
         else:
-            logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
-            interpData = ltData
+            esData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
+            liData = sasGroup.getDataset("LI")
+            ltData = sasGroup.getDataset("LT")
+
+            # Interpolate all datasets to the SLOWEST radiometric sampling rate
+            esLength = len(esData.data["Timetag2"].tolist())
+            liLength = len(liData.data["Timetag2"].tolist())
+            ltLength = len(ltData.data["Timetag2"].tolist())
+
+            interpData = None
+            if esLength < liLength and esLength < ltLength:
+                logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+                interpData = esData
+            elif liLength < ltLength:
+                logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+                interpData = liData
+            else:
+                logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+                interpData = ltData
 
         # latData, lonData need to correspond to interpData.
         # Preferentially from GPS, else from Anc file (above)
@@ -216,10 +221,11 @@ class ProcessL1b_Interp:
             if not ProcessL1b_Interp.interpolateData(sogData, interpData, "NONE", fileName):
                 return None
 
-        # Required:
-        if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName):
-            logging.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
-            return None
+        # Required for all sensors except ES Only systems
+        if ConfigFile.settings["SensorType"].lower() != "trios es only":
+            if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName):
+                logging.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
+                return None
         # Solar geometries are not interpolated, but re-calculated, so need latData, lonData
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SOLAR_AZ'], interpData, "SOLAR_AZ", fileName, latData, lonData):
             logging.writeLogFileAndPrint("Error: SOLAR_AZ missing from Ancillary data, and no Tracker group")
@@ -526,7 +532,10 @@ class ProcessL1b_Interp:
         sunTrackers = ['SunTracker_SOLARTRACKER','SunTracker_pySAS','SunTracker_DALEC','SunTracker_SoRad']
 
         newReferenceGroup = root.addGroup("IRRADIANCE")
-        newSASGroup = root.addGroup("RADIANCE")
+
+        node_group_ids, newSASGroup = [gp.id for gp in node.groups], None
+        if 'RADIANCE' in node_group_ids:
+            newSASGroup = root.addGroup("RADIANCE")
         root.groups.append(node.getGroup("GPS"))
         if node.getGroup("ANCILLARY_METADATA"):
             root.groups.append(node.getGroup("ANCILLARY_METADATA"))
@@ -540,7 +549,10 @@ class ProcessL1b_Interp:
             root.groups.append(node.getGroup("SIXS_MODEL"))
 
         referenceGroup = node.getGroup("IRRADIANCE")
-        sasGroup = node.getGroup("RADIANCE")
+        radiance_group_ids, sasGroup = [], None
+        if 'RADIANCE' in node_group_ids:
+            sasGroup = node.getGroup("RADIANCE")
+            radiance_group_ids = [gp.id for gp in sasGroup.groups]
 
         # Propagate L1AQC data
         for gp in node.groups:
@@ -556,15 +568,19 @@ class ProcessL1b_Interp:
                         newGroup.datasets[ds].datasetToColumns()
 
         esData = referenceGroup.getDataset("ES")
-        liData = sasGroup.getDataset("LI")
-        ltData = sasGroup.getDataset("LT")
+        if 'LI' in radiance_group_ids:
+            liData = sasGroup.getDataset("LI")
+        if 'LT' in radiance_group_ids:
+            ltData = sasGroup.getDataset("LT")
 
         newESData = newReferenceGroup.addDataset("ES")
         newESData.attributes = esData.attributes.copy()
-        newLIData = newSASGroup.addDataset("LI")
-        newLIData.attributes = esData.attributes.copy()
-        newLTData = newSASGroup.addDataset("LT")
-        newLTData.attributes = esData.attributes.copy()
+        if 'LI' in radiance_group_ids:
+            newLIData = newSASGroup.addDataset("LI")
+            newLIData.attributes = esData.attributes.copy()
+        if 'LT' in radiance_group_ids:
+            newLTData = newSASGroup.addDataset("LT")
+            newLTData.attributes = esData.attributes.copy()
 
         # Es dataset to dictionary
         esData.datasetToColumns()
@@ -583,46 +599,59 @@ class ProcessL1b_Interp:
         # No longer using user-input interval
         interval = (esEnd - esStart)/len(esWavelength)
 
-        # Li dataset to dictionary
-        liData.datasetToColumns()
-        columns = liData.columns
-        columns.pop("Datetag")
-        columns.pop("Timetag2")
-        columns.pop("Datetime")
-        # Get wavelength values
-        liWavelength = []
-        for k in columns:
-            liWavelength.append(float(k))
-        # Determine interpolated wavelength values
-        liStart = np.ceil(liWavelength[0])
-        liEnd = np.floor(liWavelength[len(liWavelength)-1])
+        if 'LI' in radiance_group_ids:
+            # Li dataset to dictionary
+            liData.datasetToColumns()
+            columns = liData.columns
+            columns.pop("Datetag")
+            columns.pop("Timetag2")
+            columns.pop("Datetime")
+            # Get wavelength values
+            liWavelength = []
+            for k in columns:
+                liWavelength.append(float(k))
+            # Determine interpolated wavelength values
+            liStart = np.ceil(liWavelength[0])
+            liEnd = np.floor(liWavelength[len(liWavelength)-1])
 
-        # Lt dataset to dictionary
-        ltData.datasetToColumns()
-        columns = ltData.columns
-        columns.pop("Datetag")
-        columns.pop("Timetag2")
-        columns.pop("Datetime")
-        # Get wavelength values
-        ltWavelength = []
-        for k in columns:
-            ltWavelength.append(float(k))
+        if 'LT' in radiance_group_ids:
+            # Lt dataset to dictionary
+            ltData.datasetToColumns()
+            columns = ltData.columns
+            columns.pop("Datetag")
+            columns.pop("Timetag2")
+            columns.pop("Datetime")
+            # Get wavelength values
+            ltWavelength = []
+            for k in columns:
+                ltWavelength.append(float(k))
 
-        # Determine interpolated wavelength values
-        ltStart = np.ceil(ltWavelength[0])
-        ltEnd = np.floor(ltWavelength[len(ltWavelength)-1])
+            # Determine interpolated wavelength values
+            ltStart = np.ceil(ltWavelength[0])
+            ltEnd = np.floor(ltWavelength[len(ltWavelength)-1])
 
         # No extrapolation
-        start = max(esStart,liStart,ltStart)
-        end = min(esEnd,liEnd,ltEnd)
-        newWavebands = np.arange(start, end, interval)
+        if 'LI' in radiance_group_ids and 'LT' in radiance_group_ids:
+            start = max(esStart,liStart,ltStart)
+            end = min(esEnd,liEnd,ltEnd)
+            newWavebands = np.arange(start, end, interval)
+        elif 'LI' in radiance_group_ids:
+            start = max(esStart,liStart)
+            end = min(esEnd,liEnd)
+            newWavebands = np.arange(start, end, interval)
+        elif 'LT' in radiance_group_ids:
+            start = max(esStart,ltStart)
+            end = min(esEnd,ltEnd)
+            newWavebands = np.arange(start, end, interval)
 
         print('Interpolating Es')
         ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
-        print('Interpolating Li')
-        ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
-        print('Interpolating Lt')
-        ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
+        if 'LI' in node_group_ids:
+            print('Interpolating Li')
+            ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
+        if 'LT' in node_group_ids:
+            print('Interpolating Lt')
+            ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
 
         return root
 
@@ -694,37 +723,41 @@ class ProcessL1b_Interp:
 
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
-        sasGroup = root.addGroup("RADIANCE")
+        if ConfigFile.settings["SensorType"].lower() != "trios es only":
+            sasGroup = root.addGroup("RADIANCE")
 
         # Conversion of datasets within groups to move date/timestamps into
         # the data arrays and add datetime column. Also can change dataset name.
         # Places the dataset into the new group.
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
-        ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
-        ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
-
-        if ConfigFile.settings['SensorType'].lower() == 'trios' or\
-              ConfigFile.settings['SensorType'].lower() == 'dalec' or\
-                  ConfigFile.settings['SensorType'].lower() == 'sorad':
+        if ConfigFile.settings["SensorType"].lower() == "trios es only":
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
-            liL1AQCGroup = root.addGroup('LI_L1AQC')
-            liL1AQCGroup.copy(liL1AQC)
-            ltL1AQCGroup = root.addGroup('LT_L1AQC')
-            ltL1AQCGroup.copy(ltL1AQC)
         else:
-            esDarkGroup = root.addGroup('ES_DARK_L1AQC')
-            esDarkGroup.copy(esL1AQCDark)
-            esLightGroup = root.addGroup('ES_LIGHT_L1AQC')
-            esLightGroup.copy(esL1AQCLight)
-            liDarkGroup = root.addGroup('LI_DARK_L1AQC')
-            liDarkGroup.copy(liL1AQCDark)
-            liLightGroup = root.addGroup('LI_LIGHT_L1AQC')
-            liLightGroup.copy(liL1AQCLight)
-            ltDarkGroup = root.addGroup('LT_DARK_L1AQC')
-            ltDarkGroup.copy(ltL1AQCDark)
-            ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
-            ltLightGroup.copy(ltL1AQCLight)
+            ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
+            ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+
+            if ConfigFile.settings['SensorType'].lower() in ["dalec", "sorad", "trios"]:
+                esL1AQCGroup = root.addGroup('ES_L1AQC')
+                esL1AQCGroup.copy(esL1AQC)
+                liL1AQCGroup = root.addGroup('LI_L1AQC')
+                liL1AQCGroup.copy(liL1AQC)
+                ltL1AQCGroup = root.addGroup('LT_L1AQC')
+                ltL1AQCGroup.copy(ltL1AQC)
+            else:
+                esDarkGroup = root.addGroup('ES_DARK_L1AQC')
+                esDarkGroup.copy(esL1AQCDark)
+                esLightGroup = root.addGroup('ES_LIGHT_L1AQC')
+                esLightGroup.copy(esL1AQCLight)
+                liDarkGroup = root.addGroup('LI_DARK_L1AQC')
+                liDarkGroup.copy(liL1AQCDark)
+                liLightGroup = root.addGroup('LI_LIGHT_L1AQC')
+                liLightGroup.copy(liL1AQCLight)
+                ltDarkGroup = root.addGroup('LT_DARK_L1AQC')
+                ltDarkGroup.copy(ltL1AQCDark)
+                ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
+                ltLightGroup.copy(ltL1AQCLight)
+
 
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
@@ -831,51 +864,54 @@ class ProcessL1b_Interp:
         # interpolates to the FASTEST. Not much in the literature on this, although
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
         # which makes the most sense for minimizing error.
-        esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
-        liData = sasGroup.getDataset("LI")
-        ltData = sasGroup.getDataset("LT")
-
-        # Interpolate all datasets to the SLOWEST radiometric sampling rate
-        esLength = len(esData.data["Timetag2"].tolist())
-        liLength = len(liData.data["Timetag2"].tolist())
-        ltLength = len(ltData.data["Timetag2"].tolist())
-
-        interpData = None
-        if esLength < liLength and esLength < ltLength:
-            logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
-            interpData = esData
-        elif liLength < ltLength:
-            logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
-            interpData = liData
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            interpData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
         else:
-            logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
-            interpData = ltData
+            esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
+            liData = sasGroup.getDataset("LI")
+            ltData = sasGroup.getDataset("LT")
 
-        # Confirm that datasets are overlapping in time
-        minInterpDT = min(interpData.columns['Datetime'])
-        maxInterpDT = max(interpData.columns['Datetime'])
-        if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
-            logging.writeLogFileAndPrint("ES data does not overlap interpolation dataset")
-            return None
-        if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
-            logging.writeLogFileAndPrint("LI data does not overlap interpolation dataset")
-            return None
-        if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
-            logging.writeLogFileAndPrint("LT data does not overlap interpolation dataset")
-            return None
+            # Interpolate all datasets to the SLOWEST radiometric sampling rate
+            esLength = len(esData.data["Timetag2"].tolist())
+            liLength = len(liData.data["Timetag2"].tolist())
+            ltLength = len(ltData.data["Timetag2"].tolist())
 
-        # Perform time interpolation
+            interpData = None
+            if esLength < liLength and esLength < ltLength:
+                logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+                interpData = esData
+            elif liLength < ltLength:
+                logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+                interpData = liData
+            else:
+                logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+                interpData = ltData
 
-        # Note that only the specified datasets in each group will be interpolated and
-        # carried forward. For radiometers, this means that ancillary metadata such as
-        # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
-        # Required:
-        if not ProcessL1b_Interp.interpolateData(esData, interpData, "ES", fileName):
-            return None
-        if not ProcessL1b_Interp.interpolateData(liData, interpData, "LI", fileName):
-            return None
-        if not ProcessL1b_Interp.interpolateData(ltData, interpData, "LT", fileName):
-            return None
+            # Confirm that datasets are overlapping in time
+            minInterpDT = min(interpData.columns['Datetime'])
+            maxInterpDT = max(interpData.columns['Datetime'])
+            if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
+                logging.writeLogFileAndPrint("ES data does not overlap interpolation dataset")
+                return None
+            if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
+                logging.writeLogFileAndPrint("LI data does not overlap interpolation dataset")
+                return None
+            if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
+                logging.writeLogFileAndPrint("LT data does not overlap interpolation dataset")
+                return None
+
+            # Perform time interpolation
+
+            # Note that only the specified datasets in each group will be interpolated and
+            # carried forward. For radiometers, this means that ancillary metadata such as
+            # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
+            # Required:
+            if not ProcessL1b_Interp.interpolateData(esData, interpData, "ES", fileName):
+                return None
+            if not ProcessL1b_Interp.interpolateData(liData, interpData, "LI", fileName):
+                return None
+            if not ProcessL1b_Interp.interpolateData(ltData, interpData, "LT", fileName):
+                return None
 
         if robotGroup is not None:
             # Because of the fact that geometries have already been flipped into Ancillary and
@@ -915,10 +951,12 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(diffuse_ratio, interpData, "diffuse_ratio", fileName)
             ProcessL1b_Interp.interpolateData(solar_zenith, interpData, "solar_zenith", fileName)
 
-        # Match wavelengths across instruments
-        # Calls interpolateWavelengths and matchColumns
-        # Includes columnsToDataset for only the radiometry, for remaining groups, see below
-        root = ProcessL1b_Interp.matchWavelengths(root)
+        # In case of Es Only sensor keep native resolution
+        if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+            # Match wavelengths across instruments
+            # Calls interpolateWavelengths and matchColumns
+            # Includes columnsToDataset for only the radiometry, for remaining groups, see below
+            root = ProcessL1b_Interp.matchWavelengths(root)
 
         # FRM uncertainties
         _unc = node.getGroup('RAW_UNCERTAINTIES')

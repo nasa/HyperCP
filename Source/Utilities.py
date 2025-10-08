@@ -15,7 +15,7 @@ class Utilities:
     ''' These are still called from ProcessL1b.py'''
 
     ################################# UNCERTAINTIES ORIENTED #################################
-    
+
     @staticmethod
     def RenameUncertainties_Class(node):
         """
@@ -78,7 +78,7 @@ class Utilities:
                         unc_group.removeDataset(ds.id)  # remove dataset
 
         return True
-    
+
     @staticmethod
     def get_sensor_dict(node):
         sensorID = {}
@@ -136,16 +136,14 @@ class Utilities:
     def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorList = ['ES', 'LI', 'LT']
-        for sensor in sensorList:
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        for sensor in sensor_list:
 
             ## retrieve dataset from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or \
-                ConfigFile.settings['SensorType'].lower() == "dalec" or \
-                ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["dalec", "sorad", "trios", "trios es only"]:
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -194,15 +192,14 @@ class Utilities:
     def interpUncertainties_Class(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorList = ['ES', 'LI', 'LT']
-
-        for sensor in sensorList:
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        for sensor in sensor_list:
 
             ## retrieve dataset from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -290,8 +287,8 @@ class Utilities:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorId = Utilities.get_sensor_dict(node)
-        sensorList = ['ES', 'LI', 'LT']
-        for sensor in sensorList:
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
             # indx = ds.attributes["INDEX"]
@@ -305,7 +302,7 @@ class Utilities:
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                 # inv_dict = {v: k for k, v in sensorId.items()}
                 # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)
@@ -378,7 +375,7 @@ class Utilities:
 
     # @staticmethod
     # def read_char(filepath: str, gp) -> None:
-    #     ''' Used by 
+    #     ''' Used by
     #             ProcessL1b.read_unc_coefficient_factory
     #             ProcessL1b.read_FidRadDB_cal_char_files
     #             ProcessL1b.read_unc_coefficient_class
@@ -2739,7 +2736,7 @@ class Utilities:
 #             ProcessL1b.read_unc_coefficient_frm
 
 #             Thermal coefficients devised for each radiometer class are base on "Working Temperature" defined as:
-#                 TriOS G1: ambient temperature in the thermal chamber external to the radiometer in thermal equilibrium. 
+#                 TriOS G1: ambient temperature in the thermal chamber external to the radiometer in thermal equilibrium.
 #                 Sea-Bird: internal thermistor temperature.'''
 
 #         unc_grp = node.getGroup("RAW_UNCERTAINTIES")

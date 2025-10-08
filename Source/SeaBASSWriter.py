@@ -53,7 +53,7 @@ class SeaBASSWriter:
             # Cannot get here. level force to 2
             esData = None
 
-        if ConfigFile.settings['SensorType'].lower() =='trios':
+        if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only']:
             fileNameString = node.attributes['RAW_FILE_NAME']
             fileNameList = fileNameString.split(',')
             headerRawNames = ''
@@ -281,30 +281,31 @@ class SeaBASSWriter:
         # radianceGroup = root.getGroup("RADIANCE")
         reflectanceGroup = root.getGroup("REFLECTANCE")
 
-        rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
-        rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_unc")
-        # Fallback uncertainty for non-SeaBird, Factory regime
-        if rrsUnc is None:
-            rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_sd")
+        if reflectanceGroup:
+            rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
+            rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_unc")
+            # Fallback uncertainty for non-SeaBird, Factory regime
+            if rrsUnc is None:
+                rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_sd")
 
-        nLwData = reflectanceGroup.getDataset("nLw_HYPER")
-        nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")
-        # Fallback uncertainty for non-SeaBird, Factory regime
-        if nLwUnc is None:
-            nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_sd")
+            nLwData = reflectanceGroup.getDataset("nLw_HYPER")
+            nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")
+            # Fallback uncertainty for non-SeaBird, Factory regime
+            if nLwUnc is None:
+                nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_sd")
 
-        if ConfigFile.settings['bL2BRDF']:
-            if ConfigFile.settings['bL2BRDF_fQ']:
-                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_M02")
-                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_M02")
-            if ConfigFile.settings['bL2BRDF_IOP']:
-                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_L11")
-                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_L11")
-            if ConfigFile.settings['bL2BRDF_O25']:
-                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_O25")
-                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_O25")
-            # There are currently no additional uncertainties added for BRDF
-            # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
+            if ConfigFile.settings['bL2BRDF']:
+                if ConfigFile.settings['bL2BRDF_fQ']:
+                    nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_M02")
+                    rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_M02")
+                if ConfigFile.settings['bL2BRDF_IOP']:
+                    nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_L11")
+                    rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_L11")
+                if ConfigFile.settings['bL2BRDF_O25']:
+                    nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_O25")
+                    rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_O25")
+                # There are currently no additional uncertainties added for BRDF
+                # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
 
         esData = irradianceGroup.getDataset("ES_HYPER")
         esUnc = irradianceGroup.getDataset("ES_HYPER_unc")
@@ -318,15 +319,16 @@ class SeaBASSWriter:
         # ltData = radianceGroup.getDataset("LT_HYPER")
 
         # if esData is None or liData is None or ltData is None or rrsData is None or nLwData is None:
-        if esData is None or rrsData is None or nLwData is None:
+        if ((ConfigFile.settings["SensorType"].lower() == "trios es only" and esData is None) or
+                (ConfigFile.settings["SensorType"].lower() != "trios es only" and
+                 (esData is None or rrsData is None or nLwData is None))):
             print("SeaBASSWriter: Radiometric data is missing")
             return
 
         # Append bincount to datasets
-        bincountData = reflectanceGroup.getDataset("Ensemble_N")
+        bincountData = (reflectanceGroup if reflectanceGroup else irradianceGroup).getDataset("Ensemble_N")
         bincountData.datasetToColumns()
         bincount = bincountData.columns["N"]
-
 
         # Append latpos/lonpos to datasets
         ancGroup = root.getGroup("ANCILLARY")
@@ -337,17 +339,18 @@ class SeaBASSWriter:
         latpos = latposData.columns["LATITUDE"]
         lonpos = lonposData.columns["LONGITUDE"]
 
-        rrsData.datasetToColumns()
-        nLwData.datasetToColumns()
+        if reflectanceGroup:
+            rrsData.datasetToColumns()
+            nLwData.datasetToColumns()
 
-        if ConfigFile.settings['bL2BRDF']:
-            nLwData_BRDF.datasetToColumns()
-            rrsData_BRDF.datasetToColumns()
+            if ConfigFile.settings['bL2BRDF']:
+                nLwData_BRDF.datasetToColumns()
+                rrsData_BRDF.datasetToColumns()
 
-        # In the case of TriOS factory, rrsUnc is None so datasetToColumns() is not applicable
-        if rrsUnc is not None:
-            rrsUnc.datasetToColumns()
-            nLwUnc.datasetToColumns()
+            # In the case of TriOS factory, rrsUnc is None so datasetToColumns() is not applicable
+            if rrsUnc is not None:
+                rrsUnc.datasetToColumns()
+                nLwUnc.datasetToColumns()
 
         esData.datasetToColumns()
         esUnc.datasetToColumns()
@@ -357,87 +360,91 @@ class SeaBASSWriter:
         # Truncate wavebands to desired output
         esCols = esData.columns
         esColsUnc = esUnc.columns
-        rrsCols = rrsData.columns
-        nLwCols = nLwData.columns
-        if ConfigFile.settings['bL2BRDF']:
-            nLwCols_BRDF = nLwData_BRDF.columns
-            rrsCols_BRDF = rrsData_BRDF.columns
+        if reflectanceGroup:
+            rrsCols = rrsData.columns
+            nLwCols = nLwData.columns
+            if ConfigFile.settings['bL2BRDF']:
+                nLwCols_BRDF = nLwData_BRDF.columns
+                rrsCols_BRDF = rrsData_BRDF.columns
 
-        # In the case of TriOS factory, rrsUnc is None
-        if rrsUnc is not None:
-            rrsColsUnc = rrsUnc.columns
-            nLwColsUnc = nLwUnc.columns
-        else:
-            rrsColsUnc = None
-            nLwColsUnc = None
+            # In the case of TriOS factory, rrsUnc is None
+            if rrsUnc is not None:
+                rrsColsUnc = rrsUnc.columns
+                nLwColsUnc = nLwUnc.columns
+            else:
+                rrsColsUnc = None
+                nLwColsUnc = None
 
         for k in list(esCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
                     del esCols[k]
                     del esColsUnc[k]
-        for k in list(rrsCols.keys()):
-            if (k != 'Datetag') and (k != 'Timetag2'):
-                if float(k) < minWave or float(k) > maxWave:
-                    del rrsCols[k]
-                    if rrsUnc is not None:
-                        del rrsColsUnc[k]
-        for k in list(nLwCols.keys()):
-            if (k != 'Datetag') and (k != 'Timetag2'):
-                if float(k) < minWave or float(k) > maxWave:
-                    del nLwCols[k]
-                    if nLwUnc is not None:
-                        del nLwColsUnc[k]
-        if ConfigFile.settings['bL2BRDF']:
-            for k in list(nLwCols_BRDF.keys()):
+        if reflectanceGroup:
+            for k in list(rrsCols.keys()):
                 if (k != 'Datetag') and (k != 'Timetag2'):
                     if float(k) < minWave or float(k) > maxWave:
-                        del nLwCols_BRDF[k]
-            for k in list(rrsCols_BRDF.keys()):
+                        del rrsCols[k]
+                        if rrsUnc is not None:
+                            del rrsColsUnc[k]
+            for k in list(nLwCols.keys()):
                 if (k != 'Datetag') and (k != 'Timetag2'):
                     if float(k) < minWave or float(k) > maxWave:
-                        del rrsCols_BRDF[k]
+                        del nLwCols[k]
+                        if nLwUnc is not None:
+                            del nLwColsUnc[k]
+            if ConfigFile.settings['bL2BRDF']:
+                for k in list(nLwCols_BRDF.keys()):
+                    if (k != 'Datetag') and (k != 'Timetag2'):
+                        if float(k) < minWave or float(k) > maxWave:
+                            del nLwCols_BRDF[k]
+                for k in list(rrsCols_BRDF.keys()):
+                    if (k != 'Datetag') and (k != 'Timetag2'):
+                        if float(k) < minWave or float(k) > maxWave:
+                            del rrsCols_BRDF[k]
 
         esData.columns = esCols
         esUnc.columns = esColsUnc
-        rrsData.columns = rrsCols
-        nLwData.columns = nLwCols
-        if ConfigFile.settings['bL2BRDF']:
-            nLwData_BRDF.columns = nLwCols_BRDF
-            rrsData_BRDF.columns = rrsCols_BRDF
+        if reflectanceGroup:
+            rrsData.columns = rrsCols
+            nLwData.columns = nLwCols
+            if ConfigFile.settings['bL2BRDF']:
+                nLwData_BRDF.columns = nLwCols_BRDF
+                rrsData_BRDF.columns = rrsCols_BRDF
 
-        if rrsUnc is not None:
-            rrsUnc.columns = rrsColsUnc
-            nLwUnc.columns = nLwColsUnc
+            if rrsUnc is not None:
+                rrsUnc.columns = rrsColsUnc
+                nLwUnc.columns = nLwColsUnc
 
         esData.columns["BINCOUNT"] = bincount
-        rrsData.columns["BINCOUNT"] = bincount
-        nLwData.columns["BINCOUNT"] = bincount
         esData.columns["LATITUDE"] = latpos
-        rrsData.columns["LATITUDE"] = latpos
-        nLwData.columns["LATITUDE"] = latpos
         esData.columns["LONGITUDE"] = lonpos
-        rrsData.columns["LONGITUDE"] = lonpos
-        nLwData.columns["LONGITUDE"] = lonpos
-        rrsData.columnsToDataset()
-        nLwData.columnsToDataset()
-        if ConfigFile.settings['bL2BRDF']:
-            nLwData_BRDF.columns["BINCOUNT"] = bincount
-            nLwData_BRDF.columns["LATITUDE"] = latpos
-            nLwData_BRDF.columns["LONGITUDE"] = lonpos
-            nLwData_BRDF.columnsToDataset()
-            rrsData_BRDF.columns["BINCOUNT"] = bincount
-            rrsData_BRDF.columns["LATITUDE"] = latpos
-            rrsData_BRDF.columns["LONGITUDE"] = lonpos
-            rrsData_BRDF.columnsToDataset()
-        # liData.columns["LATITUDE"] = latpos
-        # ltData.columns["LATITUDE"] = latpos
-        # liData.columns["LONGITUDE"] = lonpos
-        # ltData.columns["LONGITUDE"] = lonpos
+        if reflectanceGroup:
+            rrsData.columns["BINCOUNT"] = bincount
+            nLwData.columns["BINCOUNT"] = bincount
+            rrsData.columns["LATITUDE"] = latpos
+            nLwData.columns["LATITUDE"] = latpos
+            rrsData.columns["LONGITUDE"] = lonpos
+            nLwData.columns["LONGITUDE"] = lonpos
+            rrsData.columnsToDataset()
+            nLwData.columnsToDataset()
+            if ConfigFile.settings['bL2BRDF']:
+                nLwData_BRDF.columns["BINCOUNT"] = bincount
+                nLwData_BRDF.columns["LATITUDE"] = latpos
+                nLwData_BRDF.columns["LONGITUDE"] = lonpos
+                nLwData_BRDF.columnsToDataset()
+                rrsData_BRDF.columns["BINCOUNT"] = bincount
+                rrsData_BRDF.columns["LATITUDE"] = latpos
+                rrsData_BRDF.columns["LONGITUDE"] = lonpos
+                rrsData_BRDF.columnsToDataset()
+            # liData.columns["LATITUDE"] = latpos
+            # ltData.columns["LATITUDE"] = latpos
+            # liData.columns["LONGITUDE"] = lonpos
+            # ltData.columns["LONGITUDE"] = lonpos
 
-        if rrsUnc is not None:
-            rrsUnc.columnsToDataset()
-            nLwUnc.columnsToDataset()
+            if rrsUnc is not None:
+                rrsUnc.columnsToDataset()
+                nLwUnc.columnsToDataset()
 
         esData.columnsToDataset()
         esUnc.columnsToDataset()
@@ -447,18 +454,29 @@ class SeaBASSWriter:
         # # Append ancillary datasets
         # Required
         azimuthData = ancGroup.getDataset("SOLAR_AZ")
-        relAzData = ancGroup.getDataset("REL_AZ")
         szaData = ancGroup.getDataset("SZA")
         windData = ancGroup.getDataset("WINDSPEED")
         azimuthData.datasetToColumns()
-        relAzData.datasetToColumns()
         szaData.datasetToColumns()
         windData.datasetToColumns()
 
         azimuth = azimuthData.columns["SOLAR_AZ"]
-        relAz = relAzData.columns["REL_AZ"]
         sza = szaData.columns["SZA"]
         wind = windData.columns["WINDSPEED"]
+
+
+        # Optional for Es only
+        relAzData = ancGroup.getDataset("REL_AZ")
+
+        if relAzData is not None:
+            relAzData.datasetToColumns()
+            relAz = relAzData.columns["REL_AZ"]
+        elif ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            relAz = np.empty((1,len(wind)))
+            relAz = relAz[0]*np.nan
+            relAz = relAz.tolist()
+        else:
+            raise ValueError("REL_AZ data is required, but not found in the ancillary data.")
 
         # Optional
         aodData = ancGroup.getDataset("AOD")
@@ -502,55 +520,57 @@ class SeaBASSWriter:
             heading = heading.tolist()
 
         # No need to add all ancillary to the uncertainty deltas
-        rrsData.columns["AOD"] = aod
-        nLwData.columns["AOD"] = aod
         esData.columns["AOD"] = aod
-        # liData.columns["AOD"] = aod
-        # ltData.columns["AOD"] = aod
-
-        rrsData.columns["CLOUD"] = cloud
-        nLwData.columns["CLOUD"] = cloud
         esData.columns["CLOUD"] = cloud
-        # liData.columns["CLOUD"] = cloud
-        # ltData.columns["CLOUD"] = cloud
-
-        rrsData.columns["SOLAR_AZ"] = azimuth
-        nLwData.columns["SOLAR_AZ"] = azimuth
         esData.columns["SOLAR_AZ"] = azimuth
-        # liData.columns["SOLAR_AZ"] = azimuth
-        # ltData.columns["SOLAR_AZ"] = azimuth
-
-        rrsData.columns["HEADING"] = heading
-        nLwData.columns["HEADING"] = heading
         esData.columns["HEADING"] = heading
-        # liData.columns["HEADING"] = heading
-        # ltData.columns["HEADING"] = heading
-
-        rrsData.columns["REL_AZ"] = relAz
-        nLwData.columns["REL_AZ"] = relAz
         esData.columns["REL_AZ"] = relAz
-        # liData.columns["REL_AZ"] = relAz
-        # ltData.columns["REL_AZ"] = relAz
-
-        rrsData.columns["SZA"] = sza
-        nLwData.columns["SZA"] = sza
         esData.columns["SZA"] = sza
-        # liData.columns["SZA"] = sza
-        # ltData.columns["SZA"] = sza
-
-        rrsData.columns["WIND"] = wind
-        nLwData.columns["WIND"] = wind
         esData.columns["WIND"] = wind
-        # liData.columns["WIND"] = wind
-        # ltData.columns["WIND"] = wind
-
-        rrsData.columnsToDataset()
-        nLwData.columnsToDataset()
         esData.columnsToDataset()
-        # liData.columnsToDataset()
-        # ltData.columnsToDataset()
 
-        if ConfigFile.settings['bL2BRDF']:
+        if reflectanceGroup:
+            rrsData.columns["AOD"] = aod
+            nLwData.columns["AOD"] = aod
+            # liData.columns["AOD"] = aod
+            # ltData.columns["AOD"] = aod
+
+            rrsData.columns["CLOUD"] = cloud
+            nLwData.columns["CLOUD"] = cloud
+            # liData.columns["CLOUD"] = cloud
+            # ltData.columns["CLOUD"] = cloud
+
+            rrsData.columns["SOLAR_AZ"] = azimuth
+            nLwData.columns["SOLAR_AZ"] = azimuth
+            # liData.columns["SOLAR_AZ"] = azimuth
+            # ltData.columns["SOLAR_AZ"] = azimuth
+
+            rrsData.columns["HEADING"] = heading
+            nLwData.columns["HEADING"] = heading
+            # liData.columns["HEADING"] = heading
+            # ltData.columns["HEADING"] = heading
+
+            rrsData.columns["REL_AZ"] = relAz
+            nLwData.columns["REL_AZ"] = relAz
+            # liData.columns["REL_AZ"] = relAz
+            # ltData.columns["REL_AZ"] = relAz
+
+            rrsData.columns["SZA"] = sza
+            nLwData.columns["SZA"] = sza
+            # liData.columns["SZA"] = sza
+            # ltData.columns["SZA"] = sza
+
+            rrsData.columns["WIND"] = wind
+            nLwData.columns["WIND"] = wind
+            # liData.columns["WIND"] = wind
+            # ltData.columns["WIND"] = wind
+
+            rrsData.columnsToDataset()
+            nLwData.columnsToDataset()
+            # liData.columnsToDataset()
+            # ltData.columnsToDataset()
+
+        if reflectanceGroup and ConfigFile.settings['bL2BRDF']:
             nLwData_BRDF.columns["AOD"] = aod
             nLwData_BRDF.columns["CLOUD"] = cloud
             nLwData_BRDF.columns["SOLAR_AZ"] = azimuth
@@ -572,42 +592,44 @@ class SeaBASSWriter:
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
 
         # Format each data block for individual output
-        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,rrsUnc,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
-        formattednLw, fieldsnLw, unitsnLw  = SeaBASSWriter.formatData2(nLwData,nLwUnc,'Lwn',reflectanceGroup.attributes["nLw_UNITS"])
         formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,esUnc,'es',irradianceGroup.attributes["ES_UNITS"])
-        if ConfigFile.settings['bL2BRDF']:
-            formattednLw_BRDF, fieldsnLw_BRDF, unitsnLw_BRDF  = SeaBASSWriter.formatData2(nLwData_BRDF,nLwUnc,'Lwnex',reflectanceGroup.attributes["nLw_UNITS"])
-            formattedRrs_BRDF, fieldsRrs_BRDF, unitsRrs_BRDF  = SeaBASSWriter.formatData2(rrsData_BRDF,rrsUnc,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
+        if reflectanceGroup:
+            formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,rrsUnc,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
+            formattednLw, fieldsnLw, unitsnLw  = SeaBASSWriter.formatData2(nLwData,nLwUnc,'Lwn',reflectanceGroup.attributes["nLw_UNITS"])
+            if ConfigFile.settings['bL2BRDF']:
+                formattednLw_BRDF, fieldsnLw_BRDF, unitsnLw_BRDF  = SeaBASSWriter.formatData2(nLwData_BRDF,nLwUnc,'Lwnex',reflectanceGroup.attributes["nLw_UNITS"])
+                formattedRrs_BRDF, fieldsRrs_BRDF, unitsRrs_BRDF  = SeaBASSWriter.formatData2(rrsData_BRDF,rrsUnc,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
 
-        # formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',radianceGroup.attributes["LI_UNITS"])
-        # formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
+            # formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',radianceGroup.attributes["LI_UNITS"])
+            # formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
 
         # # Write SeaBASS files
         # Need to update headerBlock for BRDF
         # headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
-        BRDF_correction = SeaBASSHeader.settings['BRDF_correction']
-        headerBlock['BRDF_correction'] = 'noBRDF'
-        SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)
-        SeaBASSWriter.writeSeaBASS('Lwn',fp,headerBlock,formattednLw,fieldsnLw,unitsnLw)
         SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
-        SeaBASSHeader.settings['BRDF_correction'] = BRDF_correction # Changes headerBlock as well.
+        if reflectanceGroup:
+            BRDF_correction = SeaBASSHeader.settings['BRDF_correction']
+            headerBlock['BRDF_correction'] = 'noBRDF'
+            SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)
+            SeaBASSWriter.writeSeaBASS('Lwn',fp,headerBlock,formattednLw,fieldsnLw,unitsnLw)
+            SeaBASSHeader.settings['BRDF_correction'] = BRDF_correction # Changes headerBlock as well.
 
 
-        if ConfigFile.settings['bL2BRDF']:
-            # Use M02 and L11 in filenames to avoid conflict with datatype "_IOP_"
-            if ConfigFile.settings['bL2BRDF_fQ']:
-                SeaBASSWriter.writeSeaBASS('Lwn_M02',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-                SeaBASSWriter.writeSeaBASS('Rrs_M02',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+            if ConfigFile.settings['bL2BRDF']:
+                # Use M02 and L11 in filenames to avoid conflict with datatype "_IOP_"
+                if ConfigFile.settings['bL2BRDF_fQ']:
+                    SeaBASSWriter.writeSeaBASS('Lwn_M02',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                    SeaBASSWriter.writeSeaBASS('Rrs_M02',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
 
-            if ConfigFile.settings['bL2BRDF_IOP']:
-                SeaBASSWriter.writeSeaBASS('Lwn_L11',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-                SeaBASSWriter.writeSeaBASS('Rrs_L11',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+                if ConfigFile.settings['bL2BRDF_IOP']:
+                    SeaBASSWriter.writeSeaBASS('Lwn_L11',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                    SeaBASSWriter.writeSeaBASS('Rrs_L11',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
 
-            if ConfigFile.settings['bL2BRDF_O25']:
-                SeaBASSWriter.writeSeaBASS('Lwn_O25',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-                SeaBASSWriter.writeSeaBASS('Rrs_O25',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+                if ConfigFile.settings['bL2BRDF_O25']:
+                    SeaBASSWriter.writeSeaBASS('Lwn_O25',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                    SeaBASSWriter.writeSeaBASS('Rrs_O25',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
 
-        # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
-        # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
+            # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
+            # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
 
         return headerBlock['data_file_name']
