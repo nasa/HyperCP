@@ -43,13 +43,13 @@ class PIUDataStore:
 
         try:
             ancGroup = root.getGroup("ANCILLARY")
-            self.station = ancGroup.getDataset("STATION").columns["STATION"]
+            self.station = ancGroup.getDataset("STATION").columns["STATION"][0]
         except (AttributeError, KeyError):
             self.station = None
             
         try:
             acqTime = dt.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
-            self.cast = f"{self.get_regime_Name(self.cal_level)}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            self.cast = f"{self.get_regime_Name()}_{acqTime.strftime('%Y%m%d%H%M%S')}"
         except (AttributeError, KeyError):
             self.cast = None
 
@@ -353,12 +353,11 @@ class PIUDataStore:
 
 
     ## UTILITIES ##
-    @staticmethod
-    def get_regime_name(lvl: int):
-        if lvl == int(3):
-            return "FRM_Sensor-Specific"
-        elif lvl == int(2):
-            return "FRM_Class-Based"
+    def get_regime_Name(self):
+        if self.cal_level == int(3):
+            return "FRM_Sensor_Specific"
+        elif self.cal_level == int(2):
+            return "FRM_Class_Based"
         else:
             return "Factory"
 

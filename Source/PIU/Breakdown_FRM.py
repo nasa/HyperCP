@@ -40,7 +40,7 @@ class plottingToolsFRM:
             u_rel = (y/y_mean)*100
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")
-            plt.ylim(0,3)
+            plt.ylim(0,5)
         else:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
@@ -56,24 +56,31 @@ class plottingToolsFRM:
         """
 
         self.get_figure()
-        
-        labels = dict(
+        keys = dict(
             ES=["noise", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
             LI=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"],
             LT=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"]
         )
+        labels = dict(
+            ES=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "cosine (diffuse)", "cosine (direct)"],
+            LI=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"],
+            LT=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"]
+        )
 
-        indexes = [
-            np.argmin(np.abs(wavelengths - 675)),
+        indexes = [  # specific wavelengths requested by consortium partners
+            np.argmin(np.abs(wavelengths - 670)),
+            np.argmin(np.abs(wavelengths - 620)),
             np.argmin(np.abs(wavelengths - 560)),
-            np.argmin(np.abs(wavelengths - 442))
+            np.argmin(np.abs(wavelengths - 490)),
+            np.argmin(np.abs(wavelengths - 442)),
+            np.argmin(np.abs(wavelengths - 400)),
         ]
         for indx in indexes:
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
             fig, ax = plt.subplots()
 
             ax.pie(
-                [self.getpct(BD_UNCS[key], signal)[indx] for key in labels[s]],
+                [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]],
                 labels=labels[s],
                 autopct='%1.1f%%'
             )
@@ -93,8 +100,6 @@ class plottingToolsFRM:
 
     def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True):
 
-        # ax = plt.gca()
-        # ax.legend(loc='upper left', bbox_to_anchor=(1.0, 1.0), fancybox=True, shadow=True)  # , bbox_to_anchor=(1.04, 0.5)
         if legend:
             plt.legend()
         if grid:
@@ -114,6 +119,7 @@ class plottingToolsFRM:
                 umask(orig_umask)
         
         plt.savefig(fp)
+        plt.close()
     
     @staticmethod
     def getpct(v1, v2):
