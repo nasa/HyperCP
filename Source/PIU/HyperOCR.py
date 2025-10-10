@@ -66,6 +66,7 @@ class HyperOCR(BaseInstrument):
         std_dark=[]
         ave_light=[]
         ave_dark = []
+        env_pert = []
         std_signal = {}
 
         # number of replicates for light and dark readings
@@ -75,6 +76,7 @@ class HyperOCR(BaseInstrument):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
+            env_pert.append(np.std(lightData[k]))
             if N > 25:  # normal case
                 std_light.append(np.std(lightData[k])/np.sqrt(N))
                 std_dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
@@ -110,6 +112,7 @@ class HyperOCR(BaseInstrument):
             std_Light=np.array(std_light),
             std_Dark=np.array(std_dark),
             std_Signal=std_signal,
+            perturbations=np.array(env_pert)
             )  # output as dictionary for use in ProcessL2/PIU
 
     def FRM(self, PDS: pds, stats, newWaveBands) -> dict[str, np.array]:
@@ -224,6 +227,11 @@ class HyperOCR(BaseInstrument):
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
 
             # Non-Linearity
+            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
+            no_lin_corr_indx = DATA['cb_alpha'] == 0
+            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx] 
+            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
+            
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
@@ -249,7 +257,7 @@ class HyperOCR(BaseInstrument):
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
             BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
-            BD_CORR['radcal'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
+            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
 
             # Stability correction
             cal_corr_signal = np.mean(sample_cal_corr, axis=0)
@@ -260,6 +268,22 @@ class HyperOCR(BaseInstrument):
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
             BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
+            BD_CORR['ct'] = np.mean(sample_ct_corr, axis=0) - cal_corr_signal
+
+            wvls = DATA['radcal_wvl']
+            def test_plot(x, y_lpu, y_mc, name, ylim=None):
+                import matplotlib.pyplot as plt
+                plt.figure('test_plot')
+                plt.title(f"{name} Uncertainty")
+                plt.plot(x, y_lpu, label='LPU')
+                plt.plot(x, y_mc, linestyle='--', label='MC')
+                plt.grid("both")
+                plt.xlim(350, 800)
+                if ylim is not None:
+                    plt.ylim(*ylim)
+                plt.legend()
+                plt.savefig(f"{name}_unc_test.png")
+                plt.close('test_plot')
 
             if s_type == "ES":
                 # Cosine correction
@@ -278,12 +302,30 @@ class HyperOCR(BaseInstrument):
                 sample_cos_corr = prop.run_samples(
                     mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
                 )
-                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
+
                 signal = np.mean(sample_cos_corr, axis=0)
+                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
+                BD_CORR['cosine'] = signal - np.mean(sample_ct_corr, axis=0)
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
+
+                test_plot(
+                    wvls, 
+                    np.sqrt(
+                        BD_UNCS['noise']**2 + 
+                        BD_UNCS['clin']**2 + 
+                        BD_UNCS['cSl']**2 + 
+                        BD_UNCS['radcal']**2 + 
+                        BD_UNCS['stab']**2 + 
+                        BD_UNCS['ct']**2 + 
+                        BD_UNCS['cosine']**2
+                    ),
+                    unc,
+                    f"final_validation_{s_type}",
+                     ylim=[0, 8]
+                )
 
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
@@ -296,6 +338,22 @@ class HyperOCR(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
+
+                test_plot(
+                    wvls, 
+                    np.sqrt(
+                        BD_UNCS['noise']**2 + 
+                        BD_UNCS['clin']**2 + 
+                        BD_UNCS['cSl']**2 + 
+                        BD_UNCS['radcal']**2 + 
+                        BD_UNCS['stab']**2 + 
+                        BD_UNCS['ct']**2 + 
+                        BD_UNCS['pol']**2
+                    ),
+                    unc,
+                    f"final_validation_{s_type}",
+                    ylim=[0, 0.25]
+                )
 
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##

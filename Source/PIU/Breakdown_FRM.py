@@ -151,6 +151,8 @@ class SolveLPU:
 
         k = DATA['t1']/(DATA['t2'] - DATA['t1'])
         S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
+        
+        # TODO: comment equations and sensitivity coeffs
         LPU_UNCS['S12'] = np.sqrt(
             ((1 + k)**2)*(UNC['S1']**2) + 
             (k**2)*(UNC['S2']**2)
@@ -200,7 +202,10 @@ class SolveLPU:
         """
         
         signal = np.mean(sample_signal, axis=0)
-        signal_unc = self.prop.process_samples(None, sample_signal)
+        signal_unc = self.prop.process_samples(None, sample_signal)  # uncertainty in dark correction due to noise
+        # f = signal - signal*alpha
+        # sen coef 1 = 1 - 2*alpha*signal
+        # sen coef 2 = signal^2
 
         LPU_UNCS['noise'] = np.sqrt(
             (1 - 2*alpha*signal)**2 * signal_unc**2  # signal unc at this point is just dark correction uncertainty
@@ -323,16 +328,44 @@ class SolveLPU:
         return LPU_UNCS
 
     ## L2 ##
-    def waterLeaving(self, output_uncs, LPU_UNCS):
-        UNCS = output_uncs['Lw']
+    def waterLeaving(self, LPU_UNCS, li, rho):
+        sc_1 = 1 # sensitivity coefficient, 1 for LT
+        sc_1 = Li**2
+        sc_2 = rho**2 
 
-        for sensor in LPU_UNCS.keys():
-            # pass all uncs through sen coeffs for LW
-            pass
+        for k in LPU_UNCS['LI'].keys():  # pass all uncs through sen coeffs for LW
+            LPU_UNCS['Lw'][k] = np.sqrt(
+                (sc_1 * LPU_UNCS['LT'][k]**2) +
+                (sc_2 * LPU_UNCS['LI'][k]**2) 
+            )
+            
+        LPU_UNCS['rho']['Lw_units'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, output_uncs, LPU_UNCS):
-        UNCS = output_uncs['Rrs']
+    def reflectance(self, LPU_UNCS, Es, Lw):
+        sc_1 = 1 / Es
+        sc_2  = Lw / Es**2
+        sc_3 = LI / ES  # calculated sensitivity coeff for Rho only
 
-        for sensor in LPU_UNCS.keys():
-            # pass all uncs through sen coeffs for LW
-            pass
+        for k in LPU_UNCS['Lw'].keys():
+            LPU_UNCS['Rrs'][k] = np.sqrt(
+                sc_1**2 * LPU['ES'][k] +
+                sc_2**2 * LPU['Lw'][k]
+            )
+       
+        LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
+            sc_1**2 * LPU['ES']['cos_dir'] +
+        )
+        LPU_UNCS['Rrs']['cos_diff'] = np.sqrt(
+            sc_1**2 * LPU['ES']['cos_diff'] +
+        )  # no contribution from LW here
+
+        LPU_UNCS['rho']['Rrs_units'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
+
+    def normalised_waterLeaving(self, LPU_UNCS, f0_unc):
+        for k in LPU_UNCS['Lw'].keys():
+            LPU_UNCS['NLw'][k] = np.sqrt(
+                LPU_UNCS['Lw'][k]**2 + 
+                f0_unc**2
+            )  # add in quadrature for NLw
+
+        LPU_UNCS['rho']['NLw_units'] = np.sqrt(f0_unc**2 + LPU_UNCS['rho']['Lw_units']**2)

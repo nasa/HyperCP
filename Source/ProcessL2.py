@@ -480,8 +480,8 @@ class ProcessL2:
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
             k = str(wvl)
             if (any(wvl == float(x) for x in esXSlice) and
-                    any(wvl == float(x) for x in liXSlice) and
-                    any(wvl == float(x) for x in ltXSlice)):
+                any(wvl == float(x) for x in liXSlice) and
+                any(wvl == float(x) for x in ltXSlice)):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -1611,6 +1611,7 @@ class ProcessL2:
                     xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
                     xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
                     xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+                    xSlice['f0_unc'] = F0_unc  # to pass to L2 method for calculating and reporting NLw uncertainties
 
                     L2_UNC, L2_BD = instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice)
                     xUNC.update(L2_UNC)
