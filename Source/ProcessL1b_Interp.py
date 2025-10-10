@@ -552,7 +552,7 @@ class ProcessL1b_Interp:
         radiance_group_ids, sasGroup = [], None
         if 'RADIANCE' in node_group_ids:
             sasGroup = node.getGroup("RADIANCE")
-            radiance_group_ids = [gp.id for gp in sasGroup.groups]
+            radiance_group_ids = [gp.id for gp in sasGroup.datasets.values()]
 
         # Propagate L1AQC data
         for gp in node.groups:
@@ -646,10 +646,10 @@ class ProcessL1b_Interp:
 
         print('Interpolating Es')
         ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
-        if 'LI' in node_group_ids:
+        if 'LI' in radiance_group_ids:
             print('Interpolating Li')
             ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
-        if 'LT' in node_group_ids:
+        if 'LT' in radiance_group_ids:
             print('Interpolating Lt')
             ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
 

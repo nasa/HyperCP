@@ -668,7 +668,7 @@ class ProcessL1bqc:
             logging.writeLogFileAndPrint(msg)
             inFilePath = node.attributes['In_Filepath']
             if ConfigFile.settings['SensorType'].lower() == 'trios es only':
-                badTimes, _ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
+                badTimes, timeStamp = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
             else:
                 badTimes1, _ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
                 badTimes2, timeStamp = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)

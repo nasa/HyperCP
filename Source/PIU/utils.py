@@ -59,15 +59,13 @@ class utils:
             newColumns["Timetag2"] = saveTimetag2
         # Can leave Datetime off at this point
 
-        for i in range(newWaveBands.shape[0]):
-            newColumns[str(round(10*newWaveBands[i])/10)] = []  # limit to one decimal place
-
-        new_y = np.interp(newWaveBands, x, y)  #InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
-
-        for waveIndex in range(newWaveBands.shape[0]):
-            newColumns[str(round(10*newWaveBands[waveIndex])/10)].append(new_y[waveIndex])
+        new_y = np.interp(newWaveBands, x, y)  # InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
         if return_as_dict:
+            for idx, wb in enumerate(newWaveBands):
+                # wb_str = str(round(10 * wb) / 10) # limit to one decimal place (inconsitent with other parts of the code)
+                wb_str = str(wb)  # preferred for consistency
+                newColumns[wb_str] = [new_y[idx]]
             return newColumns
         else:
             return new_y

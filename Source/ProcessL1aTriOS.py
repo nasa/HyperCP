@@ -115,9 +115,10 @@ class ProcessL1aTriOS:
                     cod = False
                     root.attributes["FRAME_TYPE"] = 'light'
                 for file in ffp:
-                    if "SAM_" in file:
-                        # Regex accomodate both SAM_1234_ and SAM1234 conventions
-                        serialNumber = re.findall(r'SAM_?(\d+)_', os.path.basename(file))[0]
+                    # Regex accomodate both SAM_1234_ and SAM1234 conventions
+                    serialNumber = re.findall(r'SAM_?(\d+)_', os.path.basename(file))
+                    if serialNumber:
+                        serialNumber = serialNumber[0]
                     else:
                         logging.writeLogFileAndPrint("ERROR : naming convention is not respected")
                         serialNumber = None
@@ -391,6 +392,9 @@ class ProcessL1aTriOS:
     # Function for data formatting
     @staticmethod
     def formatting_instrument(name, cal_path, input_file, root, configPath):
+        if name is None:
+            print('Error in naming convention of raw file. Unable to load calibration file.')
+            return None,None
         print('Formatting ' + str(name) + ' Data')
         # Extract measurement type from config file
         with open(configPath, 'r', encoding="utf-8") as fc:
