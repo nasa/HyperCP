@@ -69,5 +69,21 @@ class TestSeabirdSolarTracker(unittest.TestCase):
                     self.anc_filename, processMultiLevel=True)
 
 
+class TestInsituMarineOpticsDALEC(unittest.TestCase):
+    def setUp(self):
+        # Load files to process
+        self.path_to_data = os.path.join(root, 'Data', 'Sample_Data', 'DALEC')
+        self.anc_filename = os.path.join(self.path_to_data, f'VIIRS2024_DALEC_Ancillary.sb')
+        self.cfg_filename = os.path.join(root, 'Config', 'sample_DALEC.cfg')
+        self.files = sorted(glob.glob(os.path.join(self.path_to_data, 'RAW', f'*.TXT')))
+
+    def test_seabird_solar_tracker(self):
+        from Main import Command
+        os.chdir(root)  # Need to switch to root as path in Config files are relative
+        for file in self.files:
+            Command(self.cfg_filename, 'RAW', file, self.path_to_data,'L1A',
+                    self.anc_filename, processMultiLevel=True)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -275,6 +275,10 @@ class ProcessL1bqc:
             ltGroup = node.getGroup('LT_L1AQC')
         elif ConfigFile.settings["SensorType"].lower() == "trios es only":
             esGroup = node.getGroup('ES_L1AQC')
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            sasGroup = node.getGroup("RADIANCE")
+        else:
+            raise AssertionError(f"SensorType not supported: {ConfigFile.settings['SensorType']}")
 
         robotGroup = None
         ancGroup = None
