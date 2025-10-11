@@ -328,35 +328,35 @@ class SolveLPU:
         return LPU_UNCS
 
     ## L2 ##
-    def waterLeaving(self, LPU_UNCS, li, rho):
-        sc_1 = 1 # sensitivity coefficient, 1 for LT
+    def waterLeaving(self, LPU_common_wb, LPU_UNCS, Li, rho):
+        # sc_1 = 1 # sensitivity coefficient, 1 for LT
         sc_1 = Li**2
-        sc_2 = rho**2 
+        sc_2 = rho**2  # signals have been interpolated to common wavebands, however LPU uncs exist at radcal wavelengths
 
-        for k in LPU_UNCS['LI'].keys():  # pass all uncs through sen coeffs for LW
+        for k in LPU_common_wb['LI'].keys():  # pass all uncs through sen coeffs for LW
             LPU_UNCS['Lw'][k] = np.sqrt(
-                (sc_1 * LPU_UNCS['LT'][k]**2) +
-                (sc_2 * LPU_UNCS['LI'][k]**2) 
+                (sc_1 * LPU_common_wb['LT'][k]**2) +
+                (sc_2 * LPU_common_wb['LI'][k]**2) 
             )
             
         LPU_UNCS['rho']['Lw_units'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, LPU_UNCS, Es, Lw):
+    def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lw):
         sc_1 = 1 / Es
         sc_2  = Lw / Es**2
-        sc_3 = LI / ES  # calculated sensitivity coeff for Rho only
+        sc_3 = Li / Es  # calculated sensitivity coeff for Rho only
 
         for k in LPU_UNCS['Lw'].keys():
             LPU_UNCS['Rrs'][k] = np.sqrt(
-                sc_1**2 * LPU['ES'][k] +
-                sc_2**2 * LPU['Lw'][k]
+                sc_1**2 * LPU_common_wb['ES'][k] +
+                sc_2**2 * LPU_UNCS['Lw'][k]
             )
        
         LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
-            sc_1**2 * LPU['ES']['cos_dir'] +
+            sc_1**2 * LPU_common_wb['ES']['cos_dir']
         )
         LPU_UNCS['Rrs']['cos_diff'] = np.sqrt(
-            sc_1**2 * LPU['ES']['cos_diff'] +
+            sc_1**2 * LPU_common_wb['ES']['cos_diff']
         )  # no contribution from LW here
 
         LPU_UNCS['rho']['Rrs_units'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)

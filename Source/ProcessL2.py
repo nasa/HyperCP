@@ -1611,7 +1611,6 @@ class ProcessL2:
                     xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
                     xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
                     xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
-                    xSlice['f0_unc'] = F0_unc  # to pass to L2 method for calculating and reporting NLw uncertainties
 
                     L2_UNC, L2_BD = instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice)
                     xUNC.update(L2_UNC)
@@ -1640,8 +1639,9 @@ class ProcessL2:
                 #logging.writeLogFileAndPrint('Updating sensor-specific instrument uncertainties...')
                 L1B_UNC, xBreakdownCORR, xBreakdownUNC = instrument.FRM(PDS, stats, np.array(waveSubset, float))
                 xSlice.update(L1B_UNC)
+                xSlice['f0_unc'] = F0_unc  # to pass to L2 method for calculating and reporting NLw uncertainties
                 
-                L2_UNC = instrument.FRML2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice, xBreakdownUNC, xBreakdownCORR)
+                L2_UNC = instrument.FRML2(PDS, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice, xBreakdownUNC)
                 xUNC.update(L2_UNC)
                 # free up memory since info is now stored in dictionaries
                 del L2_UNC

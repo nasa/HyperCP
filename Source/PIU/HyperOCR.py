@@ -147,14 +147,14 @@ class HyperOCR(BaseInstrument):
             BD_CORR = output_BD_CORR[s_type]  # breakdown correction magnitudes
             
             # generate initial samples with comet maths
-            sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
+            sample_cal_int  = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
             sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
-            sample_n_iter =   cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
+            sample_n_iter   = cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
             
-            sample_Ct =   cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
-            sample_LAMP = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
+            sample_Ct    = cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
+            sample_LAMP  = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
             sample_PANEL = None
-            sample_mZ =   cm.generate_sample(mDraws, DATA['mZ'], UNC['mZ'], "rand")
+            sample_mZ    = cm.generate_sample(mDraws, DATA['mZ'], UNC['mZ'], "rand")
 
             sample_t1 = cm.generate_sample(mDraws, DATA['t1'], None, None)
             sample_S1 = cm.generate_sample(mDraws, np.asarray(DATA['S1']), UNC['S1'], "rand")
@@ -162,11 +162,11 @@ class HyperOCR(BaseInstrument):
             # normalise to the longer time
 
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
-            sample_k = cm.generate_sample(mDraws, k, None, None)
+            sample_k   = cm.generate_sample(mDraws, k, None, None)
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
             
-            BD_CORR['S1'] = np.mean(sample_S1, axis=0)
-            BD_CORR['S2'] = np.mean(sample_S2, axis=0)
+            BD_CORR['S1']  = np.mean(sample_S1, axis=0)
+            BD_CORR['S2']  = np.mean(sample_S2, axis=0)
             BD_CORR['S12'] = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
             BD_UNCS.update(LPU.S12_alpha(PDS, s_type))
 
@@ -184,6 +184,11 @@ class HyperOCR(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
+            no_lin_corr_indx = DATA['cb_alpha'] == 0
+            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx] 
+            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
+            
             BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
 
             # direct comparison between Sample_S12 and alpha is useful but only if we're on the same integration time
@@ -227,11 +232,6 @@ class HyperOCR(BaseInstrument):
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
 
             # Non-Linearity
-            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
-            no_lin_corr_indx = DATA['cb_alpha'] == 0
-            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx] 
-            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
-            
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
@@ -384,6 +384,7 @@ class HyperOCR(BaseInstrument):
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
             wvls = DATA['wvls']
+            output_UNC[f"{s_type.lower()}_wvls"] = wvls
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
                 output_UNC[f"{s_type.lower()}Unc"], 
                 wvls, 

@@ -174,6 +174,11 @@ class TriOS(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
+            no_lin_corr_indx = DATA['cb_alpha'] == -2e-7   # TODO: clarify with Tartu why alpha != 0 for TriOS
+            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
+            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
+            
             BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
 
             if s_type.upper() == "ES":
@@ -208,11 +213,6 @@ class TriOS(BaseInstrument):
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
 
             # Non-Linearity Correction
-            sample_alpha_CB  = cm.generate_sample(mDraws, np.zeros_like(DATA['cb_alpha']), UNC['cb_alpha'], "syst")
-            no_lin_corr_indx = DATA['cb_alpha'] == -2e-7   # TODO: clarify with Tartu why alpha != 0 for TriOS
-            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
-            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
-            
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
@@ -373,6 +373,7 @@ class TriOS(BaseInstrument):
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
             wvls = DATA['wvls']
+            output_UNC[f"{s_type.lower()}_wvls"] = wvls
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
                 output_UNC[f"{s_type.lower()}Unc"], 
                 wvls, 
