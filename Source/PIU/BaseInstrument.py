@@ -459,17 +459,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         PT = plottingToolsFRM("L2", PDS)
         LPU = SolveLPU()
 
-        BD_UNCS.update({k: {} for k in ['NLw', 'Lw', 'Rrs', 'rho']})
-        BD_UNCS_common_wb = {}
-
+        BD_UNCS_common_wb = {'ES': {}, 'LI': {}, 'LT': {}}
         for s in BD_UNCS.keys():  # Breakdown uncs must be interpolated to common wavebands to apply to Lw and Rrs
             for k in BD_UNCS[s].keys():  # use interp method from PIUDataStore - method is static so no instance required
                 BD_UNCS_common_wb[s][k] = pds.interp_common_wvls(
                     BD_UNCS[s][k],
-                    xSlice[f"{s.lower()}_wvls"],
+                    PDS.coeff[s]["radcal_wvl"],
                     np.array(waveSubset),
                     return_as_dict=False  # return as numpy array
                 )
+
+        BD_UNCS.update({k: {} for k in ['NLw', 'Lw', 'Rrs', 'rho']})
 
         # organise data
         # cut data down to wavelengths where rho values exist -- should be no change for M99
@@ -493,7 +493,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if not hasattr(rhoDelta, '__len__'):  # Not an array (e.g. list or np.array)
             rhoDelta = np.ones(len(waveSubset)) * rhoDelta  # convert rhoDelta to the same dims as other values/Uncertainties
 
-        BD_UNCS['rho']['rho_unc'] = rhoDelta
+        BD_UNCS['rho']['rho_unc'] = np.array(rhoDelta)
 
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
@@ -506,7 +506,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_ES = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
         sample_LI = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         sample_LT = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
-        f0_unc = xSlice['f0_unc']
+        f0_unc = np.array(list(xSlice['f0_unc'].values()))
 
         # no uncertainty in wavelengths
         sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
@@ -533,33 +533,33 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
             for meas in ['Lw', 'Rrs']:
-                UNCS = BD_UNCS[meas]
+                UNC = BD_UNCS[meas]
                 if meas.upper() == 'LW':
                     signal = np.mean(sample_Lw,  axis=0)
                 else:
                     signal = np.mean(sample_Rrs, axis=0)
 
                 ## DO PLOTS ##
-                wvls = xSlice["es_wvls"]
-                PT.plot(wvls['radcal_wvl'], UNCS['noise'],  "noise",                   rel_to=signal)
-                PT.plot(wvls['radcal_wvl'], UNCS['clin'],   "non-linearity",           rel_to=signal)
-                PT.plot(wvls['radcal_wvl'], UNCS['cSl'],    "straylight",              rel_to=signal)
-                PT.plot(wvls['radcal_wvl'], UNCS['radcal'], "radiometric calibration", rel_to=signal)
+                wvls = np.array(waveSubset)
+                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal)
+                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal)
+                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal)
+                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal)
 
                 # post normalisation
-                PT.plot(wvls['radcal_wvl'], UNCS['stab'], "stability", rel_to=signal)
-                PT.plot(wvls['radcal_wvl'], UNCS['ct'],   "ct",        rel_to=signal)
+                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal)
+                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal)
                 
                 # plot contributions that vary between sensors
                 if meas.upper() == 'RRS':
-                    PT.plot(wvls['radcal_wvl'], UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
-                    PT.plot(wvls['radcal_wvl'], UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
+                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal)
+                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal)
                 
-                PT.plot(wvls['radcal_wvl'], UNCS['pol'], "polarisation", rel_to=signal)
+                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal)
                 
-                PT.save_figure()  # save the figure once all of the contributions have been added to the plot (will close the figure)
+                PT.save_figure(level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
             
-                PT.plot_pie_FRM(meas, wvls['wvls'], BD_UNCS, signal)
+                # PT.plot_pie_FRM(meas, wvls, BD_UNCS, signal)
 
         UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error
