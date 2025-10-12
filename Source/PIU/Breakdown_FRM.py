@@ -98,7 +98,7 @@ class plottingToolsFRM:
             except AttributeError:
                 plt.figure(self.s)
 
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True):
+    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B'):
 
         if legend:
             plt.legend()
@@ -107,7 +107,7 @@ class plottingToolsFRM:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.cast}_{self.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_{level}_{self.s}_{self.cast}_{self.station}.png")
             except (AttributeError, ValueError):
                 fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
         
@@ -347,11 +347,17 @@ class SolveLPU:
         sc_3 = Li / Es  # calculated sensitivity coeff for Rho only
 
         for k in LPU_UNCS['Lw'].keys():
-            LPU_UNCS['Rrs'][k] = np.sqrt(
-                sc_1**2 * LPU_common_wb['ES'][k] +
-                sc_2**2 * LPU_UNCS['Lw'][k]
-            )
-       
+            if k != 'pol':
+                LPU_UNCS['Rrs'][k] = np.sqrt(
+                    sc_1**2 * LPU_common_wb['ES'][k] +
+                    sc_2**2 * LPU_UNCS['Lw'][k]
+                )
+            else:
+                LPU_UNCS['Rrs'][k] = np.sqrt(
+                    # es does not have pol
+                    sc_2**2 * LPU_UNCS['Lw'][k]
+                )
+        
         LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
             sc_1**2 * LPU_common_wb['ES']['cos_dir']
         )

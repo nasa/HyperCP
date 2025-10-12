@@ -372,8 +372,7 @@ class TriOS(BaseInstrument):
 
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
-            wvls = DATA['wvls']
-            output_UNC[f"{s_type.lower()}_wvls"] = wvls
+            wvls = DATA["wvls"]
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
                 output_UNC[f"{s_type.lower()}Unc"], 
                 wvls, 
