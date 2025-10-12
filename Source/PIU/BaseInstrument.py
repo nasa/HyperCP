@@ -456,7 +456,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         """
 
         from Source.PIU.Breakdown_FRM import SolveLPU, plottingToolsFRM
-        PT = plottingToolsFRM("L2", PDS)
         LPU = SolveLPU()
 
         BD_UNCS_common_wb = {'ES': {}, 'LI': {}, 'LT': {}}
@@ -534,6 +533,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
             for meas in ['Lw', 'Rrs']:
                 UNC = BD_UNCS[meas]
+                PT = plottingToolsFRM(meas, PDS)
+
                 if meas.upper() == 'LW':
                     signal = np.mean(sample_Lw,  axis=0)
                 else:
@@ -541,25 +542,25 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 ## DO PLOTS ##
                 wvls = np.array(waveSubset)
-                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal)
-                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal)
-                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal)
-                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal)
+                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=[0, 10])
 
                 # post normalisation
-                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal)
-                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal)
+                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=[0, 10])
                 
                 # plot contributions that vary between sensors
                 if meas.upper() == 'RRS':
-                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal)
-                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal)
+                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal, ylim=[0, 10])
+                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal, ylim=[0, 10])
                 
-                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal)
+                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal, ylim=[0, 10])
                 
-                PT.save_figure(level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
+                PT.save_figure(level=meas)  # save the figure once all of the contributions have been added to the plot (will close the figure)
             
-                # PT.plot_pie_FRM(meas, wvls, BD_UNCS, signal)
+                PT.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal, 'L2')
 
         UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error

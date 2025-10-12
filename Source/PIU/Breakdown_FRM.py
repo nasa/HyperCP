@@ -25,7 +25,7 @@ class plottingToolsFRM:
 
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
-    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]=""):
+    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None):
         """
 
         """
@@ -40,7 +40,10 @@ class plottingToolsFRM:
             u_rel = (y/y_mean)*100
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")
-            plt.ylim(0,5)
+            if ylim is None:
+                plt.ylim(0,5)
+            else:
+                plt.ylim(*ylim)
         else:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
@@ -50,22 +53,34 @@ class plottingToolsFRM:
         
         plt.xlim(400,800)
 
-    def plot_pie_FRM(self, s, wavelengths, BD_UNCS, signal):
+    def plot_pie_FRM(self, s, wavelengths, BD_UNCS, signal, level='L1B'):
         """
 
         """
 
         self.get_figure()
-        keys = dict(
-            ES=["noise", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
-            LI=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"],
-            LT=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"]
-        )
-        labels = dict(
-            ES=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "cosine (diffuse)", "cosine (direct)"],
-            LI=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"],
-            LT=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"]
-        )
+        if level.upper() == 'L1B':
+            keys = dict(
+                ES=["noise", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
+                LI=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"],
+                LT=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"]
+            )
+            labels = dict(
+                ES=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "cosine (diffuse)", "cosine (direct)"],
+                LI=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"],
+                LT=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"]
+            )
+        else:
+            keys = dict(
+                Lw =["noise", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho"],
+                NLw=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
+                Rrs=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol", "cos_diff", "cos_dir", "rho"],
+            )
+            labels = dict(
+                Lw =["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho"],
+                NLw=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
+                Rrs=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
+            )
 
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),
@@ -86,7 +101,7 @@ class plottingToolsFRM:
             )
             plt.title(f"{s} FRM Sensor-Specific Uncertainty Components at {wvl_at_indx}nm")
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.cast}_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(fp, legend=False, grid=False)
+            self.save_figure(fp, legend=False, grid=False, level=level)
             plt.close(fig)
 
     def get_figure(self):
@@ -339,25 +354,25 @@ class SolveLPU:
                 (sc_2 * LPU_common_wb['LI'][k]**2) 
             )
             
-        LPU_UNCS['rho']['Lw_units'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
+        LPU_UNCS['Lw']['rho'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
 
     def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lw):
-        sc_1 = 1 / Es
+        sc_1  = 1 / Es
         sc_2  = Lw / Es**2
-        sc_3 = Li / Es  # calculated sensitivity coeff for Rho only
+        sc_3  = Li / Es  # calculated sensitivity coeff for Rho only
 
         for k in LPU_UNCS['Lw'].keys():
-            if k != 'pol':
+            if k != 'pol' and k != 'rho':
                 LPU_UNCS['Rrs'][k] = np.sqrt(
                     sc_1**2 * LPU_common_wb['ES'][k] +
                     sc_2**2 * LPU_UNCS['Lw'][k]
                 )
-            else:
-                LPU_UNCS['Rrs'][k] = np.sqrt(
-                    # es does not have pol
-                    sc_2**2 * LPU_UNCS['Lw'][k]
-                )
-        
+            
+        LPU_UNCS['Rrs']['pol'] = np.sqrt(
+            # es does not have pol
+            sc_2**2 * LPU_UNCS['Lw']['pol']
+        )
+
         LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
             sc_1**2 * LPU_common_wb['ES']['cos_dir']
         )
@@ -365,13 +380,12 @@ class SolveLPU:
             sc_1**2 * LPU_common_wb['ES']['cos_diff']
         )  # no contribution from LW here
 
-        LPU_UNCS['rho']['Rrs_units'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
+        LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_2**2 * LPU_UNCS['Lw']['rho']**2)
 
     def normalised_waterLeaving(self, LPU_UNCS, f0_unc):
         for k in LPU_UNCS['Lw'].keys():
             LPU_UNCS['NLw'][k] = np.sqrt(
-                LPU_UNCS['Lw'][k]**2 + 
-                f0_unc**2
+                LPU_UNCS['Lw'][k]**2
             )  # add in quadrature for NLw
 
-        LPU_UNCS['rho']['NLw_units'] = np.sqrt(f0_unc**2 + LPU_UNCS['rho']['Lw_units']**2)
+        LPU_UNCS['NLw']["f0"] = f0_unc
