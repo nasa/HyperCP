@@ -331,10 +331,10 @@ class ProcessL2:
                 for key in xBreakdownCORR['LI'].keys():
                     BDCorr['LI'][key] = newBreakdownCORRGroup.addDataset(f"LI_{sensor}_{key}")
                     BDCorr['LT'][key] = newBreakdownCORRGroup.addDataset(f"LT_{sensor}_{key}")
-                for key in xBreakdownCORR['Lw'].keys():
-                    BDCorr['LW'][key]  = newBreakdownCORRGroup.addDataset(f"LW_{sensor}_{key}")
-                for key in xBreakdownCORR['Rrs'].keys():
-                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.addDataset(f"Rrs_{sensor}_{key}")
+                # for key in xBreakdownCORR['Lw'].keys():
+                #     BDCorr['LW'][key]  = newBreakdownCORRGroup.addDataset(f"LW_{sensor}_{key}")
+                # for key in xBreakdownCORR['Rrs'].keys():
+                #     BDCorr['Rrs'][key] = newBreakdownCORRGroup.addDataset(f"Rrs_{sensor}_{key}")
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
@@ -396,10 +396,10 @@ class ProcessL2:
                 for key in xBreakdownCORR['LI'].keys():
                     BDCorr['LI'][key] = newBreakdownCORRGroup.getDataset(f"LI_{sensor}_{key}")
                     BDCorr['LT'][key] = newBreakdownCORRGroup.getDataset(f"LT_{sensor}_{key}")
-                for key in xBreakdownCORR['Lw'].keys():
-                    BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
-                for key in xBreakdownCORR['Rrs'].keys():
-                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
+                # for key in xBreakdownCORR['Lw'].keys():
+                #     BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
+                # for key in xBreakdownCORR['Rrs'].keys():
+                #     BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
 
 
             if sensor == 'HYPER':
@@ -629,10 +629,10 @@ class ProcessL2:
                     for key in BDCorr['LI'].keys():
                         BDCorr['LI'][key].columns[k].append(xBreakdownCORR['LI'][key][i])
                         BDCorr['LT'][key].columns[k].append(xBreakdownCORR['LT'][key][i])
-                    for key in BDCorr['LW']:
-                        BDCorr['LW'][key].columns[k].append(xBreakdownCORR['Lw'][key][i])
-                    for key in BDCorr['Rrs']:
-                        BDCorr['Rrs'][key].columns[k].append(xBreakdownCORR['Rrs'][key][i])
+                    # for key in BDCorr['LW']:
+                    #     BDCorr['LW'][key].columns[k].append(xBreakdownCORR['Lw'][key][i])
+                    # for key in BDCorr['Rrs']:
+                    #     BDCorr['Rrs'][key].columns[k].append(xBreakdownCORR['Rrs'][key][i])
 
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:  # should be redundant!
