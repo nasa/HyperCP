@@ -312,6 +312,12 @@ class ProcessL2:
             # add breakdowns to HDF
             if xBreakdownUNC is not None:
                 newBreakdownGroup = node.addGroup("BREAKDOWN")
+                newBreakdownGroup.attributes = {
+                    "unc_type": "absolute",
+                    "units": "same as measurement",
+                    "correlation": "not-implemented",
+                    "discalimer": "components added in quadrature expected to be less accurate than Monte Carlo propagation due to lack of correlation effects"
+                }
                 BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
                 for key in xBreakdownUNC['ES'].keys():
                     BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
@@ -325,6 +331,10 @@ class ProcessL2:
 
             if xBreakdownCORR is not None:
                 newBreakdownCORRGroup = node.addGroup("BREAKDOWN_CORRECTIONS")
+                newBreakdownCORRGroup.attributes{
+                    "units": "same as measurement",
+                    "disclaimer": "values encompas the magnitude of instrument corrections: corrected signal - uncorrected signal"
+                }
                 BDCorr = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
                 for key in xBreakdownCORR['ES'].keys():
                     BDCorr['ES'][key] = newBreakdownCORRGroup.addDataset(f"ES_{sensor}_{key}")
