@@ -512,7 +512,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_Lw = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM, [sample_LT, sample_rho, sample_LI])
         sample_Rrs = UNC_Obj_FRM.MCP.run_samples(Propagate.Rrs_FRM, [sample_LT, sample_rho, sample_LI, sample_ES])
         LPU.waterLeaving(BD_UNCS_common_wb, BD_UNCS, np.mean(sample_LI, axis=0), rho)
-        LPU.reflectance(BD_UNCS_common_wb, BD_UNCS, np.mean(sample_ES, axis=0), np.mean(sample_LI, axis=0), np.mean(sample_Lw, axis=0))
+        LPU.reflectance(
+            BD_UNCS_common_wb, 
+            BD_UNCS, 
+            np.mean(sample_ES, axis=0), 
+            np.mean(sample_LI, axis=0), 
+            np.mean(sample_LT, axis=0),
+            rho
+        )
         LPU.normalised_waterLeaving(BD_UNCS, f0_unc)
 
         del BD_UNCS_common_wb  # no longer needed
@@ -537,26 +544,28 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 if meas.upper() == 'LW':
                     signal = np.mean(sample_Lw,  axis=0)
+                    ylim = [0, 5]
                 else:
                     signal = np.mean(sample_Rrs, axis=0)
+                    ylim = [0, 5]
 
                 ## DO PLOTS ##
                 wvls = np.array(waveSubset)
-                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=[0, 10])
-                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=[0, 10])
-                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=[0, 10])
-                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=ylim)
 
                 # post normalisation
-                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=[0, 10])
-                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=ylim)
                 
                 # plot contributions that vary between sensors
                 if meas.upper() == 'RRS':
-                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal, ylim=[0, 10])
-                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal, ylim=[0, 10])
+                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal, ylim=ylim)
+                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal, ylim=ylim)
                 
-                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal, ylim=[0, 10])
+                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal, ylim=ylim)
                 
                 PT.save_figure(level=meas)  # save the figure once all of the contributions have been added to the plot (will close the figure)
             

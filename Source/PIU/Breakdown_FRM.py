@@ -48,7 +48,7 @@ class plottingToolsFRM:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
 
-        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {self.sza}")
+        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {round(self.sza,2)}")
         plt.xlabel("Wavelength (nm)")
         
         plt.xlim(400,800)
@@ -94,12 +94,40 @@ class plottingToolsFRM:
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
             fig, ax = plt.subplots()
 
-            ax.pie(
-                [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]],
-                labels=labels[s],
-                autopct='%1.1f%%'
+            vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
+            combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
+
+            explode = []
+            tot = np.sum(vals)
+            for v in vals:
+                if np.abs(v/tot)*100 < 5:
+                    explode.append(0.1)
+                else:
+                    explode.append(0)
+
+            l = ax.pie(
+                vals,
+                # labels=labels[s],
+                autopct='%1.1f%%',
+                pctdistance=1.1,
+                labeldistance=1.2,
+                explode=explode,
             )
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty Components at {wvl_at_indx}nm")
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}", pad=40)  # y=-0.01
+
+            import math
+            for label, t in zip(labels[s], l[1]):
+                x, y = t.get_position()
+                angle = int(math.degrees(math.atan2(y, x)))
+                ha = "left"
+
+                if x<0:
+                    angle -= 180
+                    ha = "right"
+
+                plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
+
+            plt.tight_layout()
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.cast}_{self.station}_{wvl_at_indx}.png")
             self.save_figure(fp, legend=False, grid=False, level=level)
             plt.close(fig)
@@ -356,31 +384,35 @@ class SolveLPU:
             
         LPU_UNCS['Lw']['rho'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lw):
-        sc_1  = 1 / Es
-        sc_2  = Lw / Es**2
-        sc_3  = Li / Es  # calculated sensitivity coeff for Rho only
+    def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lt, rho):
+        # Y = f(x) ==> Rrs =  LT - rho*LI / ES
+        sc_1 = 1 / Es   # df/dLT
+        sc_2 = rho / Es # df/dLI
+        sc_3 = Li / Es  # df/drho
+        sc_4 = (Lt - rho*Li) / Es**2  # df/dES
 
         for k in LPU_UNCS['Lw'].keys():
             if k != 'pol' and k != 'rho':
                 LPU_UNCS['Rrs'][k] = np.sqrt(
-                    sc_1**2 * LPU_common_wb['ES'][k] +
-                    sc_2**2 * LPU_UNCS['Lw'][k]
+                    sc_1**2 * LPU_common_wb['LT'][k]**2 +
+                    sc_2**2 * LPU_common_wb['LI'][k]**2 + 
+                    sc_4**2 * LPU_common_wb['ES'][k]**2
                 )
             
         LPU_UNCS['Rrs']['pol'] = np.sqrt(
             # es does not have pol
-            sc_2**2 * LPU_UNCS['Lw']['pol']
+            sc_1**2 * LPU_common_wb['LT']['pol']**2 + 
+            sc_2**2 * LPU_common_wb['LI']['pol']**2
         )
 
         LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
-            sc_1**2 * LPU_common_wb['ES']['cos_dir']
+            sc_4**2 * LPU_common_wb['ES']['cos_dir']**2
         )
         LPU_UNCS['Rrs']['cos_diff'] = np.sqrt(
-            sc_1**2 * LPU_common_wb['ES']['cos_diff']
+            sc_4**2 * LPU_common_wb['ES']['cos_diff']**2
         )  # no contribution from LW here
 
-        LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_2**2 * LPU_UNCS['Lw']['rho']**2)
+        LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
 
     def normalised_waterLeaving(self, LPU_UNCS, f0_unc):
         for k in LPU_UNCS['Lw'].keys():
