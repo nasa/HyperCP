@@ -68,7 +68,7 @@ class ProcessL1bqc:
                 filterFactor=ConfigFile.settings["fL1bqcSpecFilterEs"], rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
             logging.writeLogFileAndPrint(msg)
-        else:
+        elif ConfigFile.settings['SensorType'].lower() != 'trios es only':
             Data = group.getDataset("LI")
             timeStamp = group.getDataset("LI").data["Datetime"]
             badTimes1 = plotting.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
@@ -174,21 +174,22 @@ class ProcessL1bqc:
         esColumns.pop('Timetag2')
         esTime = esColumns.pop('Datetime')
 
-        liData = sasGroup.getDataset("LI")
-        liData.datasetToColumns()
-        liColumns = liData.columns
-        liColumns.pop('Datetag')
-        liColumns.pop('Timetag2')
-        liColumns.pop('Datetime')
+        if sasGroup is not None:
+            liData = sasGroup.getDataset("LI")
+            liData.datasetToColumns()
+            liColumns = liData.columns
+            liColumns.pop('Datetag')
+            liColumns.pop('Timetag2')
+            liColumns.pop('Datetime')
 
-        ltData = sasGroup.getDataset("LT")
-        ltData.datasetToColumns()
-        ltColumns = ltData.columns
-        ltColumns.pop('Datetag')
-        ltColumns.pop('Timetag2')
-        ltColumns.pop('Datetime')
+            ltData = sasGroup.getDataset("LT")
+            ltData.datasetToColumns()
+            ltColumns = ltData.columns
+            ltColumns.pop('Datetag')
+            ltColumns.pop('Timetag2')
+            ltColumns.pop('Datetime')
 
-        li750 = ProcessL1bqc.interpolateColumn(liColumns, 750.0)
+            li750 = ProcessL1bqc.interpolateColumn(liColumns, 750.0)
         es370 = ProcessL1bqc.interpolateColumn(esColumns, 370.0)
         es470 = ProcessL1bqc.interpolateColumn(esColumns, 470.0)
         es480 = ProcessL1bqc.interpolateColumn(esColumns, 480.0)
@@ -212,9 +213,10 @@ class ProcessL1bqc:
                     flags1[indx] = True
 
             # Flag spectra affected by clouds (Ruddick 2006, IOCCG Protocols).
-            if li750[indx]/es750[indx] >= cloudFLAG:
-                badTimes.append(dateTime)
-                flags2[indx] = True
+            if sasGroup is not None:
+                if li750[indx]/es750[indx] >= cloudFLAG:
+                    badTimes.append(dateTime)
+                    flags2[indx] = True
 
             # Flag for significant es
             # Wernand 2002
@@ -244,8 +246,9 @@ class ProcessL1bqc:
 
         # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
         esData.datasetToColumns()
-        liData.datasetToColumns()
-        ltData.datasetToColumns()
+        if sasGroup is not None:
+            liData.datasetToColumns()
+            ltData.datasetToColumns()
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
@@ -256,19 +259,26 @@ class ProcessL1bqc:
         print("Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters")
 
         referenceGroup = node.getGroup("IRRADIANCE")
-        sasGroup = node.getGroup("RADIANCE")
         gpsGroup = node.getGroup('GPS')
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            sasGroup = node.getGroup("RADIANCE")
             esDarkGroup = node.getGroup('ES_DARK_L1AQC')
             esLightGroup = node.getGroup('ES_LIGHT_L1AQC')
             ltDarkGroup = node.getGroup('LT_DARK_L1AQC')
             ltLightGroup = node.getGroup('LT_LIGHT_L1AQC')
             liDarkGroup = node.getGroup('LI_DARK_L1AQC')
             liLightGroup = node.getGroup('LI_LIGHT_L1AQC')
-        elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
+        elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
+            sasGroup = node.getGroup("RADIANCE")
             esGroup = node.getGroup('ES_L1AQC')
             liGroup = node.getGroup('LI_L1AQC')
             ltGroup = node.getGroup('LT_L1AQC')
+        elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+            esGroup = node.getGroup('ES_L1AQC')
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            sasGroup = node.getGroup("RADIANCE")
+        else:
+            raise AssertionError(f"SensorType not supported: {ConfigFile.settings['SensorType']}")
 
         robotGroup = None
         ancGroup = None
@@ -438,8 +448,10 @@ class ProcessL1bqc:
 
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL1bqcLtUVNIR"]:
-            msg = "Applying Lt(NIR)>Lt(UV) quality filtering to eliminate spectra."
-            logging.writeLogFileAndPrint(msg)
+            if ConfigFile.settings["SensorType"].lower() == "trios es only":
+                logging.writeLogFileAndPrint("Applying Lt(NIR)>Lt(UV) quality filtering is not available for Es only sensor. Aborting.")
+                return False
+            logging.writeLogFileAndPrint("Applying Lt(NIR)>Lt(UV) quality filtering to eliminate spectra.")
             # This is not well optimized for large files...
             badTimes, dateTime = ProcessL1bqc.ltQuality(sasGroup)
             if badTimes is False:
@@ -453,16 +465,15 @@ class ProcessL1bqc:
                 # check is now fraction removed
                 #   I.e., if >99% of the Es spectra from this entire file were remove, abort this file
                 if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
-                filtering.filterData(sasGroup, badTimes)
                 filtering.filterData(ancGroup, badTimes)
 
                 # Filter L1AQC data for L1BQC criteria. badTimes start/stop
                 # are used to bracket the same spectral collections, though it
                 # will involve a difference number/percentage of the datasets.
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    filtering.filterData(sasGroup, badTimes)
                     check = []
                     check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
                     check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
@@ -474,10 +485,13 @@ class ProcessL1bqc:
                         msg = "Too few spectra remaining. Abort."
                         logging.writeLogFileAndPrint(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
+                elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
+                    filtering.filterData(sasGroup, badTimes)
                     filtering.filterData(esGroup,badTimes,'L1AQC')
                     filtering.filterData(liGroup,badTimes,'L1AQC')
                     filtering.filterData(ltGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+                    filtering.filterData(esGroup, badTimes, 'L1AQC')
 
                 if sixSGroup is not None:
                     filtering.filterData(sixSGroup,badTimes)
@@ -539,10 +553,10 @@ class ProcessL1bqc:
                 msg = "Too few spectra remaining. Abort."
                 logging.writeLogFileAndPrint(msg)
                 return False
-            filtering.filterData(sasGroup, badTimes)
             filtering.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                filtering.filterData(sasGroup, badTimes)
                 check = []
                 check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
                 check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
@@ -554,10 +568,13 @@ class ProcessL1bqc:
                     msg = "Too few spectra remaining. Abort."
                     logging.writeLogFileAndPrint(msg)
                     return False
-            elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
+            elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
+                filtering.filterData(sasGroup, badTimes)
                 filtering.filterData(esGroup,badTimes,'L1AQC')
                 filtering.filterData(liGroup,badTimes,'L1AQC')
                 filtering.filterData(ltGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+                filtering.filterData(esGroup, badTimes, 'L1AQC')
             if sixSGroup is not None:
                 filtering.filterData(sixSGroup,badTimes)
 
@@ -622,10 +639,10 @@ class ProcessL1bqc:
                 print(msg)
                 logging.writeLogFileAndPrint(msg)
                 return False
-            filtering.filterData(sasGroup, badTimes)
             filtering.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                filtering.filterData(sasGroup, badTimes)
                 check = []
                 check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
                 check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
@@ -637,10 +654,13 @@ class ProcessL1bqc:
                     msg = "Too few spectra remaining. Abort."
                     logging.writeLogFileAndPrint(msg)
                     return False
-            elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
+            elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
+                filtering.filterData(sasGroup, badTimes)
                 filtering.filterData(esGroup,badTimes,'L1AQC')
                 filtering.filterData(liGroup,badTimes,'L1AQC')
                 filtering.filterData(ltGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+                filtering.filterData(esGroup, badTimes, 'L1AQC')
             if sixSGroup is not None:
                 filtering.filterData(sixSGroup,badTimes)
 
@@ -651,32 +671,32 @@ class ProcessL1bqc:
             msg = "Applying spectral filtering to eliminate noisy spectra."
             logging.writeLogFileAndPrint(msg)
             inFilePath = node.attributes['In_Filepath']
-            badTimes1,_ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
-            badTimes2,timeStamp = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
-            if badTimes1 is not None and badTimes2 is not None:
-                badTimes = np.append(badTimes1,badTimes2, axis=0)
-            elif badTimes1 is not None:
-                badTimes = badTimes1
-            elif badTimes2 is not None:
-                badTimes = badTimes2
-            # badTimes = badTimes.tolist()            
+            if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+                badTimes, timeStamp = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
+            else:
+                badTimes1, _ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
+                badTimes2, timeStamp = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
+                if badTimes1 is not None and badTimes2 is not None:
+                    badTimes = np.append(badTimes1,badTimes2, axis=0)
+                elif badTimes1 is not None:
+                    badTimes = badTimes1
+                elif badTimes2 is not None:
+                    badTimes = badTimes2
 
             if badTimes is not None:
                 # These contain many consecutive single-timestamp records that need to be concatonated.
                 badTimes = comparing.uniquePairs(badTimes)
                 badTimes = dating.catConsecutiveBadTimes(badTimes, timeStamp.tolist())
-                msg = "Removing spectra from combined flags."
-                logging.writeLogFileAndPrint(msg)
+                logging.writeLogFileAndPrint("Removing spectra from combined flags.")
                 check = filtering.filterData(referenceGroup, badTimes)
                 if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
-                check = filtering.filterData(sasGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
-                    return False
+                if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+                    check = filtering.filterData(sasGroup, badTimes)
+                    if check > 0.99:
+                        logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
+                        return False
                 check = filtering.filterData(ancGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
@@ -699,11 +719,12 @@ class ProcessL1bqc:
                         msg = "Too few spectra remaining. Abort."
                         logging.writeLogFileAndPrint(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
-                    
+                elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
                     filtering.filterData(esGroup,badTimes,'L1AQC')
                     filtering.filterData(liGroup,badTimes,'L1AQC')
                     filtering.filterData(ltGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+                    filtering.filterData(esGroup, badTimes, 'L1AQC')
 
         # Next apply the Meteorological FLAGGING prior to slicing
         # esData = referenceGroup.getDataset("ES")
@@ -711,6 +732,8 @@ class ProcessL1bqc:
             # msg = "Applying meteorological filtering to eliminate spectra."
             msg = "Applying meteorological flags. Met flags are NOT used to eliminate spectra."
             logging.writeLogFileAndPrint(msg)
+            if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+                sasGroup = None
             badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, sixSGroup, ancGroup)
 
         # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
@@ -735,22 +758,19 @@ class ProcessL1bqc:
             if badTimes is not None:
                 badTimes = comparing.uniquePairs(badTimes)
                 badTimes = dating.catConsecutiveBadTimes(badTimes, dateTime)
-                msg = "Removing spectra from Met flags. ######################### Hard-coded override for Flag3"
-                logging.writeLogFileAndPrint(msg)
+                logging.writeLogFileAndPrint("Removing spectra from Met flags. ######################### Hard-coded override for Flag3")
                 check = filtering.filterData(referenceGroup, badTimes)
                 if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
-                check = filtering.filterData(sasGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
-                    return False
+                if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+                    check = filtering.filterData(sasGroup, badTimes)
+                    if check > 0.99:
+                        logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
+                        return False
                 check = filtering.filterData(ancGroup, badTimes)
                 if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    logging.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
 
                 if sixSGroup is not None:
@@ -769,10 +789,12 @@ class ProcessL1bqc:
                         msg = "Too few spectra remaining. Abort."
                         logging.writeLogFileAndPrint(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
+                elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios"]:
                     filtering.filterData(esGroup,badTimes,'L1AQC')
                     filtering.filterData(liGroup,badTimes,'L1AQC')
                     filtering.filterData(ltGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings["SensorType"].lower() == "trios es only":
+                    filtering.filterData(esGroup,badTimes,'L1AQC')
 
         return True
 
@@ -840,38 +862,39 @@ class ProcessL1bqc:
 
         # Radiance
         gp = node.getGroup("RADIANCE")
-        gp.attributes["LI_UNITS"] = node.attributes["LI_UNITS"]
-        del node.attributes["LI_UNITS"]
-        gp.attributes["LT_UNITS"] = node.attributes["LT_UNITS"]
-        del node.attributes["LT_UNITS"]
-        if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
-            gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLi'])
-            gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLt'])
-        if node.attributes['L1AQC_DEGLITCH'] == 'ON':
-            gp.attributes['L1AQC_DEGLITCH'] = 'ON'
-            gp.attributes['LT_WINDOW_DARK'] = node.attributes['LT_WINDOW_DARK']
-            gp.attributes['LT_WINDOW_LIGHT'] = node.attributes['LT_WINDOW_LIGHT']
-            gp.attributes['LT_SIGMA_DARK'] = node.attributes['LT_SIGMA_DARK']
-            gp.attributes['LT_SIGMA_LIGHT'] = node.attributes['LT_SIGMA_LIGHT']
+        if gp:
+            gp.attributes["LI_UNITS"] = node.attributes["LI_UNITS"]
+            del node.attributes["LI_UNITS"]
+            gp.attributes["LT_UNITS"] = node.attributes["LT_UNITS"]
+            del node.attributes["LT_UNITS"]
+            if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
+                gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLi'])
+                gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLt'])
+            if node.attributes['L1AQC_DEGLITCH'] == 'ON':
+                gp.attributes['L1AQC_DEGLITCH'] = 'ON'
+                gp.attributes['LT_WINDOW_DARK'] = node.attributes['LT_WINDOW_DARK']
+                gp.attributes['LT_WINDOW_LIGHT'] = node.attributes['LT_WINDOW_LIGHT']
+                gp.attributes['LT_SIGMA_DARK'] = node.attributes['LT_SIGMA_DARK']
+                gp.attributes['LT_SIGMA_LIGHT'] = node.attributes['LT_SIGMA_LIGHT']
 
-            gp.attributes['LT_MINMAX_BAND_DARK'] = node.attributes['LT_MINMAX_BAND_DARK']
-            gp.attributes['LT_MINMAX_BAND_LIGHT'] = node.attributes['LT_MINMAX_BAND_LIGHT']
-            gp.attributes['LT_MAX_DARK'] = node.attributes['LT_MAX_DARK']
-            gp.attributes['LT_MAX_LIGHT'] = node.attributes['LT_MAX_LIGHT']
-            gp.attributes['LT_MIN_DARK'] = node.attributes['LT_MIN_DARK']
-            gp.attributes['LT_MIN_LIGHT'] = node.attributes['LT_MIN_LIGHT']
+                gp.attributes['LT_MINMAX_BAND_DARK'] = node.attributes['LT_MINMAX_BAND_DARK']
+                gp.attributes['LT_MINMAX_BAND_LIGHT'] = node.attributes['LT_MINMAX_BAND_LIGHT']
+                gp.attributes['LT_MAX_DARK'] = node.attributes['LT_MAX_DARK']
+                gp.attributes['LT_MAX_LIGHT'] = node.attributes['LT_MAX_LIGHT']
+                gp.attributes['LT_MIN_DARK'] = node.attributes['LT_MIN_DARK']
+                gp.attributes['LT_MIN_LIGHT'] = node.attributes['LT_MIN_LIGHT']
 
-            gp.attributes['LI_WINDOW_DARK'] = node.attributes['LI_WINDOW_DARK']
-            gp.attributes['LI_WINDOW_LIGHT'] = node.attributes['LI_WINDOW_LIGHT']
-            gp.attributes['LI_SIGMA_DARK'] = node.attributes['LI_SIGMA_DARK']
-            gp.attributes['LI_SIGMA_LIGHT'] = node.attributes['LI_SIGMA_LIGHT']
+                gp.attributes['LI_WINDOW_DARK'] = node.attributes['LI_WINDOW_DARK']
+                gp.attributes['LI_WINDOW_LIGHT'] = node.attributes['LI_WINDOW_LIGHT']
+                gp.attributes['LI_SIGMA_DARK'] = node.attributes['LI_SIGMA_DARK']
+                gp.attributes['LI_SIGMA_LIGHT'] = node.attributes['LI_SIGMA_LIGHT']
 
-            gp.attributes['LI_MINMAX_BAND_DARK'] = node.attributes['LI_MINMAX_BAND_DARK']
-            gp.attributes['LI_MINMAX_BAND_LIGHT'] = node.attributes['LI_MINMAX_BAND_LIGHT']
-            gp.attributes['LI_MAX_DARK'] = node.attributes['LI_MAX_DARK']
-            gp.attributes['LI_MAX_LIGHT'] = node.attributes['LI_MAX_LIGHT']
-            gp.attributes['LI_MIN_DARK'] = node.attributes['LI_MIN_DARK']
-            gp.attributes['LI_MIN_LIGHT'] = node.attributes['LI_MIN_LIGHT']
+                gp.attributes['LI_MINMAX_BAND_DARK'] = node.attributes['LI_MINMAX_BAND_DARK']
+                gp.attributes['LI_MINMAX_BAND_LIGHT'] = node.attributes['LI_MINMAX_BAND_LIGHT']
+                gp.attributes['LI_MAX_DARK'] = node.attributes['LI_MAX_DARK']
+                gp.attributes['LI_MAX_LIGHT'] = node.attributes['LI_MAX_LIGHT']
+                gp.attributes['LI_MIN_DARK'] = node.attributes['LI_MIN_DARK']
+                gp.attributes['LI_MIN_LIGHT'] = node.attributes['LI_MIN_LIGHT']
 
         # SIXS model
         sixSGroup = None
@@ -922,14 +945,6 @@ class ProcessL1bqc:
             del node.attributes['ES_WINDOW_LIGHT']
             del node.attributes['ES_SIGMA_DARK']
             del node.attributes['ES_SIGMA_LIGHT']
-            del node.attributes['LT_WINDOW_DARK']
-            del node.attributes['LT_WINDOW_LIGHT']
-            del node.attributes['LT_SIGMA_DARK']
-            del node.attributes['LT_SIGMA_LIGHT']
-            del node.attributes['LI_WINDOW_DARK']
-            del node.attributes['LI_WINDOW_LIGHT']
-            del node.attributes['LI_SIGMA_DARK']
-            del node.attributes['LI_SIGMA_LIGHT']
 
             del node.attributes['ES_MAX_DARK']
             del node.attributes['ES_MAX_LIGHT']
@@ -938,25 +953,36 @@ class ProcessL1bqc:
             del node.attributes['ES_MIN_DARK']
             del node.attributes['ES_MIN_LIGHT']
 
-            del node.attributes['LT_MAX_DARK']
-            del node.attributes['LT_MAX_LIGHT']
-            del node.attributes['LT_MINMAX_BAND_DARK']
-            del node.attributes['LT_MINMAX_BAND_LIGHT']
-            del node.attributes['LT_MIN_DARK']
-            del node.attributes['LT_MIN_LIGHT']
+            if ConfigFile.settings["SensorType"].lower() != "trios es only":
+                del node.attributes['LT_WINDOW_DARK']
+                del node.attributes['LT_WINDOW_LIGHT']
+                del node.attributes['LT_SIGMA_DARK']
+                del node.attributes['LT_SIGMA_LIGHT']
 
-            del node.attributes['LI_MAX_DARK']
-            del node.attributes['LI_MAX_LIGHT']
-            del node.attributes['LI_MINMAX_BAND_DARK']
-            del node.attributes['LI_MINMAX_BAND_LIGHT']
-            del node.attributes['LI_MIN_DARK']
-            del node.attributes['LI_MIN_LIGHT']
+                del node.attributes['LI_WINDOW_DARK']
+                del node.attributes['LI_WINDOW_LIGHT']
+                del node.attributes['LI_SIGMA_DARK']
+                del node.attributes['LI_SIGMA_LIGHT']
 
-        # Check to insure at least some data survived quality checks
-        if node.getGroup("RADIANCE").getDataset("LT").data is None:
-            msg = "All data appear to have been eliminated from the file. Aborting."
-            logging.writeLogFileAndPrint(msg)
-            return None
+                del node.attributes['LT_MAX_DARK']
+                del node.attributes['LT_MAX_LIGHT']
+                del node.attributes['LT_MINMAX_BAND_DARK']
+                del node.attributes['LT_MINMAX_BAND_LIGHT']
+                del node.attributes['LT_MIN_DARK']
+                del node.attributes['LT_MIN_LIGHT']
+
+                del node.attributes['LI_MAX_DARK']
+                del node.attributes['LI_MAX_LIGHT']
+                del node.attributes['LI_MINMAX_BAND_DARK']
+                del node.attributes['LI_MINMAX_BAND_LIGHT']
+                del node.attributes['LI_MIN_DARK']
+                del node.attributes['LI_MIN_LIGHT']
+
+        if ConfigFile.settings["SensorType"].lower() != "trios es only":
+            # Check to insure at least some data survived quality checks
+            if node.getGroup("RADIANCE").getDataset("LT").data is None:
+                logging.writeLogFileAndPrint("All data appear to have been eliminated from the file. Aborting.")
+                return None
 
         # Now strip datetimes from all datasets
         for gp in node.groups:

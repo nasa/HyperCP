@@ -41,20 +41,19 @@ class ProcessL1aqc:
                     lenGpTime = len(gpTime)
                     logging.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
 
-                    if 'FrameType' in gp.attributes:
-                        if gp.attributes['FrameType'] == 'ShutterDark':
-                            fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
+                    if 'FrameType' in gp.attributes and gp.attributes['FrameType'] == 'ShutterDark':
+                        fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
 
-                            # Now test whether the overlap has eliminated all radiometric data
-                            if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                                logging.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
-                                return None
+                        # Now test whether the overlap has eliminated all radiometric data
+                        if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                            logging.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
+                            return None
 
-                            gpTimeset  = gp.getDataset("TIMETAG2")
+                        gpTimeset  = gp.getDataset("TIMETAG2")
 
-                            gpTime = gpTimeset.data["NONE"]
-                            lenGpTime = len(gpTime)
-                            logging.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
+                        gpTime = gpTimeset.data["NONE"]
+                        lenGpTime = len(gpTime)
+                        logging.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
         return node
 
     @staticmethod
@@ -280,7 +279,7 @@ class ProcessL1aqc:
                 ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
             elif gp.id.startswith("SunTracker_sorad"): # So-rad GPS
-                # Note - So-Rad Lat, Lon are already in decimal format 
+                # Note - So-Rad Lat, Lon are already in decimal format
                 gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
                 gpsLon = np.array(gp.getDataset('LONGITUDE').data.tolist()).ravel()
@@ -381,13 +380,14 @@ class ProcessL1aqc:
             if "SENSOR_AZ" in ancData.columns:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
-            if not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc and not sasAzAnc:
-                logging.writeLogFileAndPrint('Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.')
-                return None
-            elif not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc:
-                # Corrected below for +/- solar-sensor orientation
-                for i, sasAz in enumerate(sasAzAnc):
-                    relAzAnc.append(sasAz - sunAzimuthAnc[i])
+            if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+                if not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc and not sasAzAnc:
+                    logging.writeLogFileAndPrint('Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.')
+                    return None
+                elif not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc:
+                    # Corrected below for +/- solar-sensor orientation
+                    for i, sasAz in enumerate(sasAzAnc):
+                        relAzAnc.append(sasAz - sunAzimuthAnc[i])
 
             if "PITCH" in ancData.columns:
                 pitch = ancData.columns["PITCH"][0]
@@ -409,6 +409,10 @@ class ProcessL1aqc:
             ancillaryData.attributes["LATITUDE_UNITS"]='degrees'
             ancillaryData.appendColumn("LONGITUDE", ancLon)
             ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
+
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only' and not ancillaryData:
+            logging.writeLogFileAndPrint("Required ancillary data for GPS location with sensor 'TriOS Es Only'. Abort.")
+            return None
 
         if not ConfigFile.settings["bL1aqcSunTracker"] and not ancillaryData:
             logging.writeLogFileAndPrint('Required ancillary metadata for sensor offset missing. Abort.')
@@ -522,24 +526,23 @@ class ProcessL1aqc:
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        
+
         # Notes for So-Rad
         # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt value (i.e. angle to vertical),
-        # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via 
+        # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via
         # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
         # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
         # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
-            logging.writeLogFileAndPrint("Filtering file for high pitch and roll")
+            logging.writeLogFileAndPrint("Filtering file for high pitch and roll or pre/post-tilt")
 
             # Preferentially read PITCH and ROLL from SunTracker/pySAS THS sensor...
-            pitch, roll, gp = None, None, None
-            for group in node.groups:
-                print(group.id)
+            pitch, roll = None, None
+            tilt_pre, tilt_post = None, None
+            for gp in node.groups:
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
-                if group.id.startswith("SunTracker"):
-                    gp = group
+                if gp.id.startswith("SunTracker"):
                     if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
                         timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["SAS"]
@@ -549,21 +552,26 @@ class ProcessL1aqc:
                         timeStamp = gp.getDataset("DATETIME").data
                         tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
                         roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
-                        pitch = tilt     
+                        pitch = tilt
                         break
-                 # For SATTHS without SunTracker (i.e. with pySAS)
-                if group.id.startswith('SATTHS'):
-                    gp = group
-                    if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
+                # For SATTHS without SunTracker (i.e. with pySAS)
+                if gp.id.startswith('SATTHS') and "PITCH" in gp.datasets and "ROLL" in gp.datasets:
                         timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["NONE"]
                         roll = gp.getDataset("ROLL").data["NONE"]
                         break
+                if (ConfigFile.settings["SensorType"].lower() == "trios es only" and
+                        gp.id.startswith('ES') and "TILT_PRE" in gp.datasets and "TILT_POST" in gp.datasets):
+                    # TriOS RAMSES G2 have an integrated tilt sensor and
+                    # each frame has tilt pre- and post-radiometric measurement
+                    timeStamp = gp.getDataset("DATETIME").data
+                    tilt_pre = gp.getDataset("TILT_PRE").data["NONE"]
+                    tilt_post = gp.getDataset("TILT_POST").data["NONE"]
+
             # ...and failing that, try to pull from ancillary data
-            if pitch is None or roll is None:
+            if (pitch is None or roll is None) and (tilt_pre is None or tilt_post is None):
                 if "PITCH" in ancData.columns:
                     logging.writeLogFileAndPrint("Pitch data from ancillary file used.")
-
                     pitch = ancData.columns["PITCH"][0]
                     if "ROLL" in ancData.columns:
                         logging.writeLogFileAndPrint("Roll data from ancillary file used.")
@@ -577,34 +585,45 @@ class ProcessL1aqc:
 
             tiltMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"]) # Same as PitchRollRoll...
 
-            i = 0
-            start = -1
-            stop, startstop = None, None
-            for index, pitchi in enumerate(pitch):
-                tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
-                if tilt > tiltMax:
-                    i += 1
-                    if start == -1:
-                        # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
-                        start = index
-                    stop = index
-                else:
-                    if start != -1:
-                        # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
-                        startstop = [timeStamp[start],timeStamp[stop]]
-                        logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+            if pitch is not None and roll is not None:
+                i = 0
+                start = -1
+                stop, startstop = None, None
+                for index, pitchi in enumerate(pitch):
+                    tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
+                    if tilt > tiltMax:
+                        i += 1
+                        if start == -1:
+                            # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
+                            start = index
+                        stop = index
+                    else:
+                        if start != -1:
+                            # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
+                            startstop = [timeStamp[start],timeStamp[stop]]
+                            logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                            badTimes.append(startstop)
+                            start = -1
+
+                if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                    startstop = [timeStamp[start],timeStamp[stop]]
+                    badTimes.append(startstop)
+                    logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
+
+                logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
+
+                if start==0 and stop==index: # All records are bad
+                    return None
+            elif tilt_pre is not None and tilt_post is not None:
+                bad_counter = 0
+                for t, pre, post in zip(timeStamp, tilt_pre, tilt_post):
+                    if abs(pre) > tiltMax or abs(post) > tiltMax:
+                        startstop = [t, t]  # use edge case of ProcessL1aqc.filterData to remove this record
                         badTimes.append(startstop)
-                        start = -1
-
-            if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                startstop = [timeStamp[start],timeStamp[stop]]
-                badTimes.append(startstop)
-                logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
-
-            logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
-
-            if start==0 and stop==index: # All records are bad
-                return None
+                        bad_counter += 1
+                logging.writeLogFileAndPrint(f'Percentage of data out of pre/post-tilt bounds: {round(100 * bad_counter / len(timeStamp))} %')
+            else:
+                raise AssertionError('Neither pitch and roll or tilt_pre and tilt_post found.')
 
         # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
@@ -780,7 +799,7 @@ class ProcessL1aqc:
 
                     relAzSource = 'SunTracker'
                 elif gp.id == 'SunTracker_sorad':
-   
+
                     # I have added solar azimuth and solar zenith angle to 'SunTracker_sorad' group
                     # We can re use gps Lat and Lon fields as they are on same time grid
                     sunAzimuth = []
@@ -788,17 +807,17 @@ class ProcessL1aqc:
                     for i, dt_utc in enumerate(gpsDateTime):
                         sunAzimuth.append(get_azimuth(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
                         sunZenith.append(90 - get_altitude(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
-                  
+
                     gp.addDataset("SOLAR_AZ")
-                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])  
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
                     gp.addDataset("SZA")
                     gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-                
+
                     # So-Rad relative azimuth has been pre-computed
                     newRelAzData = gp.getDataset('REL_AZ')
                     relAz = np.array(gp.getDataset('REL_AZ').data.tolist()).ravel()
 
-                    
+
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
@@ -829,9 +848,10 @@ class ProcessL1aqc:
                 newRelAzData.columnsToDataset()
         else:
         #... otherwise populate the ancGroup
-            ancGroup.addDataset("REL_AZ")
-            ancGroup.datasets["REL_AZ"].data = np.array(relAzAnc, dtype=[('NONE', '<f8')])
-            ancGroup.attributes["REL_AZ_UNITS"]='degrees'
+            if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+                ancGroup.addDataset("REL_AZ")
+                ancGroup.datasets["REL_AZ"].data = np.array(relAzAnc, dtype=[('NONE', '<f8')])
+                ancGroup.attributes["REL_AZ_UNITS"]='degrees'
             ancGroup.addDataset("SOLAR_AZ")
             ancGroup.attributes["SOLAR_AZ_UNITS"]='degrees'
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
@@ -848,7 +868,7 @@ class ProcessL1aqc:
         ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("DATETAG")
         ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-       
+
         # Add datetime to Anc group
         dateTime = ancGroup.addDataset("DATETIME")
         timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -935,28 +955,29 @@ class ProcessL1aqc:
             return None
 
         # Confirm that radiometry still overlaps in time
-        groupDict = {}
-        for iGp, gp in enumerate(node.groups):
-            groupDict[gp.id] = iGp
+        if ConfigFile.settings["SensorType"].lower() != "trios es only":
+            groupDict = {}
+            for iGp, gp in enumerate(node.groups):
+                groupDict[gp.id] = iGp
 
-        esDateTime = None
-        if ConfigFile.settings["SensorType"].lower() == "seabird":
-            esDateTime = node.groups[groupDict["ES_LIGHT"]].datasets['DATETIME'].data
-            liDateTime = node.groups[groupDict["LI_LIGHT"]].datasets['DATETIME'].data
-            ltDateTime = node.groups[groupDict["LT_LIGHT"]].datasets['DATETIME'].data
-        else:
-            # Confirm for trios, sorad, dalec
-            esDateTime = node.groups[groupDict["ES"]].datasets['DATETIME'].data
-            liDateTime = node.groups[groupDict["LI"]].datasets['DATETIME'].data
-            ltDateTime = node.groups[groupDict["LT"]].datasets['DATETIME'].data
+            esDateTime = None
+            if ConfigFile.settings["SensorType"].lower() == "seabird":
+                esDateTime = node.groups[groupDict["ES_LIGHT"]].datasets['DATETIME'].data
+                liDateTime = node.groups[groupDict["LI_LIGHT"]].datasets['DATETIME'].data
+                ltDateTime = node.groups[groupDict["LT_LIGHT"]].datasets['DATETIME'].data
+            else:
+                # Confirm for trios, sorad, dalec
+                esDateTime = node.groups[groupDict["ES"]].datasets['DATETIME'].data
+                liDateTime = node.groups[groupDict["LI"]].datasets['DATETIME'].data
+                ltDateTime = node.groups[groupDict["LT"]].datasets['DATETIME'].data
 
-        if (min(esDateTime) > max(liDateTime) or min(esDateTime) > max(ltDateTime) or
-            max(esDateTime) < min(liDateTime) or max(esDateTime) < min(ltDateTime) or
-            min(liDateTime) > max(ltDateTime) or min(liDateTime) > max(ltDateTime) or
-            min(ltDateTime) > max(liDateTime) or min(ltDateTime) > max(liDateTime)):
+            if (min(esDateTime) > max(liDateTime) or min(esDateTime) > max(ltDateTime) or
+                max(esDateTime) < min(liDateTime) or max(esDateTime) < min(ltDateTime) or
+                min(liDateTime) > max(ltDateTime) or min(liDateTime) > max(ltDateTime) or
+                min(ltDateTime) > max(liDateTime) or min(ltDateTime) > max(liDateTime)):
 
-            logging.writeLogFileAndPrint('Radiometry groups no longer overlap in time. Abort.')
-            return None
+                logging.writeLogFileAndPrint('Radiometry groups no longer overlap in time. Abort.')
+                return None
 
 
         ###########################################################################
@@ -974,5 +995,5 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
-    
+
         return node

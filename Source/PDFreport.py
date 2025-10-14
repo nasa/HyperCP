@@ -233,7 +233,9 @@ class PDF(FPDF):
                 metaData += f'Max SZA: {root.attributes["SZA_MAX"]}\n'
                 if 'ES_SPEC_FILTER' in gpDict['IRRADIANCE'].attributes:
                     metaData += f'Filter Sigma Es: {gpDict["IRRADIANCE"].attributes["ES_SPEC_FILTER"]}\n'
+                if 'RADIANCE' in gpDict and 'LI_SPEC_FILTER' in gpDict['RADIANCE'].attributes:
                     metaData += f'Filter Sigma Li: {gpDict["RADIANCE"].attributes["LI_SPEC_FILTER"]}\n'
+                if 'RADIANCE' in gpDict and 'LT_SPEC_FILTER' in gpDict['RADIANCE'].attributes:
                     metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}\n'
                 if 'CLOUD_FILTER' in root.attributes:
                     metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}\n'
@@ -262,13 +264,14 @@ class PDF(FPDF):
             metaData += 'Processing Parameters: \n'
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'
-                if '%LT_FILTER' in gpDict['RADIANCE'].attributes:
-                    metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}\n'
-                metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}\n'
-                if 'NIR_RESID_CORR' in gpDict['REFLECTANCE'].attributes:
-                    metaData += f'NIR Correction: {gpDict["REFLECTANCE"].attributes["NIR_RESID_CORR"]}\n'
-                if 'NEGATIVE_VALUE_FILTER' in gpDict['REFLECTANCE'].attributes:
-                    metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}\n'
+                if 'RADIANCE' in gpDict:
+                    if '%LT_FILTER' in gpDict['RADIANCE'].attributes:
+                        metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}\n'
+                    metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}\n'
+                    if 'NIR_RESID_CORR' in gpDict['REFLECTANCE'].attributes:
+                        metaData += f'NIR Correction: {gpDict["REFLECTANCE"].attributes["NIR_RESID_CORR"]}\n'
+                    if 'NEGATIVE_VALUE_FILTER' in gpDict['REFLECTANCE'].attributes:
+                        metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}\n'
             else:
                 metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'
                 if ConfigFile.settings['bL2EnablePercentLt']:

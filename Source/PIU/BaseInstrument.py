@@ -67,7 +67,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # filter nans
             from Source.PIU.utils import utils
 
-            if i_type.lower() == "trios" or i_type.lower() == "sorad":
+            if i_type.lower() in ["sorad", "trios", "trios es only"]:
                     utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
                     args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]  
                     # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
