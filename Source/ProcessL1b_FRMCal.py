@@ -12,7 +12,7 @@ from j6s import SixS
 
 # internal files
 from Source.ConfigFile import ConfigFile
-import Source.utils.loggingHCP as loggingHCP 
+import Source.utils.loggingHCP as loggingHCP
 
 class ProcessL1b_FRMCal:
     ''' L1AQC to L1B for Full-FRM or Class-based '''
@@ -30,9 +30,7 @@ class ProcessL1b_FRMCal:
             # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 irad_key = f'{sensortype}_LIGHT_L1AQC'
-            elif ConfigFile.settings['SensorType'].lower() == 'trios' or \
-                ConfigFile.settings['SensorType'].lower() == 'dalec' or  \
-                    ConfigFile.settings['SensorType'].lower() == 'sorad':
+            elif ConfigFile.settings["SensorType"].lower() in ["dalec", "sorad", "trios", "trios es only"]:
                 irad_key = f'{sensortype}_L1AQC'
             else:
                 return False
@@ -56,7 +54,9 @@ class ProcessL1b_FRMCal:
 
         anc_grp = node.getGroup(keys['anc'])
 
-        if ConfigFile.settings['bL1aqcSunTracker'] == 1:
+        if ConfigFile.settings['SensorType'].lower() == "trios es only":
+            rel_az = np.zeros(len(anc_grp.datasets['SOLAR_AZ'].columns[keys['saa']]))
+        elif ConfigFile.settings['bL1aqcSunTracker'] == 1:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["REL_AZ"])
         else:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns[keys['rel']])
@@ -86,17 +86,17 @@ class ProcessL1b_FRMCal:
         ## SIXS configuration
         n_mesure = len(irr_datetime)
         nband = len(wvl)
-        
+
         # SIXS called over 3min bin
         deltat = (irr_datetime[-1]-irr_datetime[0])/len(irr_datetime)
         n_min = int(3*60/deltat.total_seconds())  # nb of mesures over a bin
-        if n_min == 0:  
+        if n_min == 0:
             n_min = n_min + 1
         n_bin = len(irr_datetime)//(n_min)  # nb of bin in a cast
         if len(irr_datetime) % n_min != 0:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
-        
+
         percent_direct_solar_irradiance = np.zeros((n_bin, nband))
         percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
         direct_solar_irradiance = np.zeros((n_bin, nband))

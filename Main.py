@@ -535,8 +535,8 @@ class Window(QtWidgets.QWidget):
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
-            )   
-        elif ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
+            )
+        elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             calibrationMap = Controller.processCalibrationConfig(
@@ -560,7 +560,7 @@ class Window(QtWidgets.QWidget):
         t1Single = time.time()
         print(f"Time elapsed: {str(round((t1Single-t0Single)/60))} minutes")
 
-    def closeEvent(self, event):        
+    def closeEvent(self, event):
         configFileName = self.configComboBox.currentText()
         MainConfig.settings["cfgPath"] = os.path.join(
             CODE_HOME, "Config", configFileName)
@@ -617,7 +617,7 @@ class Window(QtWidgets.QWidget):
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
         # To check instrument type
-        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
+        if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -726,9 +726,7 @@ class Command:
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
 
-        ConfigFile.settings["SensorType"].lower() 
-
-        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
+        if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -748,7 +746,7 @@ class Command:
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
         if processMultiLevel:
-            if ConfigFile.settings["SensorType"].lower() == "trios" and to_level == "L1A":
+            if ConfigFile.settings["SensorType"].lower() in ["trios", "trios es only"] and to_level == "L1A":
                 Controller.processFilesMultiLevel(
                     self.outputDirectory, iFile, calibrationMap)
             else:

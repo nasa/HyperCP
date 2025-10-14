@@ -91,9 +91,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
         """
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
-        types = ['ES', 'LI', 'LT']
-        for sensortype in types:
-           if InstrumentType.lower() == "trios" or InstrumentType.lower() == "sorad":
+        for sensortype in rawData.keys():
+           if InstrumentType.lower() in ["sorad", "trios", "trios es only"]:
                 # filter nans
                 self.apply_NaN_Mask(rawSlice[sensortype]['data'])
                 # RawData is the full group - this is used to get a few attributes only
@@ -140,7 +139,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 return False
 
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
-        for stype in types:
+        for stype in rawData.keys():
             try:
                 output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
                     output[stype]['std_Signal'],
@@ -174,7 +173,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         :param cCos: dict to contain cosine response information
         """
 
-        for s in ["ES", "LI", "LT"]:  # s for sensor type
+        # Get list of sensors to process
+        sensor_list = []
+        group_datasets = {g.id: g.datasets for g in node.groups}
+        if 'IRRADIANCE' in group_datasets.keys() and group_datasets['IRRADIANCE']:
+            sensor_list.append('ES')
+        if 'RADIANCE' in group_datasets.keys() and group_datasets['RADIANCE']:
+            sensor_list.append('LI')
+            sensor_list.append('LT')
+        for s in sensor_list:
             cal_start = None
             cal_stop = None
             if ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -186,18 +193,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
 
-                        
+
             #elif ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
             #    radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
             #    ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
             #    self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
-            
+
             elif ConfigFile.settings["fL1bCal"] == 2:  # class-Based
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_CAL")
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
 
                 # ensure correct units are used for uncertainty calculation
-                if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+                if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                     # Convert TriOS mW/m2/nm to uW/cm^2/nm
                     cCoef[s] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / 10
                 elif ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -285,9 +292,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ones = np.ones_like(cCal['ES'])  # array of ones with correct shape.
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
-                 stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
-                 stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
-                 cCoef['ES'], cCoef['LI'], cCoef['LT'],
+                 stats['LI']['ave_Light'] if 'LI' in stats else ones, stats['LI']['ave_Dark'] if 'LI' in stats else ones,
+                 stats['LT']['ave_Light'] if 'LT' in stats else ones, stats['LT']['ave_Dark'] if 'LT' in stats else ones,
+                 cCoef['ES'], cCoef['LI'] if 'LI' in cCoef else ones, cCoef['LT'] if 'LT' in cCoef else ones,
                  ones, ones, ones,
                  ones, ones, ones,
                  ones, ones, ones,
@@ -296,18 +303,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
-                         stats['LI']['std_Light'], stats['LI']['std_Dark'],
-                         stats['LT']['std_Light'], stats['LT']['std_Dark'],
+                         stats['LI']['std_Light'] if 'LI' in stats else ones, stats['LI']['std_Dark'] if 'LI' in stats else ones,
+                         stats['LT']['std_Light'] if 'LT' in stats else ones, stats['LT']['std_Dark'] if 'LT' in stats else ones,
                          cCal['ES'] * cCoef['ES'] / 200,
-                         cCal['LI'] * cCoef['LI'] / 200,
-                         cCal['LT'] * cCoef['LT'] / 200,
-                         cStab['ES'], cStab['LI'], cStab['LT'],
-                         cLin['ES'], cLin['LI'], cLin['LT'],
+                         cCal['LI'] * cCoef['LI'] / 200 if 'LI' in cCoef else ones,
+                         cCal['LT'] * cCoef['LT'] / 200 if 'LT' in cCoef else ones,
+                         cStab['ES'], cStab['LI'] if 'LI' in cStab else ones, cStab['LT'] if 'LT' in cStab else ones,
+                         cLin['ES'], cLin['LI'] if 'LI' in cStab else ones, cLin['LT'] if 'LT' in cStab else ones,
                          np.array(cStray['ES']) / 100,
-                         np.array(cStray['LI']) / 100,
-                         np.array(cStray['LT']) / 100,
-                         np.array(cT['ES']), np.array(cT['LI']), np.array(cT['LT']),
-                         np.array(cPol['LI']), np.array(cPol['LT']), np.array(cCos['ES'])
+                         np.array(cStray['LI']) / 100 if 'LI' in cStray else ones,
+                         np.array(cStray['LT']) / 100 if 'LT' in cStray else ones,
+                         np.array(cT['ES']), np.array(cT['LI']) if 'LI' in cT else ones, np.array(cT['LT']) if 'LT' in cT else ones,
+                         np.array(cPol['LI']) if 'LI' in cPol else ones, np.array(cPol['LT']) if 'LT' in cPol else ones, np.array(cCos['ES'])
                          ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -340,30 +347,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # the breakdown plots must calculate uncertainties separately from the main processor, will incur additional
             # computational overheads
             p_unc = UncertaintyGUI(Prop_Instrument_CB)
-            p_unc.pie_plot_class(
-                means,
-                uncertainties,
-                dict(
-                    ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                    LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                    LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
-                ),
-                cast,
-                node.getGroup("ANCILLARY")
+            wavelengths = dict(
+                ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
+                LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
+                LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
             )
-            p_unc.plot_class(
-                means,
-                uncertainties,
-                dict(
-                    ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                    LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                    LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
-                ),
-                cast
-            )
+            p_unc.pie_plot_class(means, uncertainties, wavelengths, cast, node.getGroup("ANCILLARY"))
+            p_unc.plot_class(means, uncertainties, wavelengths, cast)
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
+            warnings.filterwarnings("ignore", message="divide by zero encountered in divide")
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
 
             ES_unc = es_unc / np.abs(es)
@@ -395,12 +389,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                          )
         
         # return uncertainties to ProcessL2 as dictionary - will update xUnc dict with new uncs propagated to L1B
-        return dict(
-            esUnc=es_Unc,
-            liUnc=li_Unc,
-            ltUnc=lt_Unc,
-            valid_pixels=nan_mask,
-        )
+        output = {'esUnc': es_Unc}
+        if 'LI' in stats:
+            output['liUnc'] = li_Unc
+        if 'LT' in stats:
+            output['ltUnc'] = lt_Unc
+        output['valid_pixels'] = nan_mask
+        return output
 
     @abstractmethod
     def FRM(self, node: HDFRoot, uncGrp: HDFGroup, raw_grps: dict[str, HDFGroup], raw_slices: dict[str, np.array],
@@ -523,7 +518,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                              waveSubset,
                                              np.asarray(list(esXstd.keys()), dtype=float),
                                              return_as_dict=False)
-        else:  # zhang rho needs to be interpolated to radcal wavebands (len must be 255)
+        elif rhoVec is not None:  # zhang rho needs to be interpolated to radcal wavebands (len must be 255)
             rho = self.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
                                           waveSubset,
                                           np.asarray(list(esXstd.keys()), dtype=float),
@@ -619,8 +614,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              ]
 
         rrsAbsUnc = Prop_L2_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
-        #print("rrsAbsUnc")
-        #print(rrsAbsUnc)
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
@@ -673,8 +666,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
-        #print("rrsAbsUnc")
-        #print(rrsAbsUnc)
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -705,6 +696,45 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         )
 
         return output
+
+    def ClassBasedL2_ES_only(self, waveSubset: np.array, xSlice) -> dict:
+        """
+        Sames as ClassBasedL2 except only process Es signal, which results in band convolution of Es uncertainties only.
+
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+        """
+
+        ## Band Convolution of Uncertainties
+        # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
+        esUNC_band = np.array([i[0] for i in xSlice['esUnc'].values()])
+
+        # Prune the uncertainties to remove NaNs and negative values (uncertainties which make no physical sense)
+        esUNC_band[np.isnan(esUNC_band)] = 0.0
+        esUNC_band = np.abs(esUNC_band)  # uncertainties may have negative values after conversion to relative units
+
+        ## Update the output dictionary with band L2 hyperspectral and satellite band uncertainties
+        output = {}
+        for sensor_key in self._SATELLITES.keys():
+            # Given that only one parameter simplified function self.get_band_outputs below
+            if ConfigFile.settings[self._SATELLITES[sensor_key]['config']]:
+                sensor_name = self._SATELLITES[sensor_key]['name']
+                RSR_Bands = self._SATELLITES[sensor_key]['Weight_RSR']
+                prop_Band_CB = Propagate(M=100, cores=1)  # propagate band convolved uncertainties class based
+                esDeltaBand = prop_Band_CB.band_Conv_Uncertainty(
+                    [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                    [esUNC_band, None],
+                    sensor_key # used to choose correct band convolution measurement function in uncertainty_analysis.py
+                )
+                output[f"esUNC_{sensor_name}"] = {
+                    str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)
+                }
+
+        return output
+
+
 
     ## Utilities ##
 
@@ -743,7 +773,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         if ConfigFile.settings['SensorType'].lower() == "dalec":
             waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
-        else:    
+        else:
             waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
     def get_band_outputs(self, sensor_key: str, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
@@ -917,15 +947,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             newColumns["Timetag2"] = saveTimetag2
         # Can leave Datetime off at this point
 
-        for i in range(newWaveBands.shape[0]):
-            newColumns[str(round(10*newWaveBands[i])/10)] = []  # limit to one decimal place
-
-        new_y = np.interp(newWaveBands, x, y)  #InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
-
-        for waveIndex in range(newWaveBands.shape[0]):
-            newColumns[str(round(10*newWaveBands[waveIndex])/10)].append(new_y[waveIndex])
+        new_y = np.interp(newWaveBands, x, y)  # InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
         if return_as_dict:
+            for idx, wb in enumerate(newWaveBands):
+                # wb_str = str(round(10 * wb) / 10) # limit to one decimal place (inconsitent with other parts of the code)
+                wb_str = str(wb)  # preferred for consistency
+                newColumns[wb_str] = [new_y[idx]]
             return newColumns
         else:
             return new_y
@@ -1389,7 +1417,7 @@ class HyperOCR(BaseInstrument):
                 except IndexError as err:
                     logging.writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
                     return False
-            
+
 
             signalAve = np.average(lightData[k])
 
@@ -1929,7 +1957,7 @@ class Trios(BaseInstrument):
             # Lamp_cal - part of radcal corr
             LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2']) / 10  # div by 10
             unc_dict[f'lamp_{sensortype}'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100)*LAMP
-            
+
             if sensortype == 'ES':
                 # Cosine
                 coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
@@ -1948,7 +1976,7 @@ class Trios(BaseInstrument):
                 pol.columns['0'] = radcal_wvl
                 pol.columns['1'] = y_new
                 unc_dict[f'pol_unc_{sensortype}'] = np.asarray(list(pol.columns['1']))
-                
+
                 # Panel - part of radcal corr
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_dict[f'unc_PANEL_{sensortype}'] = (np.asarray(
@@ -2311,13 +2339,13 @@ class Dalec(BaseInstrument):
     def lightDarkStats(self, grp, slice, sensortype):
         # Dalec
         lightSlice = copy.deepcopy(slice)  # copy to prevent changing of Raw data
-    
+
         lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
         darkData = lightSlice['dc']
         if  grp is None:
             logging.writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
-        
+
         # Correct light data by subtracting interpolated dark data from light data
         std_Light = []
         std_Dark = []

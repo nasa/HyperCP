@@ -132,15 +132,14 @@ class Propagate:
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
         # NOTE: ISSUE #95
-        unc = self.MCP.propagate_random(self.instruments,
-                                        mean_vals,
-                                        uncertainties,
-                                        corr_between=self.corr_matrix_Default_Instruments,
-                                        corr_x=corr_list,
-                                        output_vars=3,
-                                        # pdf_shape="truncated_gaussian",
-                                        # pdf_params={"min": 0},
-                                        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite.")
+            unc = self.MCP.propagate_random(self.instruments,
+                                            mean_vals,
+                                            uncertainties,
+                                            corr_between=self.corr_matrix_Default_Instruments,
+                                            corr_x=corr_list,
+                                            output_vars=3)
 
         # separate uncertainties and sensor values from their lists - for clarity
         Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
@@ -583,11 +582,11 @@ class Propagate:
 
         # === The sensor ===
         # Current database is not limited near these values
-        
+
         # sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
         relAz = np.min([180, 180 - relAz]) # TJ - I got an instance where rel_az was > 180, so added this as a fix.
-        sensor = {'ang': np.array([sva,  relAz]), 'wv': np.array(waveBands)} 
-    
+        sensor = {'ang': np.array([sva,  relAz]), 'wv': np.array(waveBands)}
+
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
 
         return rho

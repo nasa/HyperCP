@@ -130,7 +130,7 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 def checkInputFiles(inFilePath, level="L1A+"):
-    if ConfigFile.settings['SensorType'].lower() == 'trios':
+    if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
         flag_Trios = True
     else:
         flag_Trios = False

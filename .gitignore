@@ -63,6 +63,14 @@ Data/Sample_Data/SoRad/*
 !Data/Sample_Data/SoRad/Instrument_Characterization*/
 !Data/Sample_Data/SoRad/Instrument_Characterization*/*
 !Data/Sample_Data/SoRad/*Ancillary.sb
+Data/Sample_Data/TriOS_EsOnly/L1A/
+Data/Sample_Data/TriOS_EsOnly/L1AQC/
+Data/Sample_Data/TriOS_EsOnly/L1B/
+Data/Sample_Data/TriOS_EsOnly/L1BQC/
+Data/Sample_Data/TriOS_EsOnly/L2/
+Data/Sample_Data/TriOS_EsOnly/Reports/
+Data/Sample_Data/TriOS_EsOnly/Plots/
+
 
 Config/*
 # To update sample configurations, uncomment:
