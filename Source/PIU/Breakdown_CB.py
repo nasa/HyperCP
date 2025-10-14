@@ -54,6 +54,8 @@ class plottingToolsCB:
             plt.grid()
             
             fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.Data.cast}.png")
+            if not path.exists(self.plot_folder):
+                makedirs(self.plot_folder)
             plt.savefig(fp)
             plt.close(f"{sensor}_{self.Data.cast}")
 
@@ -104,9 +106,12 @@ class plottingToolsCB:
 
         for sensor in BD_UNCS.keys():
             indexes = [  # todo: add extra wavelengths
-                np.argmin(np.abs(wavelengths[sensor] - 675)),
+                np.argmin(np.abs(wavelengths[sensor] - 670)),
+                np.argmin(np.abs(wavelengths[sensor] - 620)),
                 np.argmin(np.abs(wavelengths[sensor] - 560)),
-                np.argmin(np.abs(wavelengths[sensor] - 442))
+                np.argmin(np.abs(wavelengths[sensor] - 490)),
+                np.argmin(np.abs(wavelengths[sensor] - 442)),
+                np.argmin(np.abs(wavelengths[sensor] - 400)),
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
@@ -129,8 +134,8 @@ class plottingToolsCB:
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
                 self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
-            
-            return BD_UNCS
+                
+        return BD_UNCS
 
     def pie_plot_class_l2(self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
@@ -170,9 +175,12 @@ class plottingToolsCB:
         )
         for product in BD_UNCS.keys():
             indexes = [
-                np.argmin(np.abs(wavelengths - 675)),
+                np.argmin(np.abs(wavelengths - 670)),
+                np.argmin(np.abs(wavelengths - 620)),
                 np.argmin(np.abs(wavelengths - 560)),
-                np.argmin(np.abs(wavelengths - 442))
+                np.argmin(np.abs(wavelengths - 490)),
+                np.argmin(np.abs(wavelengths - 442)),
+                np.argmin(np.abs(wavelengths - 400)),
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
@@ -185,19 +193,19 @@ class plottingToolsCB:
                 #                       loc='best')
                 # plt.text(12, 3.4, 'Ancillary Data', size=8)
 
-                try:
-                    ax.pie([PlotMaths.getpct(BD_UNCS[product][key], BD_VALS[product])[indx] for key in labels[product]],
-                           labels=labels[product], autopct='%1.1f%%')
-                except ValueError:
-                    # todo discuss a better solution to issue #262 with programming team
-                    print("all zeros encountered, cannot plot pie chart")
+                # try:
+                ax.pie([PlotMaths.getpct(BD_UNCS[product][key], BD_VALS[product])[indx] for key in labels[product]],
+                        labels=labels[product], autopct='%1.1f%%')
+                # except ValueError:
+                #     # todo discuss a better solution to issue #262 with programming team
+                #     print("all zeros encountered, cannot plot pie chart")
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
                 self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
 
-            return BD_UNCS
+        return BD_UNCS
 
     def plot_sample(self, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
         if rel_to is None:

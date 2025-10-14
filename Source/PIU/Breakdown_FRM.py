@@ -114,7 +114,7 @@ class plottingToolsFRM:
                 # explode=explode,
             )
 
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}", pad=40)  # y=-0.01
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
 
             import math
             for label, t in zip(labels[s], l[1]):
