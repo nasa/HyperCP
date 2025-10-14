@@ -43,6 +43,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     sensors = ['ES', 'LI', 'LT']
 
     def __init__(self):
+        if ConfigFile.settings["SensorType"].lower() == "trios es only":
+            BaseInstrument.sensors = ['ES']
         # use this to switch the straylight correction method -> FOR UNCERTAINTY PROPAGATION ONLY <- between SLAPER and
         # ZONG. Not added to config file settings because this isn't intended for the end user.
         self.sl_method: str = 'ZONG'
@@ -129,9 +131,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
-                 stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
-                 stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
-                 PDS.coeff['ES']['cal'], PDS.coeff['LI']['cal'], PDS.coeff['LT']['cal'],
+                 stats['LI']['ave_Light'] if 'LI' in stats else ones, stats['LI']['ave_Dark'] if 'LI' in stats else ones,
+                 stats['LT']['ave_Light'] if 'LT' in stats else ones, stats['LT']['ave_Dark'] if 'LT' in stats else ones,
+                 PDS.coeff['ES']['cal'], PDS.coeff['LI']['cal'] if 'LI' in PDS.coeff else ones, PDS.coeff['LT']['cal'] if 'LT' in PDS.coeff else ones,
                  ones, ones, ones,
                  ones, ones, ones,
                  ones, ones, ones,
@@ -140,18 +142,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
-                         stats['LI']['std_Light'], stats['LI']['std_Dark'],
-                         stats['LT']['std_Light'], stats['LT']['std_Dark'],
+                         stats['LI']['std_Light'] if 'LI' in stats else ones, stats['LI']['std_Dark'] if 'LI' in stats else ones,
+                         stats['LT']['std_Light'] if 'LT' in stats else ones, stats['LT']['std_Dark'] if 'LT' in stats else ones,
                          PDS.uncs['ES']['cal'] * PDS.coeff['ES']['cal'] / 200,
-                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200,
-                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200,
-                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
-                         PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
+                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200 if 'LI' in PDS.uncs else ones,
+                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200 if 'LT' in PDS.uncs else ones,
+                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else ones, PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else ones,
+                         PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else ones, PDS.uncs['LT']['nlin'] if 'LT' in PDS.uncs else ones,
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
-                         np.array(PDS.uncs['LI']['stray']) / 100,
-                         np.array(PDS.uncs['LT']['stray']) / 100,
-                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']), np.array( PDS.uncs['LT']['ct']),
-                         np.array(PDS.uncs['LI']['pol']), np.array( PDS.uncs['LT']['pol']), np.array( PDS.uncs['ES']['cos'])
+                         np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else ones,
+                         np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else ones,
+                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else ones, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else ones,
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else ones, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else ones, np.array( PDS.uncs['ES']['cos'])
                          ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -185,32 +187,20 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             PT = plottingToolsCB(PDS, "", UNC_obj_CB)
             try:
-                PT.plot_CB_spectral(
-                    BD_UNCS, 
-                    BD_VALS,                     
-                    dict(
+                wavelengths = dict(
                         ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
                         LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
                         LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
-                    ),
-                )
-
-                PT.pie_plot_class(
-                    BD_UNCS,
-                    BD_VALS,
-                    dict(
-                        ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                        LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                        LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
-                    ),
-                    node.getGroup("ANCILLARY")
-                )
+                    )
+                PT.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
+                PT.pie_plot_class(BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY"))
             except ValueError as err:
-                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
+                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots, error: {err}")
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
-            
+            warnings.filterwarnings("ignore", message="divide by zero encountered in divide")
+
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
             ES_unc = es_unc / np.abs(es)
             LI_unc = li_unc / np.abs(li)
@@ -219,31 +209,34 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()),
                               dtype=float)
-        return dict(
+        out = dict(
             esUnc=utils.interp_common_wvls(ES_unc,
-                                         np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                     dtype=float)[PDS.ind_rad_wvl['ES']],
-                                         data_wvl,
-                                         return_as_dict=True
-                                         ),
-            liUnc=utils.interp_common_wvls(LI_unc,
-                                         np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                  dtype=float)[PDS.ind_rad_wvl['LI']],
-                                         data_wvl,
-                                         return_as_dict=True
-                                         ),
-            ltUnc=utils.interp_common_wvls(LT_unc,
-                                         np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                  dtype=float)[PDS.ind_rad_wvl['LT']],
-                                         data_wvl,
-                                         return_as_dict=True
-                                         ),
-            valid_pixels=PDS.nan_mask
-        ), BD_UNCS
+                                           np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                                       dtype=float)[PDS.ind_rad_wvl['ES']],
+                                           data_wvl,
+                                           return_as_dict=True
+            )
+        )
+        if 'LI' in stats:
+            out['liUnc']=utils.interp_common_wvls(LI_unc,
+                                                  np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                                           dtype=float)[PDS.ind_rad_wvl['LI']],
+                                                  data_wvl,
+                                                  return_as_dict=True
+            )
+        if 'LT' in stats:
+            out['ltUnc']=utils.interp_common_wvls(LT_unc,
+                                                  np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                                           dtype=float)[PDS.ind_rad_wvl['LT']],
+                                                  data_wvl,
+                                                  return_as_dict=True
+            )
+        out['valid_pixels']=PDS.nan_mask
+        return out, BD_UNCS
 
     def ClassBasedL2(self, node, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
         """
-        Propagates class based uncertainties for all Lw and Rrs. See D-10 secion 5.3.1.
+        Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
         :param node: HDFRoot which stores L1BQC data
         :param uncGrp: HDFGroup storing the uncertainty budget
@@ -423,6 +416,45 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         )
 
         return UNC, BD_UNCS
+
+
+    def ClassBasedL2ESOnly(self, waveSubset: np.array, xSlice) -> dict:
+        """
+        Sames as ClassBasedL2 except only process Es signal, which results in band convolution of Es uncertainties only.
+
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+        :return: dictionary of output uncertainties that are generated
+        """
+
+        ## Band Convolution of Uncertainties
+        # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
+        esUNC_band = np.array([i[0] for i in xSlice['esUnc'].values()])
+
+        # Prune the uncertainties to remove NaNs and negative values (uncertainties which make no physical sense)
+        esUNC_band[np.isnan(esUNC_band)] = 0.0
+        esUNC_band = np.abs(esUNC_band)  # uncertainties may have negative values after conversion to relative units
+
+        ## Update the output dictionary with band L2 hyperspectral and satellite band uncertainties
+        UNC = {}
+        for sensor_key in self._SATELLITES.keys():
+            # Given that only one parameter simplified function self.get_band_outputs below
+            if ConfigFile.settings[self._SATELLITES[sensor_key]['config']]:
+                sensor_name = self._SATELLITES[sensor_key]['name']
+                RSR_Bands = self._SATELLITES[sensor_key]['Weight_RSR']
+                prop_Band_CB = Propagate(M=100, cores=1)  # propagate band convolved uncertainties class based
+                esDeltaBand = prop_Band_CB.band_Conv_Uncertainty(
+                    [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                    [esUNC_band, None],
+                    sensor_key
+                    # used to choose correct band convolution measurement function in uncertainty_analysis.py
+                )
+                UNC[f"esUNC_{sensor_name}"] = {
+                    str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)
+                }
+
+        return UNC
+
 
     @abstractmethod
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
