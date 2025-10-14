@@ -230,9 +230,15 @@ class HyperOCR(BaseInstrument):
 
             # Dark correction
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
+            BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
+
+            # environmental perturbations
+            sample_env_pert = cm.generate_sample(mDraws, np.mean(sample_dark_corr, axis=0), stats[s_type]['perturbations'], "rand")
+            sample_envp_sig = prop.combine_samples([sample_dark_corr, sample_env_pert])
+            BD_UNCS['pert'] = stats[s_type]['perturbations']
 
             # Non-Linearity
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_envp_sig, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
@@ -358,6 +364,7 @@ class HyperOCR(BaseInstrument):
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['pert'],   "env perturbations",       rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)

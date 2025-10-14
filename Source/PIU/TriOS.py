@@ -205,15 +205,23 @@ class TriOS(BaseInstrument):
             BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
+            # dark correction
             std_light = stats[s_type]['std_Light'] / 65535.0 # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
 
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
             sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")  # mean of std_dark?
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
+            BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
+
+            # environmental perturbations
+            perturbations = stats[s_type]['perturbations'] / 65535.0  # lets not have giant uncertainties due to a TriOS only correction factor, yes?
+            sample_env_pert = cm.generate_sample(mDraws, np.mean(sample_dark_corr, axis=0), stats[s_type]['perturbations'], "rand")
+            sample_envp_sig = prop.combine_samples([sample_dark_corr, sample_env_pert])
+            BD_UNCS['pert'] = perturbations
 
             # Non-Linearity Correction
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_envp_sig, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
@@ -345,7 +353,8 @@ class TriOS(BaseInstrument):
             
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "dark corrected",          rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['pert'],  "env perturbations",       rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
