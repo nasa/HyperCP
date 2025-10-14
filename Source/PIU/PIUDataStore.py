@@ -39,7 +39,7 @@ class PIUDataStore:
         self.nan_mask:    np.array = None
 
         ancGroup = root.getGroup("ANCILLARY")
-        self.sza = ancGroup.getDataset("SZA").columns["SZA"][0]
+        self.sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2) # take to 2.d.p for outputting
 
         try:
             ancGroup = root.getGroup("ANCILLARY")
@@ -81,8 +81,12 @@ class PIUDataStore:
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":
             radcal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
+            Nlin_CB_string = "CLASS_HYPEROCR_RADIANCE"
+            calDate_string = f"{s_type}_LIGHT_L1AQC"
         elif instrument == "trios":
             radcal_raw = self.readTriOSCal(grp, uncGrp, raw_slices, s_type)
+            Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
+            calDate_string = f"{s_type}_L1AQC"
         else:
             writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
             raise NotImplementedError
@@ -136,8 +140,19 @@ class PIUDataStore:
         self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_nocal'] == False], dtype=float)
         
         # Stability is handled with Class Based processing
-        self.uncs[s_type]['stab'] = np.ones_like(self.coeff[s_type]['ind_nocal']) * 0.01 # 1% stability uncertainty estimate for class based
 
+
+        # non-lin CB correction currently implemented the same for all sensor
+        self.coeff[s_type]['cb_alpha'] = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '2')[1:]
+        self.uncs[s_type]['cb_alpha']  = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '3')[1:]
+
+        cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")
+        meas_date = dt.strptime(self.cast.split('_')[-1], "%Y%m%d%H%M%S")
+        deltaTCal = meas_date - cal_date
+
+        stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
+        self.uncs[s_type]['stab'] = np.ones_like(self.coeff[s_type]['ind_nocal']) * stab_unc # 1% stability uncertainty estimate for class based
+        
         if s_type.upper() == "ES":
             raw_zen = uncGrp.getDataset(s_type + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
             zenith_ang = np.asarray([float(x) for x in raw_zen])
@@ -287,7 +302,14 @@ class PIUDataStore:
         self.ind_rad_wvl[s] = ind_rad_wvl
 
     def read_uncertainties(self, inpt: HDFGroup, s: str) -> None:
-        self.uncs[s]['stab'] = self.extract_unc_from_grp(inpt, f"{s}_STABDATA_CAL", '1')
+        cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")
+        meas_date = dt.strptime(self.cast.split('_')[-1], "%Y%m%d%H%M%S")
+        deltaTCal = meas_date - cal_date
+
+        stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
+        self.uncs[s]['stab'] = np.ones_like(self.coeff[s_type]['ind_nocal']) * stab_unc # 1% stability uncertainty estimate for class based
+        
+        # self.uncs[s]['stab'] = self.extract_unc_from_grp(inpt, f"{s}_STABDATA_CAL", '1')
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
         self.clipSL(s)
 
@@ -373,10 +395,11 @@ class PIUDataStore:
     @staticmethod
     def read_cal(grp: HDFGroup, s: str, cal_name: str, idx: Optional[str]=None, return_df: bool = False) -> Union[np.ndarray, pd.DataFrame]:
         try:
+            if grp.getDataset(s + cal_name) is None:
+                print("here")
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)[idx]
-        except (IndexError, KeyError):
+        except (IndexError, KeyError) as err:
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)
-        
         try:  # ask forgiveness not permission
             data = data if return_df else np.asarray(data.tolist())
         except AttributeError:

@@ -312,6 +312,12 @@ class ProcessL2:
             # add breakdowns to HDF
             if xBreakdownUNC is not None:
                 newBreakdownGroup = node.addGroup("BREAKDOWN")
+                newBreakdownGroup.attributes.update({
+                    "unc_type": "absolute",
+                    "units": "same as measurement",
+                    "correlation": "not-implemented",
+                    "discalimer": "components added in quadrature expected to be less accurate than Monte Carlo propagation due to lack of correlation effects"
+                })
                 BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
                 for key in xBreakdownUNC['ES'].keys():
                     BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
@@ -325,16 +331,20 @@ class ProcessL2:
 
             if xBreakdownCORR is not None:
                 newBreakdownCORRGroup = node.addGroup("BREAKDOWN_CORRECTIONS")
+                newBreakdownCORRGroup.attributes.update({
+                    "units": "same as measurement",
+                    "disclaimer": "values encompas the magnitude of instrument corrections: corrected signal - uncorrected signal",
+                })
                 BDCorr = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
                 for key in xBreakdownCORR['ES'].keys():
                     BDCorr['ES'][key] = newBreakdownCORRGroup.addDataset(f"ES_{sensor}_{key}")
                 for key in xBreakdownCORR['LI'].keys():
                     BDCorr['LI'][key] = newBreakdownCORRGroup.addDataset(f"LI_{sensor}_{key}")
                     BDCorr['LT'][key] = newBreakdownCORRGroup.addDataset(f"LT_{sensor}_{key}")
-                for key in xBreakdownCORR['Lw'].keys():
-                    BDCorr['LW'][key]  = newBreakdownCORRGroup.addDataset(f"LW_{sensor}_{key}")
-                for key in xBreakdownCORR['Rrs'].keys():
-                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.addDataset(f"Rrs_{sensor}_{key}")
+                # for key in xBreakdownCORR['Lw'].keys():
+                #     BDCorr['LW'][key]  = newBreakdownCORRGroup.addDataset(f"LW_{sensor}_{key}")
+                # for key in xBreakdownCORR['Rrs'].keys():
+                #     BDCorr['Rrs'][key] = newBreakdownCORRGroup.addDataset(f"Rrs_{sensor}_{key}")
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
@@ -396,10 +406,10 @@ class ProcessL2:
                 for key in xBreakdownCORR['LI'].keys():
                     BDCorr['LI'][key] = newBreakdownCORRGroup.getDataset(f"LI_{sensor}_{key}")
                     BDCorr['LT'][key] = newBreakdownCORRGroup.getDataset(f"LT_{sensor}_{key}")
-                for key in xBreakdownCORR['Lw'].keys():
-                    BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
-                for key in xBreakdownCORR['Rrs'].keys():
-                    BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
+                # for key in xBreakdownCORR['Lw'].keys():
+                #     BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
+                # for key in xBreakdownCORR['Rrs'].keys():
+                #     BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
 
 
             if sensor == 'HYPER':
@@ -480,8 +490,8 @@ class ProcessL2:
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
             k = str(wvl)
             if (any(wvl == float(x) for x in esXSlice) and
-                    any(wvl == float(x) for x in liXSlice) and
-                    any(wvl == float(x) for x in ltXSlice)):
+                any(wvl == float(x) for x in liXSlice) and
+                any(wvl == float(x) for x in ltXSlice)):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -629,10 +639,10 @@ class ProcessL2:
                     for key in BDCorr['LI'].keys():
                         BDCorr['LI'][key].columns[k].append(xBreakdownCORR['LI'][key][i])
                         BDCorr['LT'][key].columns[k].append(xBreakdownCORR['LT'][key][i])
-                    for key in BDCorr['LW']:
-                        BDCorr['LW'][key].columns[k].append(xBreakdownCORR['Lw'][key][i])
-                    for key in BDCorr['Rrs']:
-                        BDCorr['Rrs'][key].columns[k].append(xBreakdownCORR['Rrs'][key][i])
+                    # for key in BDCorr['LW']:
+                    #     BDCorr['LW'][key].columns[k].append(xBreakdownCORR['Lw'][key][i])
+                    # for key in BDCorr['Rrs']:
+                    #     BDCorr['Rrs'][key].columns[k].append(xBreakdownCORR['Rrs'][key][i])
 
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:  # should be redundant!

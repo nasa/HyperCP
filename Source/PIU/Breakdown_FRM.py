@@ -25,7 +25,7 @@ class plottingToolsFRM:
 
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
-    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]=""):
+    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None):
         """
 
         """
@@ -40,32 +40,47 @@ class plottingToolsFRM:
             u_rel = (y/y_mean)*100
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")
-            plt.ylim(0,5)
+            if ylim is None:
+                plt.ylim(0,5)
+            else:
+                plt.ylim(*ylim)
         else:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
 
-        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {self.sza}")
+        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {round(self.sza,2)}")
         plt.xlabel("Wavelength (nm)")
         
         plt.xlim(400,800)
 
-    def plot_pie_FRM(self, s, wavelengths, BD_UNCS, signal):
+    def plot_pie_FRM(self, s, wavelengths, BD_UNCS, signal, level='L1B'):
         """
 
         """
 
         self.get_figure()
-        keys = dict(
-            ES=["noise", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
-            LI=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"],
-            LT=["noise", "radcal", "stab", "clin", "ct", "cSl", "pol"]
-        )
-        labels = dict(
-            ES=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "cosine (diffuse)", "cosine (direct)"],
-            LI=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"],
-            LT=["noise", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"]
-        )
+        if level.upper() == 'L1B':
+            keys = dict(
+                ES=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
+                LI=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol"],
+                LT=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol"]
+            )
+            labels = dict(
+                ES=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "cosine (diffuse)", "cosine (direct)"],
+                LI=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"],
+                LT=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation"]
+            )
+        else:
+            keys = dict(
+                Lw =["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho"],
+                NLw=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
+                Rrs=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "cos_diff", "cos_dir", "rho"],
+            )
+            labels = dict(
+                Lw =["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho"],
+                NLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
+                Rrs=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
+            )
 
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),
@@ -79,14 +94,43 @@ class plottingToolsFRM:
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
             fig, ax = plt.subplots()
 
-            ax.pie(
-                [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]],
-                labels=labels[s],
-                autopct='%1.1f%%'
+            vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
+            combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
+
+            explode = []
+            tot = np.sum(vals)
+            for v in vals:
+                if np.abs(v/tot)*100 < 5:
+                    explode.append(0.1)
+                else:
+                    explode.append(0)
+
+            l = ax.pie(
+                vals,
+                # labels=labels[s],
+                autopct='%1.1f%%',
+                pctdistance=1.1,
+                labeldistance=1.2,
+                explode=explode,
             )
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty Components at {wvl_at_indx}nm")
+
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}", pad=40)  # y=-0.01
+
+            import math
+            for label, t in zip(labels[s], l[1]):
+                x, y = t.get_position()
+                angle = int(math.degrees(math.atan2(y, x)))
+                ha = "left"
+
+                if x<0:
+                    angle -= 180
+                    ha = "right"
+
+                plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
+
+            plt.tight_layout()
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.cast}_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(fp, legend=False, grid=False)
+            self.save_figure(fp, legend=False, grid=False, level=level)
             plt.close(fig)
 
     def get_figure(self):
@@ -98,7 +142,7 @@ class plottingToolsFRM:
             except AttributeError:
                 plt.figure(self.s)
 
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True):
+    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B'):
 
         if legend:
             plt.legend()
@@ -107,7 +151,7 @@ class plottingToolsFRM:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.cast}_{self.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_{level}_{self.s}_{self.cast}_{self.station}.png")
             except (AttributeError, ValueError):
                 fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
         
@@ -151,6 +195,8 @@ class SolveLPU:
 
         k = DATA['t1']/(DATA['t2'] - DATA['t1'])
         S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
+        
+        # TODO: comment equations and sensitivity coeffs
         LPU_UNCS['S12'] = np.sqrt(
             ((1 + k)**2)*(UNC['S1']**2) + 
             (k**2)*(UNC['S2']**2)
@@ -200,10 +246,15 @@ class SolveLPU:
         """
         
         signal = np.mean(sample_signal, axis=0)
-        signal_unc = self.prop.process_samples(None, sample_signal)
+        # f = signal - signal*alpha
+        # sen coef 1 = 1 - 2*alpha*signal
+        # sen coef 2 = signal^2
 
         LPU_UNCS['noise'] = np.sqrt(
-            (1 - 2*alpha*signal)**2 * signal_unc**2  # signal unc at this point is just dark correction uncertainty
+            (1 - 2*alpha*signal)**2 * LPU_UNCS['noise']**2  # signal unc at this point is just dark correction uncertainty
+        )
+        LPU_UNCS['pert'] = np.sqrt(
+            (1 - 2*alpha*signal)**2 * LPU_UNCS['pert']**2  # signal unc at this point is just dark correction uncertainty
         )
         LPU_UNCS['clin'] = np.sqrt(
             signal**4 * LPU_UNCS['alpha']**2
@@ -223,13 +274,15 @@ class SolveLPU:
 
         mDraws = sample_C_zong.shape[0]
         sample_lpu_dark      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['noise'], 'rand')
-        sample_lpu_nlin      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['clin'], 'syst')
+        sample_lpu_pert      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['pert'],  'rand')
+        sample_lpu_nlin      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['clin'],  'syst')
         sample_signal_no_unc = cm.generate_sample(mDraws, nlin_signal, None, None)
         c_zong_no_unc        = cm.generate_sample(mDraws, np.mean(sample_C_zong, axis=0), None, None)
 
         LPU_UNCS['noise'] = self._slMC(sample_lpu_dark, c_zong_no_unc)
-        LPU_UNCS['clin'] = self._slMC(sample_lpu_nlin, c_zong_no_unc)
-        LPU_UNCS['cSl']  = self._slMC(sample_signal_no_unc, sample_C_zong)
+        LPU_UNCS['pert']  = self._slMC(sample_lpu_pert, c_zong_no_unc)
+        LPU_UNCS['clin']  = self._slMC(sample_lpu_nlin, c_zong_no_unc)
+        LPU_UNCS['cSl']   = self._slMC(sample_signal_no_unc, sample_C_zong)
         
         return LPU_UNCS
 
@@ -251,6 +304,7 @@ class SolveLPU:
         sen_coef2 = (np.mean(signal, axis=0) / updated_gain**2)
         
         LPU_UNCS['noise']  = np.sqrt(sen_coef1**2 * LPU_UNCS['noise']**2)
+        LPU_UNCS['pert']   = np.sqrt(sen_coef1**2 * LPU_UNCS['pert']**2)
         LPU_UNCS['clin']   = np.sqrt(sen_coef1**2 * LPU_UNCS['clin']**2)
         LPU_UNCS['cSl']    = np.sqrt(sen_coef1**2 * LPU_UNCS['cSl']**2)
         LPU_UNCS['radcal'] = np.sqrt(sen_coef2**2 * LPU_UNCS['radcal']**2)
@@ -282,9 +336,10 @@ class SolveLPU:
         DATA = PDS.coeff[s]  # retrieve dictionaries for speed
         UNC = PDS.uncs[s]
 
-        LPU_UNCS['noise']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['noise']**2)
+        LPU_UNCS['noise']  = np.sqrt(DATA['Ct']**2 * LPU_UNCS['noise']**2)
+        LPU_UNCS['pert']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['pert']**2)
         LPU_UNCS['clin']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['clin']**2)
-        LPU_UNCS['cSl']     = np.sqrt(DATA['Ct']**2 * LPU_UNCS['cSl']**2)
+        LPU_UNCS['cSl']    = np.sqrt(DATA['Ct']**2 * LPU_UNCS['cSl']**2)
         LPU_UNCS['radcal'] = np.sqrt(DATA['Ct']**2 * LPU_UNCS['radcal']**2)
         LPU_UNCS['stab']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['stab']**2)
         LPU_UNCS['ct']     = np.sqrt(radcal_signal**2 * UNC['Ct']**2)
@@ -299,40 +354,79 @@ class SolveLPU:
         mDraws = sample_ct_corr.shape[0]
 
         sample_sig_no_unc = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), None, None)
-        sample_sig_dark   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['noise'], "rand")
-        sample_sig_clin   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['clin'], "syst")
-        sample_sig_sl     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['cSl'], "syst")
+        sample_sig_dark   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['noise'],  "rand")
+        sample_sig_pert   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['pert'],   "rand")
+        sample_sig_clin   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['clin'],   "syst")
+        sample_sig_sl     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['cSl'],    "syst")
         sample_sig_cal    = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['radcal'], "syst")
-        sample_sig_stab   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['stab'], "syst")
-        sample_sig_ct     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['ct'], "syst")
+        sample_sig_stab   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['stab'],   "syst")
+        sample_sig_ct     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['ct'],     "syst")
         
         dir_rat_no_unc  = cm.generate_sample(mDraws, np.mean(dir_ratio), None, None)
         cos_corr_no_unc = cm.generate_sample(mDraws, np.mean(sample_cos_corr, axis=0), None, None)
         fhemi_no_unc    = cm.generate_sample(mDraws, np.mean(sample_fhemi, axis=0), None, None)
         
-        LPU_UNCS['noise']    = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_dark,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['clin']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_clin,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['cSl']       = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_sl  ,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['radcal']   = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_cal ,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['stab']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_stab,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['ct']       = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_ct  ,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['cos_dir']  = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_no_unc, dir_ratio,      sample_cos_corr, fhemi_no_unc]))
-        LPU_UNCS['cos_diff'] = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr,  [sample_sig_no_unc, dir_ratio,      cos_corr_no_unc, sample_fhemi]))
+        LPU_UNCS['noise']    = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_dark,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['pert']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_pert,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['clin']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_clin,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['cSl']      = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_sl,     dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['radcal']   = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_cal,    dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['stab']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_stab,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['ct']       = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_ct,     dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
+        LPU_UNCS['cos_dir']  = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_no_unc, dir_ratio,      sample_cos_corr, fhemi_no_unc]))
+        LPU_UNCS['cos_diff'] = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_no_unc, dir_ratio,      cos_corr_no_unc, sample_fhemi]))
         LPU_UNCS['cosine']   = np.sqrt(LPU_UNCS['cos_dir']**2 +  LPU_UNCS['cos_diff']**2)
 
         return LPU_UNCS
 
     ## L2 ##
-    def waterLeaving(self, output_uncs, LPU_UNCS):
-        UNCS = output_uncs['Lw']
+    def waterLeaving(self, LPU_common_wb, LPU_UNCS, Li, rho):
+        # sc_1 = 1 # sensitivity coefficient, 1 for LT
+        sc_1 = Li**2
+        sc_2 = rho**2  # signals have been interpolated to common wavebands, however LPU uncs exist at radcal wavelengths
 
-        for sensor in LPU_UNCS.keys():
-            # pass all uncs through sen coeffs for LW
-            pass
+        for k in LPU_common_wb['LI'].keys():  # pass all uncs through sen coeffs for LW
+            LPU_UNCS['Lw'][k] = np.sqrt(
+                (sc_1 * LPU_common_wb['LT'][k]**2) +
+                (sc_2 * LPU_common_wb['LI'][k]**2) 
+            )
+            
+        LPU_UNCS['Lw']['rho'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, output_uncs, LPU_UNCS):
-        UNCS = output_uncs['Rrs']
+    def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lt, rho):
+        # Y = f(x) ==> Rrs =  LT - rho*LI / ES
+        sc_1 = 1 / Es   # df/dLT
+        sc_2 = rho / Es # df/dLI
+        sc_3 = Li / Es  # df/drho
+        sc_4 = (Lt - rho*Li) / Es**2  # df/dES
 
-        for sensor in LPU_UNCS.keys():
-            # pass all uncs through sen coeffs for LW
-            pass
+        for k in LPU_UNCS['Lw'].keys():
+            if k != 'pol' and k != 'rho':
+                LPU_UNCS['Rrs'][k] = np.sqrt(
+                    sc_1**2 * LPU_common_wb['LT'][k]**2 +
+                    sc_2**2 * LPU_common_wb['LI'][k]**2 + 
+                    sc_4**2 * LPU_common_wb['ES'][k]**2
+                )
+            
+        LPU_UNCS['Rrs']['pol'] = np.sqrt(
+            # es does not have pol
+            sc_1**2 * LPU_common_wb['LT']['pol']**2 + 
+            sc_2**2 * LPU_common_wb['LI']['pol']**2
+        )
+
+        LPU_UNCS['Rrs']['cos_dir'] = np.sqrt(
+            sc_4**2 * LPU_common_wb['ES']['cos_dir']**2
+        )
+        LPU_UNCS['Rrs']['cos_diff'] = np.sqrt(
+            sc_4**2 * LPU_common_wb['ES']['cos_diff']**2
+        )  # no contribution from LW here
+
+        LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
+
+    def normalised_waterLeaving(self, LPU_UNCS, f0_unc):
+        for k in LPU_UNCS['Lw'].keys():
+            LPU_UNCS['NLw'][k] = np.sqrt(
+                LPU_UNCS['Lw'][k]**2
+            )  # add in quadrature for NLw
+
+        LPU_UNCS['NLw']["f0"] = f0_unc

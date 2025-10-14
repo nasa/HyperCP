@@ -139,7 +139,7 @@ class ProcessL1b:
             chosen_file_idx = np.argmax(available_files_calTime_seconds)
             chosen_file = available_files[chosen_file_idx]
 
-        return chosen_file
+        return chosen_file, chosen_file_idx
 
     @staticmethod
     def read_FidRadDB_cal_char_files(root):
@@ -193,18 +193,26 @@ class ProcessL1b:
 
                     elif ConfigFile.settings["fL1bCal"] == 3:# sensor-specific
                         # Choose most recent sensor-specific characterisation (this is regardless of measurement acquisition time)
-                        chosen_file = ProcessL1b.choose_cal_char_per_time(
+                        chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
                         filing.read_char(chosen_file, gp)
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
 
                 elif calCharType == 'RADCAL':
                     # RADCAL files to be ingested depend on the multical options
-                    if ConfigFile.settings["MultiCal"] == 0:# Most recent prior to acquisition
+                    if ConfigFile.settings["MultiCal"] == 0:  # Most recent prior to acquisition
 
                         # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
-                        chosen_file = ProcessL1b.choose_cal_char_per_time(
+                        chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition')
                         filing.read_char(chosen_file, gp)
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
 
                     elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post average
 
@@ -290,6 +298,10 @@ class ProcessL1b:
             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
                 filing.read_char(f, gp)
         # Polar correction to be developed and added to FRM branch.
+        
+        # read class based non-linearity for use on wavelengths below approx 450 nm
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_LIN_*')):
+            filing.read_char(f, gp)
 
         # unc dataset renaming
         um.RenameUncertainties_FullChar(root)

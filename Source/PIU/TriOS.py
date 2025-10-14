@@ -83,6 +83,7 @@ class TriOS(BaseInstrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
+        env_pert = np.std(calibrated_light_measure, axis=0)
         if nmes > 25:
             light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
@@ -111,6 +112,7 @@ class TriOS(BaseInstrument):
             std_Light=np.array(light_std),
             std_Dark=np.array(dark_std),
             std_Signal=std_signal,
+            perturbations=np.array(env_pert)
         )
 
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
@@ -172,6 +174,11 @@ class TriOS(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
+            no_lin_corr_indx = DATA['cb_alpha'] == -2e-7   # TODO: clarify with Tartu why alpha != 0 for TriOS
+            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
+            # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
+            
             BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
 
             if s_type.upper() == "ES":
@@ -189,7 +196,7 @@ class TriOS(BaseInstrument):
                                                               [sample_sl_corr, sample_LAMP, sample_PANEL,
                                                                sample_cal_int,
                                                                sample_t1])
-            
+            import matplotlib.pyplot as plt
             BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_sl_corr))
 
             ind_nocal = DATA['ind_nocal']
@@ -198,15 +205,23 @@ class TriOS(BaseInstrument):
             BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
+            # dark correction
             std_light = stats[s_type]['std_Light'] / 65535.0 # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
 
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
             sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")  # mean of std_dark?
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
+            BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
+
+            # environmental perturbations
+            perturbations = stats[s_type]['perturbations'] / 65535.0  # lets not have giant uncertainties due to a TriOS only correction factor, yes?
+            sample_env_pert = cm.generate_sample(mDraws, np.mean(sample_dark_corr, axis=0), stats[s_type]['perturbations'], "rand")
+            sample_envp_sig = prop.combine_samples([sample_dark_corr, sample_env_pert])
+            BD_UNCS['pert'] = perturbations
 
             # Non-Linearity Correction
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_envp_sig, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
@@ -237,16 +252,34 @@ class TriOS(BaseInstrument):
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
             cal_corr_signal = np.mean(sample_cal_corr, axis=0)  # calibrated signal for sensitivity coeffs
             BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
-            BD_CORR['radcal'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
+            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
             sample_stab_corr = prop.run_samples(mf.apply_CB_corr, [sample_cal_corr, sample_stab])
             BD_UNCS['stab'] = np.sqrt(cal_corr_signal**2 * UNC['stab']**2)
+            BD_CORR['stab'] = np.zeros(len(DATA['radcal_wvl']))
 
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
             BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
+            BD_CORR['ct'] = np.mean(sample_ct_corr, axis=0) - cal_corr_signal
+
+            wvls = DATA['radcal_wvl']
+            def test_plot(x, y_lpu, y_mc, name, ylim=None):
+                import matplotlib.pyplot as plt
+                plt.figure('test_plot')
+                plt.title(f"{name} Uncertainty")
+                plt.plot(x, y_lpu, label='LPU')
+                plt.plot(x, y_mc, linestyle='--', label='MC')
+                plt.grid("both")
+                plt.xlim(350, 800)
+                if ylim is not None:
+                    plt.ylim(*ylim)
+                plt.legend()
+                plt.savefig(f"{name}_unc_test.png")
+                plt.close('test_plot')
+
 
             if s_type == "ES":
                 # Cosine correction
@@ -266,13 +299,30 @@ class TriOS(BaseInstrument):
                     mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
                 )
 
-                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
                 signal = np.mean(sample_cos_corr, axis=0)
+                BD_UNCS.update(LPU.cosine(BD_UNCS, sample_ct_corr, dir_rat, sample_cos_corr_comp, sample_fhemi_coserr))
+                BD_CORR['cosine'] = signal - np.mean(sample_ct_corr, axis=0)
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
             
+                test_plot(
+                    wvls, 
+                    np.sqrt(
+                        BD_UNCS['noise']**2 + 
+                        BD_UNCS['clin']**2 + 
+                        BD_UNCS['cSl']**2 + 
+                        BD_UNCS['radcal']**2 + 
+                        BD_UNCS['stab']**2 + 
+                        BD_UNCS['ct']**2 + 
+                        BD_UNCS['cosine']**2
+                    ),
+                    unc,
+                    f"final_validation_{s_type}",
+                     ylim=[0, 8]
+                )
+
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
@@ -284,10 +334,27 @@ class TriOS(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
+
+                test_plot(
+                    wvls, 
+                    np.sqrt(
+                        BD_UNCS['noise']**2 + 
+                        BD_UNCS['clin']**2 + 
+                        BD_UNCS['cSl']**2 + 
+                        BD_UNCS['radcal']**2 + 
+                        BD_UNCS['stab']**2 + 
+                        BD_UNCS['ct']**2 + 
+                        BD_UNCS['pol']**2
+                    ),
+                    unc,
+                    f"final_validation_{s_type}",
+                    ylim=[0, 0.25]
+                )
             
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "dark corrected",          rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)
+                PT.plot(DATA['radcal_wvl'], BD_UNCS['pert'],  "env perturbations",       rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
@@ -314,7 +381,7 @@ class TriOS(BaseInstrument):
 
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
-            wvls = DATA['wvls']
+            wvls = DATA["wvls"]
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
                 output_UNC[f"{s_type.lower()}Unc"], 
                 wvls, 

@@ -28,13 +28,40 @@ class plottingToolsCB:
         self.engine = prop if prop is not None else MCPropagation(100, parallel_cores=1)
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
+
+    def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths):
+        keys = dict(
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+        )
+
+        # now we plot the result
+        for sensor in ['ES', 'LI', 'LT']:
+            plt.figure(f"{sensor}_{self.Data.cast}")
+            for key in keys[sensor]:
+                plt.plot(wavelengths[sensor], 
+                PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]), 
+                label=key
+                )
+            
+            plt.xlabel("Wavelengths")
+            plt.xlim(350, 900)
+            plt.ylabel("Relative Uncertainty (%)")
+            plt.ylim(0, 15)
+            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
+            plt.legend()
+            plt.grid()
+            
+            fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.Data.cast}.png")
+            plt.savefig(fp)
+            plt.close(f"{sensor}_{self.Data.cast}")
+
     def pie_plot_class(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
-
-        # results, values = PlotMaths.classBased(self.engine, vals, uncs, False)
         
         if np.any(BD_VALS['ES'] < 0):
             print('WARNING: Negative uncertainty potential')
@@ -76,7 +103,7 @@ class plottingToolsCB:
         ]
 
         for sensor in BD_UNCS.keys():
-            indexes = [
+            indexes = [  # todo: add extra wavelengths
                 np.argmin(np.abs(wavelengths[sensor] - 675)),
                 np.argmin(np.abs(wavelengths[sensor] - 560)),
                 np.argmin(np.abs(wavelengths[sensor] - 442))
@@ -223,6 +250,7 @@ class plottingToolsCB:
         
         plt.savefig(fp)
     
+
 class PlotMaths:
     
     def __init__(self):
