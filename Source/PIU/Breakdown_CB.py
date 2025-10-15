@@ -37,7 +37,8 @@ class plottingToolsCB:
         )
 
         # now we plot the result
-        for sensor in ['ES', 'LI', 'LT']:
+        sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
+        for sensor in sensors:
             plt.figure(f"{sensor}_{self.Data.cast}")
             for key in keys[sensor]:
                 plt.plot(wavelengths[sensor], 

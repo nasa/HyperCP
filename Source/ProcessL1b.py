@@ -151,7 +151,9 @@ class ProcessL1b:
 
         return root (with the group "RAW_UNCERTAINTIES" updated to contain the read cal/chars)
         '''
-        fidRadPath =os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
+        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
+            else ConfigFile.settings['SensorType']
+        fidRadPath= os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
 
         # Initialise "RAW_UNCERTAINTIES"
         gp = root.addGroup("RAW_UNCERTAINTIES")

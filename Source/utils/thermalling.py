@@ -18,7 +18,8 @@ def UncTempCorrection(node):
     unc_grp = node.getGroup("RAW_UNCERTAINTIES")
     # sensorID = Utilities.get_sensor_dict(node)
     # inv_ID = {v: k for k, v in sensorID.items()}
-    for sensor in ["LI", "LT", "ES"]:
+    sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+    for sensor in sensor_list:
         TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
         meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
@@ -44,7 +45,7 @@ def UncTempCorrection(node):
             #     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
             # # else:
             # #     logging.writeLogFileAndPrint("Caps-on temperature dataset not found")
-        elif ConfigFile.settings['SensorType'].lower() == "trios":
+        elif ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
             sensorGroup = node.getGroup(f'{sensor}')
             if "SPECTEMP" in sensorGroup.datasets:
                 # NOTE: Need to distinguish G2 at some point
