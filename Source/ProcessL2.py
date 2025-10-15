@@ -406,11 +406,6 @@ class ProcessL2:
                 for key in xBreakdownCORR['LI'].keys():
                     BDCorr['LI'][key] = newBreakdownCORRGroup.getDataset(f"LI_{sensor}_{key}")
                     BDCorr['LT'][key] = newBreakdownCORRGroup.getDataset(f"LT_{sensor}_{key}")
-                # for key in xBreakdownCORR['Lw'].keys():
-                #     BDCorr['LW'][key]  = newBreakdownCORRGroup.getDataset(f"LW_{sensor}_{key}")
-                # for key in xBreakdownCORR['Rrs'].keys():
-                #     BDCorr['Rrs'][key] = newBreakdownCORRGroup.getDataset(f"Rrs_{sensor}_{key}")
-
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
@@ -1388,7 +1383,7 @@ class ProcessL2:
             **{k.lower() + 'STD_RAW': v['std_Signal'] for k, v in stats.items()}, # Check output is reliable
             **{k.lower() + 'Remaining': v for k, v in slice_remaining.items()},
         }
-        x_unc, x_breakdown_unc = None, None
+        x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
             l1b_unc, x_breakdown_unc = sensor.ClassBased(node, uncGroup, stats)
@@ -1400,7 +1395,7 @@ class ProcessL2:
                                                   zip(x_slice[k.lower() + 'Unc'].items(), v.values())}
                 x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(),
                                                        x_slice)
-                x_breakdown_unc.udpate(l2_bd)
+                x_breakdown_unc.update(l2_bd)
             elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")
                 return False
@@ -1408,8 +1403,9 @@ class ProcessL2:
             from Source.PIU.PIUDataStore import PIUDataStore
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
             l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
+            x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
-            x_unc = sensor.FRML2(rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_corr, x_breakdown_unc)
+            x_unc = sensor.FRML2(pds, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
         logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s")
 
         # Move uncertainties to x_unc and drop samples form x_slice
@@ -1430,7 +1426,7 @@ class ProcessL2:
             ProcessL2.spectralIrradiance(node, 'HYPER', timestamp_dict, x_slice, F0_hyper, F0_unc, wavelengths, x_unc)
         else:
             ProcessL2.spectralReflectance(node, 'HYPER', timestamp_dict, x_slice, F0_hyper, F0_unc,
-                                          rho_scalar, rho_vec, wavelengths, x_unc)
+                                          rho_scalar, rho_vec, wavelengths, x_unc, x_breakdown_unc, x_breakdown_corr)
 
 
         # %% Apply NIR Correction

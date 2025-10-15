@@ -29,15 +29,23 @@ class plottingToolsCB:
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
 
-    def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths):
-        keys = dict(
-            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
-        )
+    def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths, level='L1B'):
+        if level == 'L1B':
+            keys = dict(
+                ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+                LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+                LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+            )
+            sensors = ['ES', 'LI', 'LT']
+        else:
+            keys = dict(
+                Lw =["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+                Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+            )
+            sensors = ['Lw', 'Rrs']
 
         # now we plot the result
-        for sensor in ['ES', 'LI', 'LT']:
+        for sensor in sensors:
             plt.figure(f"{sensor}_{self.Data.cast}")
             for key in keys[sensor]:
                 plt.plot(wavelengths[sensor], 

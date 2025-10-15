@@ -358,9 +358,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
             PT = plottingToolsCB(PDS, "", UNC_obj_CB)
             try:
-                # TODO: call spectral plot method
-                
-                breakdown_UNCS = PT.pie_plot_class_l2(
+                PT.plot_CB_spectral(
+                    BD_UNCS, 
+                    BD_VALS,                     
+                    dict(
+                        Lw =np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+                        Rrs=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+                    ),
+                    level='L2'
+                )
+                PT.pie_plot_class_l2(
                     BD_UNCS,
                     BD_VALS,
                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
@@ -552,6 +559,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 ## DO PLOTS ##
                 wvls = np.array(waveSubset)
                 PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['pert'],   "env perturbations",       rel_to=signal, ylim=ylim)
                 PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=ylim)
                 PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=ylim)
                 PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=ylim)
@@ -559,6 +567,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # post normalisation
                 PT.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=ylim)
                 PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=ylim)
+                PT.plot(wvls, UNC['rho'],  "rho",       rel_to=signal, ylim=ylim)
                 
                 # plot contributions that vary between sensors
                 if meas.upper() == 'RRS':
