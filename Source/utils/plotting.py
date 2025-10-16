@@ -33,9 +33,8 @@ def plotRadiometry(root, filename, rType, plotDelta = False):
     dataDelta = None
     # Note: If only one spectrum is left in a given ensemble, STD will
     #be zero for Es, Li, and Lt.'''
-    if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
-            ConfigFile.settings['SensorType'].lower() == 'dalec' or\
-        ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
+    if  (ConfigFile.settings['SensorType'].lower()  in ["dalec", "sorad", "trios", "trios es only"]
+            and ConfigFile.settings['fL1bCal'] == 1):
         suffix = 'sd'
     else:
         suffix = 'unc'
