@@ -379,7 +379,9 @@ class ProcessL1bTriOS:
             classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', "TriOS_initial")
 
         # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
-        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
+        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
+            else ConfigFile.settings['SensorType']
+        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['fL1bCal'] == 1:
