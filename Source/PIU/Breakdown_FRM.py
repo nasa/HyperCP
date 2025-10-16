@@ -97,13 +97,13 @@ class plottingToolsFRM:
             vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
             combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
 
-            explode = []
-            tot = np.sum(vals)
-            for v in vals:
-                if np.abs(v/tot)*100 < 5:
-                    explode.append(0.1)
-                else:
-                    explode.append(0)
+            # explode = []
+            # tot = np.sum(vals)
+            # for v in vals:
+            #     if np.abs(v/tot)*100 < 5:
+            #         explode.append(0.1)
+            #     else:
+            #         explode.append(0)
 
             l = ax.pie(
                 vals,
@@ -111,10 +111,10 @@ class plottingToolsFRM:
                 autopct='%1.1f%%',
                 pctdistance=1.1,
                 labeldistance=1.2,
-                explode=explode,
+                # explode=explode,
             )
 
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}", pad=40)  # y=-0.01
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
 
             import math
             for label, t in zip(labels[s], l[1]):
