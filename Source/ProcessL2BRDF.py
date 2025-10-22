@@ -57,8 +57,9 @@ class ProcessL2BRDF():
                     if ds.startswith("Rrs"):
                         # Can't change datasets in this loop, so make a list
                         # TODO consider uncertainties!
-                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02")):
+                        if not (ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02")):  # ds.endswith("_unc") or
                             Rrs_list.append(ds)
+                
                 # Extract the spectrla information
                 for ds in Rrs_list:
                     Rrs_ds = gp.getDataset(ds)
@@ -134,12 +135,16 @@ class ProcessL2BRDF():
                         Rrs_BRDF = Rrs.copy()
                         for k in Rrs:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist() 
+                                if 'unc' in ds:
+                                    Rrs_BRDF[k] = np.array(OC_BRDF.brdf_unc.sel(bands=float(k), n=0)).tolist()
+                                    if not isinstance(Rrs_BRDF[k], list):
+                                        Rrs_BRDF[k] = [Rrs_BRDF[k]]  # uncs not saved as list, perhaps numpy bug
+                                else:
+                                    Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
                         
                         Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
                         Rrs_BRDF_ds.columns = Rrs_BRDF
                         Rrs_BRDF_ds.columnsToDataset()
-    
                         # Apply same factors to corresponding nLw
                         nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
                         nLw = nLw_ds.columns
