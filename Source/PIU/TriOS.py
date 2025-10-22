@@ -265,22 +265,6 @@ class TriOS(BaseInstrument):
             BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
             BD_CORR['ct'] = np.mean(sample_ct_corr, axis=0) - cal_corr_signal
 
-            wvls = DATA['radcal_wvl']
-            def test_plot(x, y_lpu, y_mc, name, ylim=None):
-                import matplotlib.pyplot as plt
-                plt.figure('test_plot')
-                plt.title(f"{name} Uncertainty")
-                plt.plot(x, y_lpu, label='LPU')
-                plt.plot(x, y_mc, linestyle='--', label='MC')
-                plt.grid("both")
-                plt.xlim(350, 800)
-                if ylim is not None:
-                    plt.ylim(*ylim)
-                plt.legend()
-                plt.savefig(f"{name}_unc_test.png")
-                plt.close('test_plot')
-
-
             if s_type == "ES":
                 # Cosine correction
                 sol_zen = DATA['solar_zenith']
@@ -306,22 +290,6 @@ class TriOS(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
-            
-                test_plot(
-                    wvls, 
-                    np.sqrt(
-                        BD_UNCS['noise']**2 + 
-                        BD_UNCS['clin']**2 + 
-                        BD_UNCS['cSl']**2 + 
-                        BD_UNCS['radcal']**2 + 
-                        BD_UNCS['stab']**2 + 
-                        BD_UNCS['ct']**2 + 
-                        BD_UNCS['cosine']**2
-                    ),
-                    unc,
-                    f"final_validation_{s_type}",
-                     ylim=[0, 8]
-                )
 
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
@@ -334,22 +302,6 @@ class TriOS(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
-
-                test_plot(
-                    wvls, 
-                    np.sqrt(
-                        BD_UNCS['noise']**2 + 
-                        BD_UNCS['clin']**2 + 
-                        BD_UNCS['cSl']**2 + 
-                        BD_UNCS['radcal']**2 + 
-                        BD_UNCS['stab']**2 + 
-                        BD_UNCS['ct']**2 + 
-                        BD_UNCS['pol']**2
-                    ),
-                    unc,
-                    f"final_validation_{s_type}",
-                    ylim=[0, 0.25]
-                )
             
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##

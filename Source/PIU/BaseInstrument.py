@@ -129,6 +129,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
              return False, None
 
         ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
+        zeroes = np.zeros_like(PDS.uncs['ES']['cal']) 
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                  stats['LI']['ave_Light'] if 'LI' in stats else ones, stats['LI']['ave_Dark'] if 'LI' in stats else ones,
@@ -142,18 +143,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
-                         stats['LI']['std_Light'] if 'LI' in stats else ones, stats['LI']['std_Dark'] if 'LI' in stats else ones,
-                         stats['LT']['std_Light'] if 'LT' in stats else ones, stats['LT']['std_Dark'] if 'LT' in stats else ones,
+                         stats['LI']['std_Light'] if 'LI' in stats else zeroes, stats['LI']['std_Dark'] if 'LI' in stats else zeroes,
+                         stats['LT']['std_Light'] if 'LT' in stats else zeroes, stats['LT']['std_Dark'] if 'LT' in stats else zeroes,
                          PDS.uncs['ES']['cal'] * PDS.coeff['ES']['cal'] / 200,
-                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200 if 'LI' in PDS.uncs else ones,
-                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200 if 'LT' in PDS.uncs else ones,
-                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else ones, PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else ones,
-                         PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else ones, PDS.uncs['LT']['nlin'] if 'LT' in PDS.uncs else ones,
+                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200 if 'LI' in PDS.uncs else zeroes,
+                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200 if 'LT' in PDS.uncs else zeroes,
+                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else zeroes,
+                         PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['nlin'] if 'LT' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
-                         np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else ones,
-                         np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else ones,
-                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else ones, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else ones,
-                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else ones, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else ones, np.array( PDS.uncs['ES']['cos'])
+                         np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else zeroes,
+                         np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else zeroes,
+                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos'])
                          ]
 
         # generate uncertainties using Monte Carlo Propagation object

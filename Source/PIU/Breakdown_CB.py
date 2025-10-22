@@ -36,7 +36,7 @@ class plottingToolsCB:
                 LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
                 LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
             )
-            sensors = ['ES', 'LI', 'LT']
+            sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         else:
             keys = dict(
                 Lw =["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
@@ -45,7 +45,6 @@ class plottingToolsCB:
             sensors = ['Lw', 'Rrs']
 
         # now we plot the result
-        sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         for sensor in sensors:
             plt.figure(f"{sensor}_{self.Data.cast}")
             for key in keys[sensor]:
