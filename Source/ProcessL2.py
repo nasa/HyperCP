@@ -1187,8 +1187,6 @@ class ProcessL2:
             sensor, sensor_type = Dalec(), 'Dalec'
         elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             sensor, sensor_type = TriOS(), 'TriOS'
-            if ConfigFile.settings["SensorType"].lower() == "trios es only":
-                sensor.sensors = ['ES']
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             sensor, sensor_type = HyperOCR(), 'SeaBird'
         else:
@@ -1393,8 +1391,12 @@ class ProcessL2:
                 for k, v in slice_mean.items():
                     x_slice[k.lower() + 'Unc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                                                   zip(x_slice[k.lower() + 'Unc'].items(), v.values())}
-                x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(),
-                                                       x_slice)
+                if es_only:
+                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
+                    l2_bd = {}
+                else:
+                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(),
+                                                           x_slice)
                 x_breakdown_unc.update(l2_bd)
             elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")
@@ -1414,7 +1416,7 @@ class ProcessL2:
                 if "sample" in k.lower():
                     del x_slice[k]  # samples are no longer needed
                 elif "unc" in k.lower():
-                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)  # transfer instrument uncs to xUNC
+                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)  # transfer instrument uncs to x_unc
 
             # Extract uncertainties for convolving to satellite bands
             slice_unc = {k: v for k, v in x_unc.items() if k.endswith('UNC_HYPER')}

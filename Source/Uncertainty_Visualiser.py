@@ -183,7 +183,8 @@ class UncertaintyGUI(ABC):
         )
 
         # now we plot the result
-        for sensor in ['ES', 'LI', 'LT']:
+        sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
+        for sensor in sensors:
             plt.figure(f"{sensor}_{cast}")
             for key in keys[sensor]:
                 plt.plot(wavelengths[sensor], self._engine.getpct(results[sensor][key], values[sensor]), label=key)

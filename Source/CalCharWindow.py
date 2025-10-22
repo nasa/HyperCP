@@ -18,7 +18,9 @@ class CalCharWindow(QtWidgets.QDialog):
         super().__init__(parent)
         self.name = name
         # Define path to local repository of FidRadDB sensor-specific files.
-        self.path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
+        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
+            else ConfigFile.settings['SensorType']
+        self.path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
         self.setModal(True)
         self.initUI()
 
@@ -29,7 +31,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # SERIAL NUMBERS and cl/char files needed for full FRM case
         # NB: This is needed only for FRM regimes (class and full)
         ConfigFile.settings['neededCalCharsFRM'] = {}
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
+        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
             for k,v in ConfigFile.settings['CalibrationFiles'].items():
                 # sensorType is frameType only for TriOS
                 sensorType = v['frameType']
@@ -356,7 +358,7 @@ class CalCharWindow(QtWidgets.QDialog):
     ###################################### GUI-controlled functions ###############################################
 
     def ThermalStatusUpdate(self):
-        if ConfigFile.settings['SensorType'].lower() == 'trios': # G1
+        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]: # G1
             self.ThermistorRadioButton.setDisabled(True)
             if ConfigFile.settings["fL1bThermal"] == 1:
                 # NOTE: This will need to be changed for G2
@@ -476,7 +478,10 @@ class CalCharWindow(QtWidgets.QDialog):
         '''
 
         # Define strings to be
-        missingFilesStrings = {'ES':'All needed files found', 'LT':'All needed files found', 'LI':'All needed files found'}
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            missingFilesStrings = {'ES':'All needed files found', 'LT':'No LT sensor', 'LI':'No LI sensor'}
+        else:
+            missingFilesStrings = {'ES':'All needed files found', 'LT':'All needed files found', 'LI':'All needed files found'}
         # missingFilesStrings = {'ES':'', 'LT':'', 'LI':''}
         missingFilesList = []
         # Define path to local repository of FidRadDB sensor-specific files.
