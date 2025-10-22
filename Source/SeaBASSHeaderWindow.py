@@ -497,8 +497,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                             and key not in omitList:
                         SeaBASSHeader.settings[key] = value
 
-        SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
+        if ConfigFile.settings["SensorType"].lower() == "trios es only":
+            SeaBASSHeader.settings['instrument_manufacturer'] = 'TriOS'
+        else:
+            SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
+        if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only']:
             SeaBASSHeader.settings['instrument_model'] = 'RAMSES'
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             SeaBASSHeader.settings['instrument_model'] = 'HyperOCR'
