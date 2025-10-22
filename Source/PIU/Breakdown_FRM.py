@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import comet_maths as cm
-from typing import Optional
+from typing import Optional, Union
 
 # Source
 from Source.MainConfig import MainConfig
@@ -11,9 +11,6 @@ from Source.MainConfig import MainConfig
 # PIU
 from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
 from Source.PIU.PIUDataStore import PIUDataStore
-from Source.PIU.HyperOCR import HyperOCR
-from Source.PIU.TriOS import TriOS
-from Source.PIU.DALEC import Dalec
 
 
 class plottingToolsFRM:
@@ -25,40 +22,54 @@ class plottingToolsFRM:
 
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
-    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None):
+    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
         """
+        simple method for plotting uncertainties both in absolute and relative (if rel_to is given)
 
+        :param x: x axis values
+        :param y: y axis values
+        :param name: name of plot for title and save name
+        :param rel_to: array of values for the signal that uncertainties (param y) are to be calculated relative to, i.e. Rrs values
+        :param unit: unit to be displayed on y axis of plot
+        :param ylim: y limits if required
         """
 
         self.get_figure()  # create plt.figure with name based on sensor/station/cast
         if rel_to is not None:
             if len(rel_to.shape) > 1:
-                y_mean = np.mean(rel_to, axis=0)
+                y_mean = np.mean(rel_to, axis=0)  # if rel_to is a sample/PDF make sure to get the mean 
             else:  # if we have a signal to put uncs in relative units
-                y_mean = rel_to  
+                y_mean = rel_to  # otherwise we just use rel_to directly
             
-            u_rel = (y/y_mean)*100
+            u_rel = (y/y_mean)*100  # calculate relative uncertainty
             plt.plot(x, u_rel, label=f"{name}")
-            plt.ylabel("relative uncertainty (%)")
+            plt.ylabel("relative uncertainty (%)")  # unit is always % if relative uncertainties used
             if ylim is None:
-                plt.ylim(0,5)
+                plt.ylim(0,5)  # if not ylim then default to 5% max (if relative)
             else:
                 plt.ylim(*ylim)
         else:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
 
-        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {round(self.sza,2)}")
-        plt.xlabel("Wavelength (nm)")
+        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {round(self.sza,2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
+        plt.xlabel("Wavelength (nm)")  # x lable always wavelength in uncertainty plotting in HyperCP
         
-        plt.xlim(400,800)
+        plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
 
-    def plot_pie_FRM(self, s, wavelengths, BD_UNCS, signal, level='L1B'):
+    def plot_pie_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str: np.array], signal: np.array, level: str='L1B') -> None:
+        """
+        plots a pie chart for the sensor-specific regime
+
+        :param s: sensor name
+        :param wavelengths: wavelengths for signal/uncertainties
+        :param BD_UNCS: dictionary of breakdown uncertainties to be plotted
+        :param signal: the signal for caluclating relative uncertainties
+        :param level: string to delinate between L1B: ES, LI, LT and L2: Lw, NLw, Rrs plotting
+
         """
 
-        """
-
-        self.get_figure()
+        # select appropriate keys and lable names for given level (based on how BD_UNCS is filled in BaseInstrument, HyperOCR and TriOS classes. 
         if level.upper() == 'L1B':
             keys = dict(
                 ES=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
@@ -89,21 +100,14 @@ class plottingToolsFRM:
             np.argmin(np.abs(wavelengths - 490)),
             np.argmin(np.abs(wavelengths - 442)),
             np.argmin(np.abs(wavelengths - 400)),
-        ]
-        for indx in indexes:
+        ]  # get closest wavelength available to the specific wavelengths which are to be outputted
+        for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-            fig, ax = plt.subplots()
+            fig = self.get_figure()
+            ax = plt.gca()
 
             vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
             combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
-
-            # explode = []
-            # tot = np.sum(vals)
-            # for v in vals:
-            #     if np.abs(v/tot)*100 < 5:
-            #         explode.append(0.1)
-            #     else:
-            #         explode.append(0)
 
             l = ax.pie(
                 vals,
@@ -111,11 +115,11 @@ class plottingToolsFRM:
                 autopct='%1.1f%%',
                 pctdistance=1.1,
                 labeldistance=1.2,
-                # explode=explode,
             )
 
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
 
+            # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
             import math
             for label, t in zip(labels[s], l[1]):
                 x, y = t.get_position()
@@ -128,21 +132,34 @@ class plottingToolsFRM:
 
                 plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
 
-            plt.tight_layout()
+            plt.tight_layout()  # for improved clarity and less overlapping of labels
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.cast}_{self.station}_{wvl_at_indx}.png")
             self.save_figure(fp, legend=False, grid=False, level=level)
-            plt.close(fig)
+            # plt.close(fig)
 
-    def get_figure(self):
+    def get_figure(self) -> plt.figure:
+        """
+        Helper method to return a figure with a specific naming convention
+        """
         try:
-            plt.figure(f"{self.s}_{self.cast}_{self.station}")
+            fig = plt.figure(f"{self.s}_{self.cast}_{self.station}")
         except AttributeError:
             try:
-                plt.figure(f"{self.s}_{self.cast}")
+                fig = plt.figure(f"{self.s}_{self.cast}")
             except AttributeError:
-                plt.figure(self.s)
-
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B'):
+                fig = plt.figure(self.s)
+        
+        return fig
+    
+    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B') -> None:
+        """
+        Helper function to save figures based on cast/station information
+        
+        :param fp: optional, save path for figure
+        :param legend: bool to add legend to plot - default = True
+        :param grid: bool to add grid to both axes of plot - default = True
+        :param level: to determine which level is being saved so it can be included in savefilepath 
+        """
 
         if legend:
             plt.legend()
@@ -166,7 +183,14 @@ class plottingToolsFRM:
         plt.close()
     
     @staticmethod
-    def getpct(v1, v2):
+    def getpct(v1: Union[float, np.array], v2: Union[float, np.array]) -> np.array:
+        """
+        gets the percentage of v1 out of v2: (v1/v2) * 100%
+        
+        :param v1: value to be made relative
+        :param v2: value that v1 is relative to
+        
+        """
         pct = []
         for i in range(len(v1)):
             if v2[i] != 0:  # ignore wavelengths where we do not have an output
@@ -177,6 +201,11 @@ class plottingToolsFRM:
 
 
 class SolveLPU:
+    """
+    class to calculate the LPU
+    :param prop: MC propagation object, required only for L1B outputs
+    """
+
     def __init__(self, prop=None):
         if prop is not None:
             self.prop = prop
@@ -184,6 +213,7 @@ class SolveLPU:
     @staticmethod
     def S12_alpha(PDS: PIUDataStore, s: str) -> dict[str: np.array]:
         """
+        calculates breakdown uncertainties for S12 and alpha
 
         :param PDS: uncertainties and coefficients used in FRM-Sensor-Specific L1B signal caluclation
         :param s: sensor name - ES, LI or LT
@@ -208,7 +238,16 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def updatedGains(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, sample_S12_sl_corr):
+    def updatedGains(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, sample_S12_sl_corr) -> dict[str: np.array]:
+        """
+        calculate breakdown uncertaintiesd for the updated radiometric gains
+
+        :param LPU_UNCS: BreakDown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param PDS: PIUDataStore object containing information on the coefficients and uncertainty inputs for calulating sensor-specific uncertainties
+        :param s: sensor name
+        :param sample_S12_sl_corr: straylight and non-linearity corrected signal for calculating updated gains
+        """
+
         DATA = PDS.coeff[s]  # retrieve dictionaries for speed
         UNC = PDS.uncs[s]
 
@@ -330,7 +369,12 @@ class SolveLPU:
         
     def temperature(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, radcal_signal) -> dict[str: np.array]:
         """
+        uses LPU to calculate temperature uncertainty as well as propagate uncertainties through the temperature correction
         
+        :param LPU_UNCS: BreakDown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param PDS: PIUDataStore object containing information on the coefficients and uncertainty inputs for calulating sensor-specific uncertainties
+        :param s: sensor name
+        :param radcal_signal: signal with radiometric calibration applied
         """
 
         DATA = PDS.coeff[s]  # retrieve dictionaries for speed
@@ -348,7 +392,13 @@ class SolveLPU:
 
     def cosine(self, LPU_UNCS: dict[str: np.array], sample_ct_corr, dir_ratio, sample_cos_corr, sample_fhemi)-> dict[str: np.array]:
         """
-
+        uses LPU to calculate cosine uncertainty as well as propagate uncertainties through the cosine correction. This method uses Monte Carlo instead 
+        of the LPU due to complicated sensitivity coefficents
+        
+        :param LPU_UNCS: BreakDown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param sample_ct_corr: PDF of the ct corrected signal
+        :param dir_ratio: direct ratio calculated by 6S
+        : 
         """
 
         mDraws = sample_ct_corr.shape[0]
@@ -381,17 +431,19 @@ class SolveLPU:
 
     ## L2 ##
     def waterLeaving(self, LPU_common_wb, LPU_UNCS, Li, rho):
-        # sc_1 = 1 # sensitivity coefficient, 1 for LT
-        sc_1 = Li**2
-        sc_2 = rho**2  # signals have been interpolated to common wavebands, however LPU uncs exist at radcal wavelengths
+        # f = Lt - rho*Li
+        sc_1 = 1  # df/dLt
+        sc_2 = Li**2  # df/drho
+        sc_3 = rho**2  # df/dLi
+        # signals have been interpolated to common wavebands, however LPU uncs exist at radcal wavelengths
 
         for k in LPU_common_wb['LI'].keys():  # pass all uncs through sen coeffs for LW
             LPU_UNCS['Lw'][k] = np.sqrt(
                 (sc_1 * LPU_common_wb['LT'][k]**2) +
-                (sc_2 * LPU_common_wb['LI'][k]**2) 
+                (sc_3 * LPU_common_wb['LI'][k]**2) 
             )
             
-        LPU_UNCS['Lw']['rho'] = np.sqrt(sc_1 * LPU_UNCS['rho']['rho_unc']**2)
+        LPU_UNCS['Lw']['rho'] = np.sqrt(sc_2 * LPU_UNCS['rho']['rho_unc']**2)
 
     def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lt, rho):
         # Y = f(x) ==> Rrs =  LT - rho*LI / ES
