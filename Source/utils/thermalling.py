@@ -18,7 +18,12 @@ def UncTempCorrection(node):
     unc_grp = node.getGroup("RAW_UNCERTAINTIES")
     # sensorID = Utilities.get_sensor_dict(node)
     # inv_ID = {v: k for k, v in sensorID.items()}
-    sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+    sensor_list = []
+    for grp in node.groups:
+        for s in ['ES', 'LI', 'LT']:
+            if s in grp.id and not s in sensor_list:
+                sensor_list.append(s)
+
     for sensor in sensor_list:
         TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
@@ -164,7 +169,7 @@ def generateTempCoeffs(workingTemp, sigmaT, thermalCoeffDS, sensor):
             else:
                 ThermUnc.append(np.abs(therm_coeffi * dT))  # take absolute value as comet maths does not like negative uncertainties
         except IndexError as err:
-            print(f'{err} in Utilities.generateTempCoeffs')
+            print(f'{err} in Utilitiesg.enerateTempCoeffs')
             ThermCorr.append(1.0)
             ThermUnc.append(0)
 

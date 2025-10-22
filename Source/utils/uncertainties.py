@@ -78,9 +78,13 @@ class unc_management:
     def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
-        for sensor in sensor_list:
+        sensor_list = []
+        for grp in node.groups:
+            for s in ['ES', 'LI', 'LT']:
+                if s in grp.id and not s in sensor_list:
+                    sensor_list.append(s)
 
+        for sensor in sensor_list:
             ## retrieve dataset from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -138,8 +142,12 @@ class unc_management:
         :param node: HDF root containing uncertainties group
         """
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]  # TODO: move sensor list into config, depending on Nils implementation of ES only regime - Ashley
-
+        sensor_list = []
+        for grp in node.groups:
+            for s in ['ES', 'LI', 'LT']:
+                if s in grp.id and not s in sensor_list:
+                    sensor_list.append(s)#
+                    
         for sensor in sensor_list:
             ## retrieve dataset from corresponding instrument
             grp_name = None
@@ -213,7 +221,12 @@ class unc_management:
         grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorId = unc_management.get_sensor_dict(node)
         grp.datasets
-        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        sensor_list = []
+        for grp in node.groups:
+            for s in ['ES', 'LI', 'LT']:
+                if s in grp.id and not s in sensor_list:
+                    sensor_list.append(s)
+
         for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
