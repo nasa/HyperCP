@@ -78,16 +78,14 @@ class unc_management:
     def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorList = ['ES', 'LI', 'LT']
-        for sensor in sensorList:
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        for sensor in sensor_list:
 
             ## retrieve dataset from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or \
-                ConfigFile.settings['SensorType'].lower() == "dalec" or \
-                ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["dalec", "sorad", "trios", "trios es only"]:
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -140,14 +138,14 @@ class unc_management:
         :param node: HDF root containing uncertainties group
         """
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorList = ['ES', 'LI', 'LT']  # TODO: move sensor list into config, depending on Nils implementation of ES only regime - Ashley
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]  # TODO: move sensor list into config, depending on Nils implementation of ES only regime - Ashley
 
-        for sensor in sensorList:
+        for sensor in sensor_list:
             ## retrieve dataset from corresponding instrument
             grp_name = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 grp_name = f"{sensor}_LIGHT"
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                 grp_name = sensor
             else:
                 return False
@@ -214,8 +212,9 @@ class unc_management:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorId = unc_management.get_sensor_dict(node)
-        sensorList = ['ES', 'LI', 'LT']
-        for sensor in sensorList:
+        grp.datasets
+        sensor_list = [g.id for g in node.groups if g.id in ('ES', 'LI', 'LT')]
+        for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
             # indx = ds.attributes["INDEX"]
@@ -229,7 +228,7 @@ class unc_management:
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                 # inv_dict = {v: k for k, v in sensorId.items()}
                 # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)
@@ -293,7 +292,7 @@ class unc_management:
                     sensorID[sensorCode] = "LT"
 
             # elif "IDDevice" in grp.attributes:
-            elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
                 if "ES" in grp.datasets:
                     sensorID[grp.attributes["IDDevice"][4:8]] = "ES"
                 if "LI" in grp.datasets:

@@ -372,12 +372,11 @@ class ProcessL1bTriOS:
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         # classbased_dir needed for FRM whilst pol is handled in class-based way
-        if ConfigFile.settings["SensorType"].lower() == "seabird" or  ConfigFile.settings["SensorType"].lower() == "trios":
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', #
-                                     ConfigFile.settings['SensorType']+"_initial")
-        elif ConfigFile.settings["SensorType"].lower() == "sorad":
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
-                                     'TriOS' +"_initial")
+        if ConfigFile.settings["SensorType"].lower() in ["seabird", "trios"]:
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+                                          ConfigFile.settings['SensorType']+"_initial")
+        elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios es only"]:
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', "TriOS_initial")
 
         # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
         radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])

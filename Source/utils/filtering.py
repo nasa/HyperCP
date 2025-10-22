@@ -174,7 +174,7 @@ def filterData(group, badTimes, level = None):
         timeStamp = group.getDataset("Timestamp").data["Datetime"]
         # TRIOS: copy CAL & BACK before filetering, and delete them
         # to avoid conflict when filtering more row than 255
-        if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == "sorad":
+        if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
             do_reset = True
             raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
             raw_back = group.getDataset("BACK_"+group.id[0:2]).data
@@ -214,7 +214,7 @@ def filterData(group, badTimes, level = None):
             break
         timeStamp = newTimeStamp.copy()
 
-    if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == "sorad":
+    if ConfigFile.settings['SensorType'].lower()  in ["sorad", "trios", "trios es only"]:
         # TRIOS: reset CAL and BACK as before filtering
         if do_reset:
             group.addDataset("CAL_"+group.id[0:2])

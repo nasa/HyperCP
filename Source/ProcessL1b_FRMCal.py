@@ -460,7 +460,8 @@ class ProcessL1b_FRMCal:
 
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
 
-        for sensortype in ['ES', 'LI', 'LT']:
+        sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
+        for sensortype in sensors:
             print('FRM Processing:', sensortype)
             # Read data
             grp = node.getGroup(sensortype)

@@ -24,10 +24,13 @@ class PIUDataStore:
     """contains class to read and store input uncertainties for PIU"""
     sensors: list = ['ES', 'LI', 'LT']
 
-    def __init__(self, root: HDFRoot, inpt: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
+    def __init__(self, root: HDFRoot, input: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
         """ class which contains methods that provide digestable uncertainties to classes in PIU 
             converts datafile inputs into a dictionary of coefficients and uncertainties for all regimes
         """
+        if ConfigFile.settings["SensorType"].lower() == "trios es only":
+            PIUDataStore.sensors = ['ES']
+
         self.uncs:      dict = {s: {} for s in self.sensors}
         self.coeff:     dict = {s: {} for s in self.sensors}
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
@@ -56,18 +59,18 @@ class PIUDataStore:
         if not create_empty:  # do not read uncs and coeffs if we are creating an empty PDS
             instrument = ConfigFile.settings['SensorType'].lower()  # get instrument type
             if self.cal_level == 3:
-                [self.readCalFRM(root, inpt, raw_grps, raw_slices, sensor) for sensor in self.sensors]
+                [self.readCalFRM(root, input, raw_grps, raw_slices, sensor) for sensor in self.sensors]
             else:
                 if self.cal_level == 2:
-                    [self.readCalClassBased(inpt, sensor, instrument) for sensor in self.sensors]
+                    [self.readCalClassBased(input, sensor, instrument) for sensor in self.sensors]
                 elif instrument == 'seabird':
-                    [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
+                    [self.readCalFactory(root, input, sensor) for sensor in self.sensors]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
                 
                 # finally
-                [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
+                [self.read_uncertainties(root, input, sensor) for sensor in self.sensors]
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
@@ -83,7 +86,7 @@ class PIUDataStore:
             radcal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
             Nlin_CB_string = "CLASS_HYPEROCR_RADIANCE"
             calDate_string = f"{s_type}_LIGHT_L1AQC"
-        elif instrument == "trios":
+        elif instrument in ["trios", "trios es only"]:
             radcal_raw = self.readTriOSCal(grp, uncGrp, raw_slices, s_type)
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"
@@ -106,7 +109,7 @@ class PIUDataStore:
         S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
         S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
 
-        if instrument == "trios":  # if trios then convert to same units as signal
+        if instrument in ["trios", "trios es only"]:  # if trios then convert to same units as signal
             S1 = S1/65535.0
             S2 = S2/65535.0
             S1_unc = np.asarray(S1_unc/65535.0, dtype=float)  # TODO: does this need to cast to np.array?
@@ -285,7 +288,7 @@ class PIUDataStore:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
         ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
         
-        corr_factor = 10 if (i_type == "trios" or i_type == "sorad") else 1 # Convert TriOS mW/m2/nm to uW/cm^2/nm
+        corr_factor = 10 if i_type in ["sorad", "trios", "trios es only"] else 1 # Convert TriOS mW/m2/nm to uW/cm^2/nm
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
         self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
@@ -301,10 +304,11 @@ class PIUDataStore:
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
         self.ind_rad_wvl[s] = ind_rad_wvl
 
-    def read_uncertainties(self, root: HDFRoot, inpt: HDFGroup, s: str) -> None:
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
+    def read_uncertainties(self, root, inpt: HDFGroup, s: str) -> None:
+        instrument = ConfigFile.settings['SensorType'].lower()
+        if instrument == "seabird":
             calDate_string = f"{s}_LIGHT_L1AQC"
-        elif ConfigFile.settings['SensorType'].lower() == "trios":
+        elif instrument in ["trios", "trios es only"]:
             calDate_string = f"{s}_L1AQC"
         else:
             writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
@@ -315,7 +319,9 @@ class PIUDataStore:
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
-        self.uncs[s]['stab'] = np.ones_like(self.coeff[s]['cal']) * stab_unc # 1% stability uncertainty estimate for class based
+        # TODO need to retrieve indexes: np.ones_like(self.coeff[s_type]['ind_nocal']) *   (Ashley?)
+        self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
+
         
         # self.uncs[s]['stab'] = self.extract_unc_from_grp(inpt, f"{s}_STABDATA_CAL", '1')
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')

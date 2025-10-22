@@ -398,7 +398,8 @@ class SolveLPU:
         :param LPU_UNCS: BreakDown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
         :param sample_ct_corr: PDF of the ct corrected signal
         :param dir_ratio: direct ratio calculated by 6S
-        : 
+        :param sample_cor_corr: PDF of the cosine correction
+        :param sample_fhemi: PDF of the full hemispherical correction
         """
 
         mDraws = sample_ct_corr.shape[0]
@@ -430,7 +431,16 @@ class SolveLPU:
         return LPU_UNCS
 
     ## L2 ##
-    def waterLeaving(self, LPU_common_wb, LPU_UNCS, Li, rho):
+    def waterLeaving(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Li: np.array, rho: np.array) -> dict[str: np.array]:
+        """
+        Method to propagate L1B uncertainties to water leaving radiance
+
+        :param LPU_common_wb: Breakdown uncertainties interpolated to L2 'common' wavebands
+        :param LPU_UNCS: Breakdown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param Li: Li signal for caluclating sensitivity coefficients
+        :param rho: rho values for caluclating sensitivity coefficients
+        """
+        
         # f = Lt - rho*Li
         sc_1 = 1  # df/dLt
         sc_2 = Li**2  # df/drho
@@ -445,7 +455,18 @@ class SolveLPU:
             
         LPU_UNCS['Lw']['rho'] = np.sqrt(sc_2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, LPU_common_wb, LPU_UNCS, Es, Li, Lt, rho):
+    def reflectance(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Es: np.array, Li: np.array, Lt: np.array, rho: np.array) -> dict[str: np.array]:
+        """
+        Method to propagate L1B uncertainties to remote sensing reflectance
+
+        :param LPU_common_wb: Breakdown uncertainties interpolated to L2 'common' wavebands
+        :param LPU_UNCS: Breakdown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param Es: Es signal for caluclating sensitivity coefficients
+        :param Li: Li signal for caluclating sensitivity coefficients
+        :param Lt: Lt signal for caluclating sensitivity coefficients
+        :param rho: rho values for caluclating sensitivity coefficients
+        """
+        
         # Y = f(x) ==> Rrs =  LT - rho*LI / ES
         sc_1 = 1 / Es   # df/dLT
         sc_2 = rho / Es # df/dLI
@@ -475,7 +496,15 @@ class SolveLPU:
 
         LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def normalised_waterLeaving(self, LPU_UNCS, f0_unc):
+    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], f0_unc: np.array) -> dict[str: np.array]:
+        """
+        Method to propagate L1B uncertainties to normalised water leaving radiance
+
+        :param LPU_UNCS: Breakdown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param Li: Li signal for caluclating sensitivity coefficients
+        :param rho: rho values for caluclating sensitivity coefficients
+        """
+        
         for k in LPU_UNCS['Lw'].keys():
             LPU_UNCS['NLw'][k] = np.sqrt(
                 LPU_UNCS['Lw'][k]**2
