@@ -86,31 +86,31 @@ class plottingToolsCB:
             LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         )
 
-         # build table of anc data
-        aod = ancGrp.datasets['AOD'].columns['AOD'][0]
-        rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
-        saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
-        sza = ancGrp.datasets['SZA'].columns['SZA'][0]
-        ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
-        sst = ancGrp.datasets['SST'].columns['SST'][0]
+        #  # build table of anc data
+        # aod = ancGrp.datasets['AOD'].columns['AOD'][0]
+        # rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
+        # saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
+        # sza = ancGrp.datasets['SZA'].columns['SZA'][0]
+        # ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
+        # sst = ancGrp.datasets['SST'].columns['SST'][0]
 
-        col_labels = ['value']
-        row_labels = [
-            'Aerosol Optical Depth',
-            'Relative Azimuth',
-            'Solar Azimuth',
-            'Solar Zenith',
-            'Wind Speed',
-            'Water Temperature'
-        ]
-        table_vals = [
-            [aod],
-            [rel_az],
-            [saa],
-            [sza],
-            [ws],
-            [sst]
-        ]
+        # col_labels = ['value']
+        # row_labels = [
+        #     'Aerosol Optical Depth',
+        #     'Relative Azimuth',
+        #     'Solar Azimuth',
+        #     'Solar Zenith',
+        #     'Wind Speed',
+        #     'Water Temperature'
+        # ]
+        # table_vals = [
+        #     [aod],
+        #     [rel_az],
+        #     [saa],
+        #     [sza],
+        #     [ws],
+        #     [sst]
+        # ]
 
         for sensor in BD_UNCS.keys():
             indexes = [  # todo: add extra wavelengths
