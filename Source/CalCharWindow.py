@@ -358,7 +358,7 @@ class CalCharWindow(QtWidgets.QDialog):
     ###################################### GUI-controlled functions ###############################################
 
     def ThermalStatusUpdate(self):
-        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]: # G1
+        if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
             if ConfigFile.settings["fL1bThermal"] == 1:
                 # NOTE: This will need to be changed for G2
