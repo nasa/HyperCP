@@ -83,7 +83,7 @@ class TriOS(BaseInstrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        env_pert = np.std(calibrated_light_measure, axis=0)
+        env_pert = np.std(calibrated_light_measure, axis=0) / light_avg
         if nmes > 25:
             light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
@@ -303,6 +303,8 @@ class TriOS(BaseInstrument):
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
             
+            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["perturbations"])
+
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
                 PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)

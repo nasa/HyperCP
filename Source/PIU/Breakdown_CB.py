@@ -32,9 +32,9 @@ class plottingToolsCB:
     def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths, level='L1B'):
         if level == 'L1B':
             keys = dict(
-                ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-                LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-                LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+                ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+                LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+                LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
             )
             sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         else:
@@ -81,9 +81,9 @@ class plottingToolsCB:
             print('WARNING: Negative uncertainty potential')
         
         labels = dict(
-            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+            ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         )
 
          # build table of anc data
@@ -178,7 +178,7 @@ class plottingToolsCB:
         ]
 
         labels = dict(
-            Lw=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Lw =["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
             Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
         )
         for product in BD_UNCS.keys():
