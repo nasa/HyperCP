@@ -123,6 +123,8 @@ class unc_management:
 
             ## Interpolate for initial class-based file, in use at the moment
             for data_type in ["_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL"]:
+                if sensor == 'ES' and data_type == '_POLDATA_CAL':
+                    continue
                 ds = grp.getDataset(sensor + data_type)
                 ds.datasetToColumns()
                 x = ds.columns['0']
