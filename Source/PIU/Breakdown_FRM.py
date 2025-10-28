@@ -292,9 +292,6 @@ class SolveLPU:
         LPU_UNCS['noise'] = np.sqrt(
             (1 - 2*alpha*signal)**2 * LPU_UNCS['noise']**2  # signal unc at this point is just dark correction uncertainty
         )
-        LPU_UNCS['pert'] = np.sqrt(
-            (1 - 2*alpha*signal)**2 * LPU_UNCS['pert']**2  # signal unc at this point is just dark correction uncertainty
-        )
         LPU_UNCS['clin'] = np.sqrt(
             signal**4 * LPU_UNCS['alpha']**2
         )
@@ -313,13 +310,11 @@ class SolveLPU:
 
         mDraws = sample_C_zong.shape[0]
         sample_lpu_dark      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['noise'], 'rand')
-        sample_lpu_pert      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['pert'],  'rand')
         sample_lpu_nlin      = cm.generate_sample(mDraws, nlin_signal, LPU_UNCS['clin'],  'syst')
         sample_signal_no_unc = cm.generate_sample(mDraws, nlin_signal, None, None)
         c_zong_no_unc        = cm.generate_sample(mDraws, np.mean(sample_C_zong, axis=0), None, None)
 
         LPU_UNCS['noise'] = self._slMC(sample_lpu_dark, c_zong_no_unc)
-        LPU_UNCS['pert']  = self._slMC(sample_lpu_pert, c_zong_no_unc)
         LPU_UNCS['clin']  = self._slMC(sample_lpu_nlin, c_zong_no_unc)
         LPU_UNCS['cSl']   = self._slMC(sample_signal_no_unc, sample_C_zong)
         
@@ -343,7 +338,6 @@ class SolveLPU:
         sen_coef2 = (np.mean(signal, axis=0) / updated_gain**2)
         
         LPU_UNCS['noise']  = np.sqrt(sen_coef1**2 * LPU_UNCS['noise']**2)
-        LPU_UNCS['pert']   = np.sqrt(sen_coef1**2 * LPU_UNCS['pert']**2)
         LPU_UNCS['clin']   = np.sqrt(sen_coef1**2 * LPU_UNCS['clin']**2)
         LPU_UNCS['cSl']    = np.sqrt(sen_coef1**2 * LPU_UNCS['cSl']**2)
         LPU_UNCS['radcal'] = np.sqrt(sen_coef2**2 * LPU_UNCS['radcal']**2)
@@ -381,7 +375,6 @@ class SolveLPU:
         UNC = PDS.uncs[s]
 
         LPU_UNCS['noise']  = np.sqrt(DATA['Ct']**2 * LPU_UNCS['noise']**2)
-        LPU_UNCS['pert']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['pert']**2)
         LPU_UNCS['clin']   = np.sqrt(DATA['Ct']**2 * LPU_UNCS['clin']**2)
         LPU_UNCS['cSl']    = np.sqrt(DATA['Ct']**2 * LPU_UNCS['cSl']**2)
         LPU_UNCS['radcal'] = np.sqrt(DATA['Ct']**2 * LPU_UNCS['radcal']**2)
@@ -406,7 +399,6 @@ class SolveLPU:
 
         sample_sig_no_unc = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), None, None)
         sample_sig_dark   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['noise'],  "rand")
-        sample_sig_pert   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['pert'],   "rand")
         sample_sig_clin   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['clin'],   "syst")
         sample_sig_sl     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['cSl'],    "syst")
         sample_sig_cal    = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['radcal'], "syst")
@@ -418,7 +410,6 @@ class SolveLPU:
         fhemi_no_unc    = cm.generate_sample(mDraws, np.mean(sample_fhemi, axis=0), None, None)
         
         LPU_UNCS['noise']    = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_dark,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
-        LPU_UNCS['pert']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_pert,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
         LPU_UNCS['clin']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_clin,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
         LPU_UNCS['cSl']      = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_sl,     dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
         LPU_UNCS['radcal']   = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_cal,    dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
@@ -429,6 +420,21 @@ class SolveLPU:
         LPU_UNCS['cosine']   = np.sqrt(LPU_UNCS['cos_dir']**2 +  LPU_UNCS['cos_diff']**2)
 
         return LPU_UNCS
+
+    def environmental_perturbations(self, LPU_UNCS: dict[str: np.array], signal: np.ndarray, pert: np.array) -> dict[str: np.array]:
+        """
+        get estimate of perterbations caused by environmental effects. Measured as instability (stdev) in the corrected signal 
+
+        :param LPU_UNCS: Breakdown Uncertainties calculated in FRM method, should contain breakdown uncertainties for above methods in class
+        :param signal: either signal or PDF of signal to take the standard deviation to calculate env perturbations
+        :param pert: perturbation from lightDarkStats
+        """
+
+        if len(signal.shape) > 1:
+            signal = np.mean(signal, axis=0)
+
+        # environmental perturbations is caluclated relative to DN, multiply by corrected signal to recover abs units
+        LPU_UNCS['pert'] = pert * signal  # signal standard deviation.
 
     ## L2 ##
     def waterLeaving(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Li: np.array, rho: np.array) -> dict[str: np.array]:
@@ -504,10 +510,12 @@ class SolveLPU:
         :param Li: Li signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
+
+        # TODO: should be f0 multiplied by Rrs
         
         for k in LPU_UNCS['Lw'].keys():
             LPU_UNCS['NLw'][k] = np.sqrt(
-                LPU_UNCS['Lw'][k]**2
+                LPU_UNCS['Rrs'][k]**2
             )  # add in quadrature for NLw
 
         LPU_UNCS['NLw']["f0"] = f0_unc

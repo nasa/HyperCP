@@ -105,34 +105,21 @@ class unc_management:
                 ds.columns['wvl'] = x_new
                 ds.columnsToDataset()
 
-
-            ## Interpolate for initial class-based file, in use at the moment
-            for data_type in ["_TEMPDATA_CAL"]:
-                ds = grp.getDataset(sensor + data_type)
-                ds.datasetToColumns()
-                x = ds.columns['1']
-                for indx in range(2, len(ds.columns)):
-                    y = ds.columns[str(indx)]
-                    y_new = np.interp(x_new, x, y)
-                    ds.columns[str(indx)] = y_new
-                # column ['0'] longer than the rest due to interpolation - this is a quick work around
-                ds.columns['0'] = np.array(
-                    range(len(x_new)))  # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
-                ds.columns['1'] = x_new
-                ds.columnsToDataset()
-
-            ## Interpolate for initial class-based file, in use at the moment
-            for data_type in ["_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL"]:
-                if sensor == 'ES' and data_type == '_POLDATA_CAL':
-                    continue
-                ds = grp.getDataset(sensor + data_type)
-                ds.datasetToColumns()
-                x = ds.columns['0']
-                y = ds.columns['1']
-                y_new = np.interp(x_new, x, y)
-                ds.columns['0'] = x_new
-                ds.columns['1'] = y_new
-                ds.columnsToDataset()
+            for dtype in [
+                "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
+                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
+                ]:
+                try:
+                    ds = grp.getDataset(f"{sensor}{dtype}")
+                    ds.datasetToColumns()
+                except AttributeError:
+                    pass
+                else:  # if we find a dataset with the given name then interpolate class based uncertainties
+                    if 'TEMPDATA' in dtype:
+                        unc_management.interp_radcal(ds, x_new, '1', 2)
+                    else:
+                        unc_management.interp_2_col(ds, x_new)
+                    ds.columnsToDataset()
 
         return True
 
@@ -175,24 +162,6 @@ class unc_management:
                         ds.columns[indx_name] = y[1:]
             ds.columnsToDataset()
 
-            def interp_2_col(ds, x_new):
-                x = ds.columns['0']
-                y = ds.columns['1']
-                y_new = np.interp(x_new, x, y)
-                ds.columns['0'] = x_new
-                ds.columns['1'] = y_new
-
-            def interp_radcal(ds, x_new, col='0', idx=1):
-                x = ds.columns[col]
-                for indx in range(idx,len(ds.columns)):
-                    y = ds.columns[str(indx)]
-                    y_new = np.interp(x_new, x, y)
-                    ds.columns[str(indx)] = y_new
-
-                if indx > 1:
-                    ds.columns['0'] = np.array(range(len(x_new)))
-                    ds.columns['1'] = x_new
-
             for dtype in [
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
@@ -204,14 +173,34 @@ class unc_management:
                     pass
                 else:  # if we find a dataset with the given name then interpolate class based uncertainties
                     if "RADCAL" in dtype:
-                        interp_radcal(ds, x_new)
+                        unc_management.interp_radcal(ds, x_new)
                     elif 'TEMPDATA' in dtype:
-                        interp_radcal(ds, x_new, '1', 2)
+                        unc_management.interp_radcal(ds, x_new, '1', 2)
                     else:
-                        interp_2_col(ds, x_new)
+                        unc_management.interp_2_col(ds, x_new)
                     ds.columnsToDataset()
 
         return True
+
+    @staticmethod
+    def interp_2_col(ds, x_new):
+        x = ds.columns['0']
+        y = ds.columns['1']
+        y_new = np.interp(x_new, x, y)
+        ds.columns['0'] = x_new
+        ds.columns['1'] = y_new
+
+    @staticmethod
+    def interp_radcal(ds, x_new, col='0', idx=1):
+        x = ds.columns[col]
+        for indx in range(idx,len(ds.columns)):
+            y = ds.columns[str(indx)]
+            y_new = np.interp(x_new, x, y)
+            ds.columns[str(indx)] = y_new
+
+        if indx > 1:
+            ds.columns['0'] = np.array(range(len(x_new)))
+            ds.columns['1'] = x_new
 
     @staticmethod
     def interpUncertainties_FullChar(node):

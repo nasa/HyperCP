@@ -497,7 +497,8 @@ class ProcessL1b_FRMCal:
             # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)  # Slapper
             S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
             alpha = ((S1-S12)/(S12**2)).tolist()
-            LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
+            LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant')  # PAD with zero if not 255 long
+            # TODO: update with Tartu interpolation
 
             ## sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
             ind_zero = radcal_cal<=0

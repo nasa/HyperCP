@@ -76,7 +76,6 @@ class HyperOCR(BaseInstrument):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
-            env_pert.append(np.std(lightData[k]))
             if N > 25:  # normal case
                 std_light.append(np.std(lightData[k])/np.sqrt(N))
                 std_dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
@@ -89,6 +88,7 @@ class HyperOCR(BaseInstrument):
 
             ave_light.append(np.average(lightData[k]))
             ave_dark.append(np.average(darkData[k]))
+            env_pert.append(np.std(lightData[k])/np.average(lightData[k]))
 
             for x in range(N):
                 try:
@@ -313,6 +313,8 @@ class HyperOCR(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
+
+            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["perturbations"])
 
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
                 ## DO PLOTS ##
