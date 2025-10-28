@@ -591,11 +591,14 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
 
-        l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc. Plots (class-based only)", self)
-        # l2UncertaintyBreakdownPlotLabel = QtWidgets.QLabel(" ", self)
+        self.l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc. Plots", self)
         self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
-        if ConfigFile.settings["bL2UncertaintyBreakdownPlot"]:
-            self.l2UncertaintyBreakdownPlotCheckBox.setChecked(True)
+        if ConfigFile.settings['fL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower() not in ['seabird']:
+            self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
+            self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
+            self.l2UncertaintyBreakdownPlotCheckBox.setChecked(False)
+            self.l2UncertaintyBreakdownPlotCheckBox.setDisabled(True)
+            
 
         self.l2StationsCheckBox.clicked.connect(self.l2StationsCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
@@ -1039,7 +1042,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox4.addLayout(l2PlotHBox)
 
-        VBox4.addWidget(l2UncertaintyBreakdownPlotsLabel)
+        VBox4.addWidget(self.l2UncertaintyBreakdownPlotsLabel)
         l2PlotUncHBox = QtWidgets.QHBoxLayout()
         l2PlotUncHBox.addSpacing(45)
         l2PlotUncHBox.addWidget(self.l2UncertaintyBreakdownPlotCheckBox)
@@ -1467,6 +1470,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigWindow.refreshConfig(self)
         CalCharWindowDialog = CalCharWindow(self.name,self)
+        CalCharWindowDialog.window_closed.connect(self.l2UncertaintyBreakdownPlotCheckBoxUpdate)
         CalCharWindowDialog.show()
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
@@ -1711,6 +1715,17 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
             self.l2BRDF_O25CheckBox.setChecked(True)
+
+    def l2UncertaintyBreakdownPlotCheckBoxUpdate(self):
+        print('Update Unc. Plot Checkbox')
+        if ConfigFile.settings['fL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower() not in ['seabird']:
+            self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
+            self.l2UncertaintyBreakdownPlotCheckBox.setDisabled(True)
+
+        if ConfigFile.settings['fL1bCal'] == 2 or ConfigFile.settings['fL1bCal'] == 3:
+            self.l2UncertaintyBreakdownPlotsLabel.setDisabled(False)
+            self.l2UncertaintyBreakdownPlotCheckBox.setDisabled(False)
+
 
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")

@@ -1217,6 +1217,9 @@ class ProcessL2:
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
                 group.id = f'{key}_L1AQC'
+        if not stats:
+            logging.writeLogFileAndPrint("statistics not generated")
+            return False
         slice_std = {k: {str(wl): [std_interp[0]] for wl, std_interp in stats[k]['std_Signal_Interpolated'].items()}
                      for k, slice in data_slice.items()}
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
@@ -1899,7 +1902,9 @@ class ProcessL2:
         node.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
 
         # Check to insure at least some data survived quality checks
-        if ConfigFile.settings["SensorType"].lower() == "trios es only" and node.getGroup("IRRADIANCE").getDataset("ES_HYPER").data is None:
+        if (ConfigFile.settings["SensorType"].lower() == "trios es only" and
+                ('ES_HYPER' not in node.getGroup("IRRADIANCE").datasets or
+                 node.getGroup("IRRADIANCE").getDataset("ES_HYPER").data is None)):
             logging.writeLogFileAndPrint("All irradiance data appear to have been eliminated from the file. Aborting.")
             return None
         if ConfigFile.settings["SensorType"].lower() != "trios es only" and node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:

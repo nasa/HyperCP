@@ -4,6 +4,7 @@ import glob
 import shutil
 from pathlib import Path
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal
 
 from ocdb.api.OCDBApi import new_api, OCDBApi
 from Source.ConfigFile import ConfigFile
@@ -14,6 +15,8 @@ from Source import PACKAGE_DIR as CODE_HOME
 
 class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
+
+    window_closed = pyqtSignal()
     def __init__(self, name, parent=None):
         super().__init__(parent)
         self.name = name
@@ -358,7 +361,7 @@ class CalCharWindow(QtWidgets.QDialog):
     ###################################### GUI-controlled functions ###############################################
 
     def ThermalStatusUpdate(self):
-        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]: # G1
+        if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
             if ConfigFile.settings["fL1bThermal"] == 1:
                 # NOTE: This will need to be changed for G2
@@ -368,6 +371,8 @@ class CalCharWindow(QtWidgets.QDialog):
             self.AirTempRadioButton.setDisabled(False)
             self.CapsOnFileRadioButton.setDisabled(False)
         else:
+            if ConfigFile.settings['SensorType'].lower() in ["trios es only"]: # Assume: TriOS ES Only is G2
+                ConfigFile.settings["fL1bThermal"] = 1 # In case config has no fL1bThermal. Assume: TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(False)
             self.AirTempRadioButton.setDisabled(True)
             self.CapsOnFileRadioButton.setDisabled(True)
@@ -771,8 +776,12 @@ class CalCharWindow(QtWidgets.QDialog):
         # If no warnings raised, then close window...
         if closeFlag:
             print("Cal/char - Save/Close Pressed")
+            self.window_closed.emit()
+            # event.accept()
             self.close()
 
     def cancelButtonPressed(self):
         print("Cal/char - Cancel Pressed")
+        self.window_closed.emit()
+        # event.accept()
         self.close()
