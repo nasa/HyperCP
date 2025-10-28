@@ -179,6 +179,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
         
+        BD_UNCS['ES']['pert'] = stats['ES']["perturbations"] * es
+        BD_UNCS['LI']['pert'] = stats['LI']["perturbations"] * li if 'LI' in PDS.uncs else zeroes
+        BD_UNCS['LT']['pert'] = stats['LT']["perturbations"] * lt if 'LT' in PDS.uncs else zeroes
+
+        es_unc = np.sqrt(es_unc**2 + BD_UNCS['ES']['pert']**2)
+        li_unc = np.sqrt(li_unc**2 + BD_UNCS['LI']['pert']**2)
+        lt_unc = np.sqrt(lt_unc**2 + BD_UNCS['LT']['pert']**2)
+
         # check if negative signal for any pixels
         is_negative = np.any([ x < 0 for x in means])
         if is_negative:
@@ -235,7 +243,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         out['valid_pixels']=PDS.nan_mask
         return out, BD_UNCS
 
-    def ClassBasedL2(self, node, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, node, uncGrp, stats, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
@@ -347,6 +355,30 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
         
+        # Use Law of propagation of uncertainty to add perturbation uncertainty to Rrs/Lw
+        es_pert = stats['ES']["perturbations"] * es
+        li_pert = stats['LI']["perturbations"] * li
+        lt_pert = stats['LT']["perturbations"] * lt
+
+        sc_1 = 1  # df/dLt
+        # rho not included as it has no unc contribution to perturbations
+        sc_3 = rho**2  # df/dLi
+        
+        BD_UNCS['Lw']['pert'] = np.sqrt(
+            (sc_1 * lt_pert**2) +
+            (sc_3 * li_pert**2) 
+        )
+
+        sc_1 = 1 / es   # df/dLT
+        sc_2 = rho / es # df/dLI
+        sc_4 = (lt - rho*li) / es**2  # df/dES
+
+        BD_UNCS['Rrs']['pert'] = np.sqrt(
+            sc_1**2 * lt_pert**2 +
+            sc_2**2 * li_pert**2 + 
+            sc_4**2 * es_pert**2
+        )
+
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"

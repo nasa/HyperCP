@@ -39,8 +39,8 @@ class plottingToolsCB:
             sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         else:
             keys = dict(
-                Lw =["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-                Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+                Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+                Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
             )
             sensors = ['Lw', 'Rrs']
 
@@ -178,8 +178,8 @@ class plottingToolsCB:
         ]
 
         labels = dict(
-            Lw =["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-            Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
+            Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
         )
         for product in BD_UNCS.keys():
             indexes = [

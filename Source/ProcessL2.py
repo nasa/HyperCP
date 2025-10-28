@@ -1395,7 +1395,7 @@ class ProcessL2:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
                 else:
-                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(),
+                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, stats, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(),
                                                            x_slice)
                 x_breakdown_unc.update(l2_bd)
             elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
