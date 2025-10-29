@@ -83,7 +83,7 @@ class TriOS(BaseInstrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        env_pert = np.std(calibrated_light_measure, axis=0) / light_avg
+        env_pert = np.abs(np.std(calibrated_light_measure, axis=0) / light_avg)
         if nmes > 25:
             light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
