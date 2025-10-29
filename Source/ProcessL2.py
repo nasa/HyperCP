@@ -1355,7 +1355,7 @@ class ProcessL2:
         if es_only:
             rho_scalar, rho_vec, rho_unc = None, None, None
         else:
-            rho_scalar, rho_vec, rho_unc = ProcessL2.calculate_rho_sky_for_ensemble(wavelengths.tolist(), slice_mean, anc_slice)
+            rho_scalar, rho_vec, rho_unc, wavelengths = ProcessL2.calculate_rho_sky_for_ensemble(wavelengths.tolist(), slice_mean, anc_slice)
 
         # %% Get TSIS-1 and convolve to satellite bands
         # NOTE: TSIS uncertainties reported as 1-sigma
@@ -1562,7 +1562,7 @@ class ProcessL2:
         else:
             rhoVec = None
 
-        return rhoScalar, rhoVec, rhoUNC
+        return rhoScalar, rhoVec, rhoUNC, np.array(wavelengths)
 
     @staticmethod
     def stationsEnsemblesReflectance(node, root, station=None):
