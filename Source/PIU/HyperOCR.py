@@ -88,7 +88,7 @@ class HyperOCR(BaseInstrument):
 
             ave_light.append(np.average(lightData[k]))
             ave_dark.append(np.average(darkData[k]))
-            env_pert.append(np.std(lightData[k])/np.average(lightData[k]))
+            env_pert.append(np.abs(np.std(lightData[k])/np.average(lightData[k])))
 
             for x in range(N):
                 try:
