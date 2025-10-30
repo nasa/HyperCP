@@ -46,7 +46,7 @@ class CalibrationFile:
                 continue
             if line.startswith("#"):
                 if filename[0:3] in ['HSL','HED','HLD','HSE']:
-                    # Highly presumptuous format requirement here
+                    # NOTE: Highly presumptuous format requirement here
                     if line.startswith("# 20"):
                         try:
                             # This will update with each new calibration date until the last/latest date

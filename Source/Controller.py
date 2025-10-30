@@ -260,23 +260,23 @@ class Controller:
 
         return calibrationMap
 
-    @staticmethod
-    def processCalibrationConfigDalec(configFileName, calFiles):
-        ''' Write pseudo calibration/configuration map for Dalec'''
-        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
-        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+    # @staticmethod
+    # def processCalibrationConfigDalec(configFileName, calFiles):
+    #     ''' Write pseudo calibration/configuration map for Dalec'''
+    #     calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+    #     calPath = os.path.join(PATH_TO_CONFIG, calFolder)
 
-        # print("processCalibrationConfig")
-        calibrationMap = collections.OrderedDict()
+    #     # print("processCalibrationConfig")
+    #     calibrationMap = collections.OrderedDict()
 
-        for key in list(calFiles.keys()):
-            cf = CalibrationFile()
-            cf.id=key
-            cf.name=os.path.join(calPath,key)
-            cf.instrumentType = "Dalec"
-            calibrationMap[key] = cf
+    #     for key in list(calFiles.keys()):
+    #         cf = CalibrationFile()
+    #         cf.id=key
+    #         cf.name=os.path.join(calPath,key)
+    #         cf.instrumentType = "Dalec"
+    #         calibrationMap[key] = cf
 
-        return calibrationMap
+    #     return calibrationMap
 
     @staticmethod
     def processAncData(fp):

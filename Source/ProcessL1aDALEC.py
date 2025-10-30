@@ -177,6 +177,7 @@ class ProcessL1aDALEC:
             gp.id = calid+'.'+channelType[i]
             root.groups.append(gp)
             gp.attributes['CalFileName']=calid
+            gp.attributes['CalibrationDate'] = calibrationMap[calid].CalibrationDate
             gp.attributes['FrameType']="Not Required"
             gp.attributes['SensorDataList']='Cal_'+channelType[i]+','+channelType[i]+',DATETAG,TIMETAG2,INTTIME,SPECTEMP'
 
