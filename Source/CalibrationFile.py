@@ -21,6 +21,7 @@ class CalibrationFile:
         self.measMode = ""
         self.frameType = ""
         self.sensorType = ""
+        self.CalibrationDate = ""
 
 
     def printd(self):
@@ -53,10 +54,10 @@ class CalibrationFile:
                             calMon = int(line[7:9])
                             calDay = int(line[10:12])
                             # calDT = datetime.strptime(f'{calYr:04d}{calMon:02d}{calDay:02d}+0000', '%Y%m%d%z')
-                            self.CalibrationDate = f'{calYr:04d}{calMon:02d}{calDay:02d}+0000'
+                            self.CalibrationDate = f'{calYr:04d}{calMon:02d}{calDay:02d}000000'
                             continue
-                        except:
-                            logging.writeLogFileAndPrint(f"Failed to calibration dates from calibration file {filename}")
+                        except ValueError as err:
+                            logging.writeLogFileAndPrint(f"Failed to calibration dates from calibration file {filename}: {err}")
                             break
                     else:
                         continue
