@@ -377,6 +377,10 @@ class ProcessL1aTriOS:
     def get_attr(metadata, gp):
         for irow,_ in enumerate(metadata.iterrows()):
             gp.attributes[metadata[0][irow].strip()]=str(metadata[1][irow].strip())
+            if metadata[0][irow].strip() == 'IDDataCal' and 'ini' in gp.id:
+                dateStr = re.findall(r"\d{4}-\d{2}-\d{2}",str(metadata[1][irow].strip()))[0]
+                CalDate = f'{dateStr[0:4]}{dateStr[5:7]}{dateStr[8:10]}000000'
+                gp.attributes['CalibrationDate'] = CalDate
         return None
 
     # Function for reading and getting metadata for config .ini files
