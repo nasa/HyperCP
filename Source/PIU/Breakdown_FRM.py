@@ -510,10 +510,8 @@ class SolveLPU:
         :param Li: Li signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
-
-        # TODO: should be f0 multiplied by Rrs
         
-        for k in LPU_UNCS['Lw'].keys():
+        for k in LPU_UNCS['Rrs'].keys():
             LPU_UNCS['NLw'][k] = np.sqrt(
                 LPU_UNCS['Rrs'][k]**2
             )  # add in quadrature for NLw
