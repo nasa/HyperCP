@@ -311,7 +311,7 @@ class PIUDataStore:
         elif instrument in ["trios", "trios es only"]:
             calDate_string = f"{s}_L1AQC"
         else:
-            writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
+            writeLogFileAndPrint(f"{instrument} not yet implemented")
             raise NotImplementedError
 
         cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")

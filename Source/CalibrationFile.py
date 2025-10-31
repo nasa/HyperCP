@@ -21,6 +21,7 @@ class CalibrationFile:
         self.measMode = ""
         self.frameType = ""
         self.sensorType = ""
+        self.CalibrationDate = ""
 
 
     def printd(self):
@@ -41,8 +42,28 @@ class CalibrationFile:
             line = line.strip()
 
             # Ignore comments and empty lines
-            if line.startswith("#") or len(line) == 0:
+            if len(line) == 0:
                 continue
+            if line.startswith("#"):
+                if filename[0:3] in ['HSL','HED','HLD','HSE']:
+                    # NOTE: Highly presumptuous format requirement here
+                    if line.startswith("# 20"):
+                        try:
+                            # This will update with each new calibration date until the last/latest date
+                            calYr = int(line[2:6])
+                            calMon = int(line[7:9])
+                            calDay = int(line[10:12])
+                            # calDT = datetime.strptime(f'{calYr:04d}{calMon:02d}{calDay:02d}+0000', '%Y%m%d%z')
+                            self.CalibrationDate = f'{calYr:04d}{calMon:02d}{calDay:02d}000000'
+                            continue
+                        except ValueError as err:
+                            logging.writeLogFileAndPrint(f"Failed to calibration dates from calibration file {filename}: {err}")
+                            break
+                    else:
+                        continue
+
+                else:
+                    continue
 
             cd = CalibrationData()
             cd.read(line)

@@ -532,16 +532,16 @@ class Window(QtWidgets.QWidget):
 
         # if flag_Trios == 0:
         calibrationMap = None
-        if ConfigFile.settings["SensorType"].lower() == "seabird":
+        if ConfigFile.settings["SensorType"].lower() in ["seabird", "dalec"] :
             calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
             )
         elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-        elif ConfigFile.settings["SensorType"].lower() == "dalec":
-            calibrationMap = Controller.processCalibrationConfig(
-                configFileName, calFiles
-            )
+        # elif ConfigFile.settings["SensorType"].lower() == "dalec":
+        #     calibrationMap = Controller.processCalibrationConfig(
+        #         configFileName, calFiles
+        #     )
 
         if not calibrationMap:
             print(

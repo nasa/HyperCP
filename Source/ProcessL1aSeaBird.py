@@ -63,6 +63,8 @@ class ProcessL1aSeaBird:
             # Don't add contexts that did not match any data in RawFileReader
             if 'CalFileName' not in gp.attributes:
                 continue
+            if calibrationMap[gp.attributes['CalFileName']].sensorType is not 'None':
+                gp.attributes["CalibrationDate"] = calibrationMap[gp.attributes['CalFileName']].CalibrationDate
             gp.attributes["InstrumentType"] = cf.instrumentType
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
@@ -70,7 +72,7 @@ class ProcessL1aSeaBird:
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
-            gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))
+            gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))            
             if gp.id != 'SAS' and gp.id != 'Reference':
                 root.groups.append(gp)
 

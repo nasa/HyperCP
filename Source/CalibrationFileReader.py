@@ -5,6 +5,7 @@ import shutil
 import zipfile
 
 from Source.CalibrationFile import CalibrationFile
+import Source.utils.loggingHCP as logging
 
 
 class CalibrationFileReader:
@@ -22,6 +23,17 @@ class CalibrationFileReader:
                     cf.id=name
                     cf.name=os.path.join(dirpath,name)
                     cf.instrumentType = "Dalec"
+                    # NOTE: Highly presumptuous format requirement here
+                    try:
+                        # This will update with each new calibration date until the last/latest date
+                        calYr = int(name[11:15])
+                        calMon = int(name[16:18])
+                        calDay = int(name[19:21])
+                        # calDT = datetime.strptime(f'{calYr:04d}{calMon:02d}{calDay:02d}+0000', '%Y%m%d%z')
+                        cf.CalibrationDate = f'{calYr:04d}{calMon:02d}{calDay:02d}000000'
+                    except ValueError as err:
+                        logging.writeLogFileAndPrint(f"Failed to calibration dates from calibration file {name}: {err}")
+                        break
                     calibrationMap[name] = cf
                 elif os.path.splitext(name)[1].lower() == ".cal" or \
                    os.path.splitext(name)[1].lower() == ".tdf":
