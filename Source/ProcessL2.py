@@ -1212,7 +1212,20 @@ class ProcessL2:
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        if ConfigFile.settings["SensorType"].lower() != "dalec":
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        else:
+            # NOTE: Temporary placeholder for DALEC stats.
+            stats1,stats = {},{}
+            for group in raw_groups:
+                bandN = len(raw_groups[group].datasets[group].columns)
+                reject = ['Datetime','Datetag','Timetag2']
+                bands = [key for key in groups[group].datasets[group].columns if key not in reject]
+                for dataset in ['ave_Light','ave_Dark','std_Light','std_Dark','std_Signal','perturbations']:
+                    stats1[dataset] = np.ones(bandN)*np.nan
+                for dataset in ['std_Signal_Interpolated']:
+                    stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
+                stats[group] = stats1
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
