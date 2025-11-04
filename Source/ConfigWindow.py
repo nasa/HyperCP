@@ -593,6 +593,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc. Plots", self)
         self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2UncertaintyBreakdownPlot"]) == 1:
+            self.l2UncertaintyBreakdownPlotCheckBox.setChecked(True)
         if ConfigFile.settings['fL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower() not in ['seabird']:
             self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
             self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
