@@ -99,7 +99,7 @@ class ProcessL2:
                 #   This is most likely in blue, non-turbid waters not intended for NIR offset correction.
                 #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
                 #   metadata because it may only be on some ensembles within a file.
-                logging.writeLogFileAndPrint('Bad NIR Correction. Revert to No NIR correction.')
+                logging.writeLogFileAndPrint(f'Bad NIR Correction {rrsNIRCorr:0.4f} [sr^-1]. Revert to No NIR correction.')
                 rrsNIRCorr = 0
             # Subtract average from each waveband
             for k in rrsSlice:
@@ -306,8 +306,6 @@ class ProcessL2:
             newLWSTDData = newRadianceGroup.addDataset(f"LW_{sensor}_sd")
             newRrsSTDData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_sd")
             newnLwSTDData = newReflectanceGroup.addDataset(f"nLw_{sensor}_sd")
-
-            # For CV, use CV = STD/n
 
             # add breakdowns to HDF
             if xBreakdownUNC is not None:
@@ -518,9 +516,9 @@ class ProcessL2:
                     newnLwSTDData.columns[k] = []
 
                     if xBreakdownUNC is not None:
-                        for key in BDData['ES'].keys():
+                        for key in BDData['ES']:
                             BDData['ES'][key].columns[k] = []
-                        for key in BDData['LI'].keys():
+                        for key in BDData['LI']:
                             BDData['LI'][key].columns[k] = []
                             BDData['LT'][key].columns[k] = []
                         for key in BDData['LW']:
@@ -529,9 +527,9 @@ class ProcessL2:
                             BDData['Rrs'][key].columns[k] = []
 
                     if xBreakdownCORR is not None:
-                        for key in BDCorr['ES'].keys():
+                        for key in BDCorr['ES']:
                             BDCorr['ES'][key].columns[k] = []
-                        for key in BDCorr['LI'].keys():
+                        for key in BDCorr['LI']:
                             BDCorr['LI'][key].columns[k] = []
                             BDCorr['LT'][key].columns[k] = []
                         for key in BDCorr['LW']:
@@ -618,9 +616,9 @@ class ProcessL2:
                 newLTDataMedian.columns[k].append(ltMedian)
 
                 if xBreakdownUNC is not None:
-                    for key in BDData['ES'].keys():
+                    for key in BDData['ES']:
                         BDData['ES'][key].columns[k].append(xBreakdownUNC['ES'][key][i])
-                    for key in BDData['LI'].keys():
+                    for key in BDData['LI']:
                         BDData['LI'][key].columns[k].append(xBreakdownUNC['LI'][key][i])
                         BDData['LT'][key].columns[k].append(xBreakdownUNC['LT'][key][i])
                     for key in BDData['LW']:
@@ -629,9 +627,9 @@ class ProcessL2:
                         BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][i])
 
                 if xBreakdownCORR is not None:
-                    for key in BDCorr['ES'].keys():
+                    for key in BDCorr['ES']:
                         BDCorr['ES'][key].columns[k].append(xBreakdownCORR['ES'][key][i])
-                    for key in BDCorr['LI'].keys():
+                    for key in BDCorr['LI']:
                         BDCorr['LI'][key].columns[k].append(xBreakdownCORR['LI'][key][i])
                         BDCorr['LT'][key].columns[k].append(xBreakdownCORR['LT'][key][i])
                     # for key in BDCorr['LW']:
@@ -725,9 +723,9 @@ class ProcessL2:
 
         # TODO: add f0 unc to breakdown? - Ashley
         if xBreakdownUNC is not None:
-            for key in BDData['ES'].keys():
+            for key in BDData['ES']:
                 BDData['ES'][key].columnsToDataset()
-            for key in BDData['LI'].keys():
+            for key in BDData['LI']:
                 BDData['LI'][key].columnsToDataset()
                 BDData['LT'][key].columnsToDataset()
             for key in BDData['LW']:
@@ -736,9 +734,9 @@ class ProcessL2:
                 BDData['Rrs'][key].columnsToDataset()
 
         if xBreakdownCORR is not None:
-            for key in BDCorr['ES'].keys():
+            for key in BDCorr['ES']:
                 BDCorr['ES'][key].columnsToDataset()
-            for key in BDCorr['LI'].keys():
+            for key in BDCorr['LI']:
                 BDCorr['LI'][key].columnsToDataset()
                 BDCorr['LT'][key].columnsToDataset()
             for key in BDCorr['LW']:
@@ -831,9 +829,9 @@ class ProcessL2:
 
                 # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0]  # Always the zeroth element; i.e. XSlice data are independent of past slices and node
-                esRemaining = np.asarray(esXRemaining[k])  # array of remaining ensemble values in this band
-                f0 = F0[k]
-                f0UNC = F0_unc[k]
+                # esRemaining = np.asarray(esXRemaining[k])  # array of remaining ensemble values in this band
+                # f0 = F0[k]
+                # f0UNC = F0_unc[k]
 
                 esMedian = esXmedian[k][0]
                 esSTD = esXstd[k][0]
@@ -962,7 +960,7 @@ class ProcessL2:
 
     @staticmethod
     def negReflectance(reflGroup, field, VIS = None):
-        ''' Perform negative reflectance spectra checking '''
+        ''' Perform negative reflectance spectra checking for all ensembles '''
         # Run for entire file, not just one ensemble
         if VIS is None:
             VIS = [400,700]
@@ -977,6 +975,7 @@ class ProcessL2:
         timeStamp = reflColumns.pop('Datetime')
 
         badTimes = []
+        # Iterate over ensembles
         for indx, timeTag in enumerate(timeStamp):
             # If any spectra in the vis are negative, delete the whole spectrum
             reflVIS = []
@@ -991,6 +990,7 @@ class ProcessL2:
             # Flag entire record for removal
             if any(item < 0 for item in reflVIS):
                 badTimes.append(timeTag)
+                logging.writeLogFileAndPrint(f'Ensemble {indx} of {field} flagged for negative Rrs')
 
             # Set negatives to 0
             NIR = [VIS[-1] + 1, max(wavelengths)]
@@ -1046,7 +1046,7 @@ class ProcessL2:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             for k in hyperSlice: # each k is a time series at a waveband.
-                v = hyperSlice[k] if y is None else [hyperSlice[k][i] for i in y]  # selects the lowest 5% within the interval window...
+                v = hyperSlice[k] if y is None else [hyperSlice[k][i] for i in y]  # selects the lowest X% within the ensemble...
                 mean = np.nanmean(v) # ... and averages them
                 median = np.nanmedian(v) # ... and the median spectrum
                 xSlice[k] = [mean]
@@ -1169,12 +1169,12 @@ class ProcessL2:
         # %% Get active raw groups (based on data available in groups, required to get std)
         map_raw_groups = {'ES': esRawGroup, 'LI': liRawGroup, 'LT': ltRawGroup}
         if ConfigFile.settings['SensorType'].lower() == "seabird":
-            raw_groups = {k: {t: map_raw_groups[k][t] for t in ['LIGHT', 'DARK']} for k in groups.keys()}
+            raw_groups = {k: {t: map_raw_groups[k][t] for t in ['LIGHT', 'DARK']} for k in groups}
             raw_slices = {k: {t: {'datetime': grp[t].datasets['DATETIME'].data[start:end],
                                   'data': ProcessL2.columnToSlice(grp[t].datasets[k].columns, start, end)}
                               for t in ['LIGHT', 'DARK']} for k, grp in raw_groups.items()}
         else:
-            raw_groups = {k: map_raw_groups[k] for k in groups.keys()}
+            raw_groups = {k: map_raw_groups[k] for k in groups}
             raw_slices = {k: {'data': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end)}
                           for k, grp in raw_groups.items()}
 
@@ -1212,7 +1212,20 @@ class ProcessL2:
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        if ConfigFile.settings["SensorType"].lower() != "dalec":
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        else:
+            # NOTE: Temporary placeholder for DALEC stats.
+            stats1,stats = {},{}
+            for group in raw_groups:
+                bandN = len(raw_groups[group].datasets[group].columns)
+                reject = ['Datetime','Datetag','Timetag2']
+                bands = [key for key in groups[group].datasets[group].columns if key not in reject]
+                for dataset in ['ave_Light','ave_Dark','std_Light','std_Dark','std_Signal','perturbations']:
+                    stats1[dataset] = np.ones(bandN)*np.nan
+                for dataset in ['std_Signal_Interpolated']:
+                    stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
+                stats[group] = stats1
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
@@ -1221,36 +1234,36 @@ class ProcessL2:
             logging.writeLogFileAndPrint("statistics not generated")
             return False
         slice_std = {k: {str(wl): [std_interp[0]] for wl, std_interp in stats[k]['std_Signal_Interpolated'].items()}
-                     for k, slice in data_slice.items()}
+                     for k, sliceData in data_slice.items()}
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
 
         # %% Convolve to satellite bands
         convolve_to_satellite, satellite_bands = {}, {}
         if ConfigFile.settings['bL2WeightMODISA']:
-            convolve_to_satellite['MODISA'] = lambda slice: Weight_RSR.processMODISBands(slice, sensor='A')
+            convolve_to_satellite['MODISA'] = lambda sliceData: Weight_RSR.processMODISBands(sliceData, sensor='A')
             satellite_bands['MODIS'] = Weight_RSR.MODISBands()
         if ConfigFile.settings['bL2WeightMODIST']:
-            convolve_to_satellite['MODIST'] = lambda slice: Weight_RSR.processMODISBands(slice, sensor='T')
+            convolve_to_satellite['MODIST'] = lambda sliceData: Weight_RSR.processMODISBands(sliceData, sensor='T')
             satellite_bands['MODIS'] = Weight_RSR.MODISBands()
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            convolve_to_satellite['VIIRSN'] = lambda slice: Weight_RSR.processVIIRSBands(slice, sensor='N')
+            convolve_to_satellite['VIIRSN'] = lambda sliceData: Weight_RSR.processVIIRSBands(sliceData, sensor='N')
             satellite_bands['VIIRS'] = Weight_RSR.VIIRSBands()
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            convolve_to_satellite['VIIRSJ'] = lambda slice: Weight_RSR.processVIIRSBands(slice, sensor='J')
+            convolve_to_satellite['VIIRSJ'] = lambda sliceData: Weight_RSR.processVIIRSBands(sliceData, sensor='J')
             satellite_bands['VIIRS'] = Weight_RSR.VIIRSBands()
         if ConfigFile.settings['bL2WeightSentinel3A']:
-            convolve_to_satellite['Sentinel3A'] = lambda slice: Weight_RSR.processSentinel3Bands(slice, sensor='A')
+            convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='A')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            convolve_to_satellite['Sentinel3A'] = lambda slice: Weight_RSR.processSentinel3Bands(slice, sensor='B')
+            convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='B')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
-        satellite_slice = {satellite: {k: convolve_to_satellite[satellite](slice) for k, slice in data_slice.items()}
-                           for satellite in convolve_to_satellite}
-        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](slice)
-                                           for k, slice in slice_std.items()}
-                               for satellite in convolve_to_satellite}
+        satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
+                                for satellite in convolve_to_satellite}
+        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
+                                for k, sliceData in slice_std.items()}
+                                for satellite in convolve_to_satellite}
 
         # %% Get index of N lowest Lt frames => selection
         if enable_percent_lt and es_only:
@@ -1261,10 +1274,10 @@ class ProcessL2:
             enable_percent_lt = False
 
         if 'LT' in data_slice:
-            n = len(data_slice['LT'][list(data_slice['LT'].keys())[0]])
+            nSpecStart = len(data_slice['LT'][list(data_slice['LT'].keys())[0]])
         else:
-            n = len(timestamps)
-        y = np.arange(n) # Default to all indexes, if no LT data or percent_lt is not enabled
+            nSpecStart = len(timestamps)
+        y = np.arange(nSpecStart) # Default to all indexes, if no LT data or percent_lt is not enabled
         # TODO NH merge Replace y assignment above by strategy below
         # # If Percent Lt is turned off, this will average the whole slice, and if
         # # ensemble is off (set to 0), just the one spectrum will be used.
@@ -1278,19 +1291,23 @@ class ProcessL2:
             # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
             # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
             # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
-            x = round(n * percent_lt / 100)
+            nSpecEnd = round(nSpecStart * percent_lt / 100)
             # There are sometimes only a small number of spectra in the slice,
             #  so the percent Lt estimation becomes highly questionable and is overridden here.
-            if n <= 5 or x == 0:
-                x = n  # if only 5 or fewer records retained, use them all...
-            if x > 1:
+            if nSpecStart <= 5 or nSpecEnd == 0:
+                nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
+            if nSpecEnd > 1:
                 lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
                 index = np.argsort(lt780)
-                y = index[:x]
-                n = x  # Update n to the number of selected spectra
-                logging.writeLogFileAndPrint(f"{n} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
+                y = index[:nSpecEnd]                
+                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
+            else:
+                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
+                return False
+        else:
+            nSpecEnd = nSpecStart
 
-        # %% Get Ensemble Size
+        # %% Append Ensemble Size
         for grp in node.groups:
             if grp.id not in ['REFLECTANCE', 'IRRADIANCE', 'RADIANCE']:
                 continue
@@ -1299,29 +1316,29 @@ class ProcessL2:
             if 'Ensemble_N' not in grp.datasets:
                 grp.addDataset('Ensemble_N')
                 grp.datasets['Ensemble_N'].columns['N'] = []
-            grp.datasets['Ensemble_N'].columns['N'].append(n)
+            grp.datasets['Ensemble_N'].columns['N'].append(nSpecEnd)
             grp.datasets['Ensemble_N'].columnsToDataset()
 
-        # %% Mean of the slice selection (based on index of N lowest Lt frames)
+        # %% Slice averaging
         slice_mean, slice_median, slice_remaining = {}, {}, {}
-        for k, slice in data_slice.items():
-            has_nan, slice_mean[k], slice_median[k], slice_remaining[k] = ProcessL2.sliceAveHyper(y, slice)
+        for k, sliceData in data_slice.items():
+            has_nan, slice_mean[k], slice_median[k], slice_remaining[k] = ProcessL2.sliceAveHyper(y, sliceData)
             if has_nan:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                 return False
 
-        # %% Mean of the slice selection convolved to satellite bands
+        # %% Convolution of slice averages to satellite bands
         satellite_slice_mean, satellite_slice_median, satellite_slice_remaining = {}, {}, {}
         for satellite, data in satellite_slice.items():
             satellite_slice_mean[satellite], satellite_slice_median[satellite], satellite_slice_remaining[satellite] = {}, {}, {}
-            for k, slice in data.items():
+            for k, sliceData in data.items():
                 has_nan, satellite_slice_mean[satellite][k], satellite_slice_median[satellite][k], \
-                    satellite_slice_remaining[satellite][k] = ProcessL2.sliceAveHyper(y, slice)
+                    satellite_slice_remaining[satellite][k] = ProcessL2.sliceAveHyper(y, sliceData)
                 if has_nan:
                     logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                     return False
 
-        # %% Mean of the ancillary selection
+        # %% Ancillary slice averaging
         ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY")  # Just populated above
         newAncGroup.attributes['ANC_SOURCE_FLAGS'] = ['0: Undetermined, 1: Field, 2: Model, 3: Fallback']
@@ -1350,7 +1367,6 @@ class ProcessL2:
             else:
                 anc_slice[param] = None
 
-
         # %% Calculate rho_sky for the ensemble
         if es_only:
             rho_scalar, rho_vec, rho_unc = None, None, None
@@ -1363,7 +1379,7 @@ class ProcessL2:
 
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
         if F0_hyper is None:
-            logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: No hyperspectral TSIS-1 F0. Aborting.")
+            logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: No hyperspectral TSIS-1 F0. Aborting.")
             return False
 
         satellite_f0, satellite_f0_unc = {}, {}
@@ -1374,7 +1390,6 @@ class ProcessL2:
             # Get bands for Zhang models
             b = np.array(bands)
             satellite_bands_subset[sat] = b[(350 <= b) & (b <= 1000)].tolist()
-
 
         # %% Format data and Propagate Uncertainties
         x_slice = {
@@ -1407,7 +1422,7 @@ class ProcessL2:
         elif ConfigFile.settings["fL1bCal"] == 3:  # FRM-Sensor Specific
             from Source.PIU.PIUDataStore import PIUDataStore
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
-            l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
+            l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths) # Linter shows issues with this call 'No value for argument ...'
             x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
             x_unc = sensor.FRML2(pds, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
@@ -1433,14 +1448,13 @@ class ProcessL2:
             ProcessL2.spectralReflectance(node, 'HYPER', timestamp_dict, x_slice, F0_hyper, F0_unc,
                                           rho_scalar, rho_vec, wavelengths, x_unc, x_breakdown_unc, x_breakdown_corr)
 
-
-        # %% Apply NIR Correction
+        # %% Apply NIR Correction to this ensemble
         # Perform near-infrared residual correction to remove additional atmospheric and glint contamination
         rrs_nir_cor, nLw_nir_corr = None, None
         if ConfigFile.settings["bL2PerformNIRCorrection"] and not es_only:
             rrs_nir_cor, nLw_nir_corr = ProcessL2.nirCorrection(node, 'HYPER', F0_hyper)
 
-        # %% Convolve to satellite bands
+        # %% Convolve to satellite bands (this ensemble)
         for (sat, mean), median, remaining, std in zip(
                 satellite_slice_mean.items(), satellite_slice_median.values(),
                 satellite_slice_remaining.values(), satellite_slice_std.values()):
@@ -1480,7 +1494,8 @@ class ProcessL2:
     @staticmethod
     def calculate_rho_sky_for_ensemble(wavelengths, data_slice_mean, anc_slice):
         # Get Configuration
-        rho_default = float(ConfigFile.settings["fL2RhoSky"]) # Not used
+        # rho_default = float(ConfigFile.settings["fL2RhoSky"]) # Not used
+        rhoVector, rhoScalar, rhoUNC = None, None, None
         anc_slice['REL_AZ'] = np.abs(anc_slice['REL_AZ'])
         if int(ConfigFile.settings["bL23CRho"]):
             method = 'three_c_rho'
@@ -1551,15 +1566,12 @@ class ProcessL2:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(anc_slice['WINDSPEED'], anc_slice['SZA'],
                                                            anc_slice['REL_AZ'],
                                                            rho_uncertainty_obj)
-            # Not wavelength dependent, so no need for rhoVector
-            rhoVector = None
 
         # Format output
         if rhoVector is not None:
             rhoVec = {}
             for i, k in enumerate(wavelengths):
                 rhoVec[str(k)] = rhoVector[i]
-            rhoScalar = None
         else:
             rhoVec = None
 
@@ -1726,66 +1738,66 @@ class ProcessL2:
             progressBar = tqdm(total=esLength, unit_scale=True, unit_divisor=1)
             for i in range(0, esLength-1):
                 progressBar.update(1)
-                start = i
-                end = i+1
+                startEnsIndx = i
+                stopEnsIndx = i+1
 
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup,
                                                     uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                    sixSGroup, start, end):
+                                                    sixSGroup, startEnsIndx, stopEnsIndx):
                     logging.writeLogFileAndPrint('ProcessL2.ensemblesReflectance unsliced failed. Abort.')
                     continue
         else:
             logging.writeLogFileAndPrint('Binning datasets to ensemble time interval.')
 
             # Iterate over the time ensembles
-            start = 0
-            endTime = timeStamp[0] + datetime.timedelta(0,interval)
+            startEnsIndx = 0
+            stopEnsTime = timeStamp[0] + datetime.timedelta(0,interval)
             endFileTime = timeStamp[-1]
             EndOfFileFlag = False
-            # endTime is theoretical based on interval
-            if endTime > endFileTime:
-                endTime = endFileTime
+            # stopEnsTime is theoretical based on interval
+            if stopEnsTime > endFileTime:
+                stopEnsTime = endFileTime
                 EndOfFileFlag = True # In case the whole file is shorter than the selected interval
 
             for i in range(0, esLength):
                 timei = timeStamp[i]
-                if (timei > endTime) or EndOfFileFlag: # end of increment reached
+                if (timei > stopEnsTime) or EndOfFileFlag: # end of ensemble reached
                     if EndOfFileFlag:
-                        end = len(timeStamp)-1 # File shorter than interval; include all spectra
+                        stopEnsIndx = len(timeStamp)-1 # File shorter than interval; include all spectra
                         if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup,
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            sixSGroup, start, end):
+                                                            sixSGroup, startEnsIndx, stopEnsIndx):
                             logging.writeLogFileAndPrint('ProcessL2.ensemblesReflectance with slices failed. Continue.')
                             break # End of file reached. Safe to break
 
                         break # End of file reached. Safe to break
                     else:
-                        endTime = timei + datetime.timedelta(0,interval) # increment for the next bin loop
-                        end = i # end of the slice is up to and not including...so -1 is not needed
+                        stopEnsTime = timei + datetime.timedelta(0,interval) # increment for the next bin loop
+                        stopEnsIndx = i # end of the slice is up to and not including...so -1 is not needed
 
-                    if endTime > endFileTime:
-                        endTime = endFileTime
+                    if stopEnsTime > endFileTime:
+                        stopEnsTime = endFileTime
                         EndOfFileFlag = True
 
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup,
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            sixSGroup, start, end):
+                                                            sixSGroup, startEnsIndx, stopEnsIndx):
                         logging.writeLogFileAndPrint('ProcessL2.ensemblesReflectance with slices failed. Continue.')
 
-                        start = i
+                        startEnsIndx = i
                         continue # End of ensemble reached. Continue.
-                    start = i
+                    startEnsIndx = i
 
                     if EndOfFileFlag:
                         # No need to continue incrementing; all records captured in one ensemble
                         break
 
-            # For the rare case where end of record is reached at, but not exceeding, endTime...
+            # For the rare case where end of record is reached at, but not exceeding, stopEnsTime...
             if not EndOfFileFlag:
-                end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
+                stopEnsIndx = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup,
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            sixSGroup, start, end):
+                                                            sixSGroup, startEnsIndx, stopEnsIndx):
                     logging.writeLogFileAndPrint('ProcessL2.ensemblesReflectance ender clause failed.')
 
         #####################################
@@ -1807,7 +1819,7 @@ class ProcessL2:
             # newReflectanceGroup = node.groups[0]
             newReflectanceGroup = node.getGroup("REFLECTANCE")
             if not newReflectanceGroup.datasets:
-                logging.writeLogFileAndPrint("Ensemble is empty. Aborting.")
+                logging.writeLogFileAndPrint("Reflectance group is empty. Aborting.")
                 return False
 
             badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = fRange)

@@ -23,13 +23,13 @@ class Dalec(BaseInstrument):
     def lightDarkStats(self, grp, slice, sensortype):
         # Dalec
         lightSlice = deepcopy(slice)  # copy to prevent changing of Raw data
-    
+
         lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
         darkData = lightSlice['dc']
         if  grp is None:
             writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
-        
+
         # Correct light data by subtracting interpolated dark data from light data
         std_Light = []
         std_Dark = []
