@@ -855,16 +855,16 @@ if __name__ == "__main__":
     multiLevel = args.multiLevel
 
 
-    # Close splashscreen
-    try:
-        import platform
+    # # Close splashscreen
+    # try:
+    #     import platform
 
-        if platform.system() in ["Windows", "Linux"]:
-            import pyi_splash
+    #     if platform.system() in ["Windows", "Linux"]:
+    #         import pyi_splash
 
-            pyi_splash.close()
-    except ImportError:
-        pass
+    #         pyi_splash.close()
+    # except ImportError:
+    #     pass
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
