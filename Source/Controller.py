@@ -517,6 +517,9 @@ class Controller:
                 if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                     and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
                     plotting.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                    # Plot uncertainties if selected in config
+                    if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+                        plotting.plotUncertainties(node, filename)
 
         # Write output file
         if node is not None:

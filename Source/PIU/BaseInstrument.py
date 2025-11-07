@@ -243,7 +243,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         out['valid_pixels']=PDS.nan_mask
         return out, BD_UNCS
 
-    def ClassBasedL2(self, node, uncGrp, stats, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
@@ -260,7 +260,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
             UNC_obj_CB = Propagate(M=100, cores=0)
-            PDS = pds(node, uncGrp)
         except NotImplementedError:
              print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
              return False

@@ -620,6 +620,62 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
 
     return badTimes
 
+@staticmethod
+def plotUncertainties(root, filename):
+    # read in required values and uncs from root
+    # import relevant methods
+    
+    irrGrp = root.getGroup("IRRADIANCE")
+    radGrp = root.getGroup("RADIANCE")
+    refGrp = root.getGroup("REFLECTANCE")
+
+    bd_grp = root.getGroup("BREAKDOWNS")
+
+    # TODO: make sure you do the class based case also
+    # TODO: add BRDF UNC to BD_UNCS if available
+    
+    # lw = lt - (rhoScalar * li)
+    # rrs = lw / es
+    # nLw = rrs*f0
+    
+    if ConfigFile.settings['fL1bCal'] <= 2:
+        from Source.PIU.Breakdown_CB import plottingToolsCB as PT
+
+    #     PT.PlotL1B(
+    #         node,
+    #         waveSubset,
+    #         xBreakdownUNC,
+    #         es,
+    #         li,
+    #         lt,
+    #     )
+
+    #     PT.PlotL2(
+    #         waveSubset, 
+    #         xBreakdownUNC, 
+    #         lw, 
+    #         rrs
+    #     )
+    elif ConfigFile.settings['fL1bCal'] == 3:
+            from Source.PIU.Breakdown_FRM import plottingToolsFRM as PT
+            
+    #     PT.plotL1B(
+    #         esXSlice.keys(), 
+    #         xBreakdownUNC,
+    #         dict(
+    #             ES=es,
+    #             LI=li,
+    #             LT=lt,
+    #         ),
+    #         waveSubset,
+    #     )
+
+    #     PT.plotL2(
+    #         waveSubset, 
+    #         xBreakdownUNC, 
+    #         lw, 
+    #         rrs
+    #     )
 
 def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
 

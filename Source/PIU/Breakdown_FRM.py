@@ -22,6 +22,66 @@ class plottingToolsFRM:
 
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
+    def plotL1B(self, wvls, BD_UNCS, signal, waveSubset):
+        for s_type in ['ES', 'LI', 'LT']:
+            ## DO PLOTS ##
+            self.plot(wvls, BD_UNCS['noise'],  "noise",                   rel_to=signal)
+            self.plot(wvls, BD_UNCS['pert'],   "env perturbations",       rel_to=signal)
+            self.plot(wvls, BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
+            self.plot(wvls, BD_UNCS['cSl'],    "straylight",              rel_to=signal)
+            self.plot(wvls, BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
+
+            # post normalisation
+            self.plot(wvls, BD_UNCS['stab'], "stability", rel_to=signal)
+            self.plot(wvls, BD_UNCS['ct'],   "ct",        rel_to=signal)
+            
+            # plot contributions that vary between sensors
+            if s_type.upper() == 'ES':
+                self.plot(wvls, BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
+                self.plot(wvls, BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
+            else:
+                self.plot(wvls, BD_UNCS['pol'], "polarisation", rel_to=signal)
+            
+            self.save_figure()  # save the figure once all of the contributions have been added to the plot (will close the figure)
+        
+            self.plot_pie_FRM(s_type, waveSubset, BD_UNCS, signal)
+
+    def plotL2(self, BD_UNCS, waveSubset, sample_Lw, sample_Rrs):
+        for meas in ['Lw', 'Rrs']:
+            UNC = BD_UNCS[meas]
+
+            if meas.upper() == 'LW':
+                signal = np.mean(sample_Lw,  axis=0)
+                ylim = [0, 5]
+            else:
+                signal = np.mean(sample_Rrs, axis=0)
+                ylim = [0, 5]
+
+            ## DO PLOTS ##
+            wvls = np.array(waveSubset)
+            self.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['pert'],   "env perturbations",       rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=ylim)
+
+            # post normalisation
+            self.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=ylim)
+            self.plot(wvls, UNC['rho'],  "rho",       rel_to=signal, ylim=ylim)
+            
+            # plot contributions that vary between sensors
+            if meas.upper() == 'RRS':
+                self.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal, ylim=ylim)
+                self.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal, ylim=ylim)
+            
+            self.plot(wvls, UNC['pol'], "polarisation", rel_to=signal, ylim=ylim)
+            
+            self.save_figure(level=meas)  # save the figure once all of the contributions have been added to the plot (will close the figure)
+        
+            self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal, 'L2')
+
+
     def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)

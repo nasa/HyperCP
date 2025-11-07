@@ -1,5 +1,6 @@
 # Packages
 from os import path, makedirs, umask
+from datetime import datetime
 
 # linting
 from typing import Optional
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 # Source
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 # PIU
 from Source.PIU import PIUDataStore as pds
@@ -21,13 +23,51 @@ from Source.PIU import PIUDataStore as pds
 
 class plottingToolsCB:
 
-    def __init__(self, PDS: pds, sensor: str, prop: Optional[MCPropagation]=None):
+    def __init__(self, PDS: pds, sensor: Optional[str]=None, prop: Optional[MCPropagation]=None):
         self.Data = PDS  # TODO: get vals and uncs from self.Data and not inputs to the class_plotting funcs
-        self.s = sensor
+        if sensor is not None:
+            self.s = sensor
         # self.adjusted = None  # not implemented yet
         self.engine = prop if prop is not None else MCPropagation(100, parallel_cores=1)
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
+    def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
+        try:
+            BD_VALS = {
+                'ES': es,
+                'LI': li,
+                'LT': lt
+            }
+            self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
+            self.pie_plot_class(BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY"))
+        except ValueError as err:
+            writeLogFileAndPrint(f"unable to run uncertainty breakdown plots, error: {err}")
+
+    def PlotL2(self, node, wavelengths, BD_UNCS, lw, rrs, waveSubset):
+        acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+        cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"#
+
+        try:
+            BD_VALS = {
+                "Lw": lw,
+                "Rrs": rrs,
+            }
+
+            self.plot_CB_spectral(
+                BD_UNCS, 
+                BD_VALS,                     
+                wavelengths,
+                level='L2'
+            )
+            self.pie_plot_class_l2(
+                BD_UNCS,
+                BD_VALS,
+                wavelengths,  # pass radcal wavelengths
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+        except ValueError as err:
+            writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
 
     def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths, level='L1B'):
         if level == 'L1B':
