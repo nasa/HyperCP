@@ -74,6 +74,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]  
                     # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
             elif i_type.lower() == "dalec":
+                    # NOTE: Needs updating
+                    utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
                     args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]    
             elif i_type.lower() == "seabird":
                     utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
