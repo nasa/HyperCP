@@ -23,11 +23,9 @@ from Source.PIU import PIUDataStore as pds
 
 class plottingToolsCB:
 
-    def __init__(self, PDS: pds, sensor: Optional[str]=None, prop: Optional[MCPropagation]=None):
-        self.Data = PDS  # TODO: get vals and uncs from self.Data and not inputs to the class_plotting funcs
-        if sensor is not None:
-            self.s = sensor
-        # self.adjusted = None  # not implemented yet
+    def __init__(self, sza, station, prop: Optional[MCPropagation]=None):
+        self.sza = sza
+        self.station = station
         self.engine = prop if prop is not None else MCPropagation(100, parallel_cores=1)
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
@@ -86,7 +84,7 @@ class plottingToolsCB:
 
         # now we plot the result
         for sensor in sensors:
-            plt.figure(f"{sensor}_{self.Data.cast}")
+            plt.figure(f"{sensor}_{self.station}")
             for key in keys[sensor]:
                 plt.plot(wavelengths[sensor], 
                 PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]), 
@@ -101,11 +99,11 @@ class plottingToolsCB:
             plt.legend()
             plt.grid()
             
-            fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.Data.cast}.png")
+            fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.station}.png")
             if not path.exists(self.plot_folder):
                 makedirs(self.plot_folder)
             plt.savefig(fp)
-            plt.close(f"{sensor}_{self.Data.cast}")
+            plt.close(f"{sensor}_{self.station}")
 
     def pie_plot_class(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
@@ -179,7 +177,7 @@ class plottingToolsCB:
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
+                fp = path.join(self.plot_folder, f"pie_{sensor}_{self.station}_{wvl_at_indx}.png")
                 self.save_figure(fp, legend=False, grid=False)
                 plt.close(fig)
                 
@@ -255,7 +253,7 @@ class plottingToolsCB:
 
         return BD_UNCS
 
-    def plot_sample(self, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
+    def plot_sample(self, s:str, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
         if rel_to is None:
             y_mean = np.mean(sample, axis=0)
         elif len(rel_to.shape) > 1:
@@ -270,14 +268,14 @@ class plottingToolsCB:
 
         u_rel = (y/np.abs(y_mean))*100 
         try:
-            plt.figure(f"{self.s}_{self.Data.cast}_{self.Data.station}")
+            plt.figure(f"{s}_{self.station}")
         except AttributeError:
             try:
-                plt.figure(f"{self.s}_{self.Data.cast}")
+                plt.figure(f"{s}")
             except AttributeError:
-                plt.figure(self.s)
+                plt.figure(s)
 
-        plt.title(f"FRM Breakdown: {self.s}")
+        plt.title(f"FRM Breakdown: {s}")
         plt.plot(x, u_rel, label=f"{name}")
         
         plt.xlabel("Wavelength (nm)")
@@ -285,7 +283,11 @@ class plottingToolsCB:
         plt.xlim(400,800)
         plt.ylim(0,5)
     
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+    def save_figure(self, s: Optional[str], fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+        if (not s) and (not fp):
+            print("either sensor or filepath must be defined to save a figure")
+            return False
+        
         if legend:
             plt.legend()
         if grid:
@@ -293,9 +295,9 @@ class plottingToolsCB:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.Data.cast}_{self.Data.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_{s}_{self.station}.png")
             except (AttributeError, ValueError):
-                fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
+                fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
         
         if not path.exists(self.plot_folder):
             try:

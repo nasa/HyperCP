@@ -131,8 +131,7 @@ class TriOS(BaseInstrument):
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
-            from Source.PIU.Breakdown_FRM import plottingToolsFRM, SolveLPU
-            PT = plottingToolsFRM(s_type, PDS)
+            from Source.PIU.Breakdown_FRM import SolveLPU
             LPU = SolveLPU(prop)
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
             UNC = PDS.uncs[s_type]
@@ -304,30 +303,6 @@ class TriOS(BaseInstrument):
                 sample = sample_pol_corr
             
             LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["perturbations"])
-
-            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
-                ## DO PLOTS ##
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['noise'],  "noise",                   rel_to=signal)
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['pert'],  "env perturbations",       rel_to=signal)
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['clin'],   "non-linearity",           rel_to=signal)
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['cSl'],    "straylight",              rel_to=signal)
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['radcal'], "radiometric calibration", rel_to=signal)
-
-                # post normalisation
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['stab'], "stability", rel_to=signal)
-                PT.plot(DATA['radcal_wvl'], BD_UNCS['ct'],   "ct",        rel_to=signal)
-                
-                # plot contributions that vary between sensors
-                if s_type.upper() == 'ES':
-                    # PT.plot(DATA['radcal_wvl'], BD_UNCS['cosine'], "cosine", rel_to=signal)
-                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_dir'],  "cosine (direct)",  rel_to=signal)
-                    PT.plot(DATA['radcal_wvl'], BD_UNCS['cos_diff'], "cosine (diffuse)", rel_to=signal)
-                else:
-                    PT.plot(DATA['radcal_wvl'], BD_UNCS['pol'], "polarisation", rel_to=signal)
-                
-                PT.save_figure()  # save the figure once all of the contributions have been added to the plot (will close the figure)
-            
-                PT.plot_pie_FRM(s_type, DATA['wvls'], BD_UNCS, signal)
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty

@@ -629,53 +629,95 @@ def plotUncertainties(root, filename):
     radGrp = root.getGroup("RADIANCE")
     refGrp = root.getGroup("REFLECTANCE")
 
-    bd_grp = root.getGroup("BREAKDOWNS")
+    es_cols  = irrGrp.getDataset("ES_HYPER").columns
+    li_cols  = radGrp.getDataset("LI_HYPER").columns
+    lt_cols  = radGrp.getDataset("LT_HYPER").columns
+    nlw_cols = refGrp.getDataset("nLw_HYPER").columns
+    rrs_cols = refGrp.getDataset("Rrs_HYPER").columns
 
-    # TODO: make sure you do the class based case also
+    for sensor, cols in zip(
+        ['ES', 'LI', 'LT', 'Rrs', 'nLw'],
+        [es_cols, li_cols, lt_cols, nlw_cols, rrs_cols]
+    ):
+        if sensor == 'ES':
+            dates = cols.pop("Datetag")
+            times = cols.pop("Timetag2")
+        else:
+            cols.pop("Datetag")
+            cols.pop("Timetag2")
+    
     # TODO: add BRDF UNC to BD_UNCS if available
-    
-    # lw = lt - (rhoScalar * li)
-    # rrs = lw / es
-    # nLw = rrs*f0
-    
-    if ConfigFile.settings['fL1bCal'] <= 2:
-        from Source.PIU.Breakdown_CB import plottingToolsCB as PT
+    bd_grp = root.getGroup("BREAKDOWN")
+    waveSubset = np.array(list(es_cols.keys()), float)
+    waveKeys   = np.array(list(es_cols.keys()))
+    for t, cast in enumerate(times):
+        es  = np.array([es_cols[wvl][t] for wvl in waveKeys])
+        li  = np.array([li_cols[wvl][t] for wvl in waveKeys])
+        lt  = np.array([li_cols[wvl][t] for wvl in waveKeys])
+        nlw = np.array([li_cols[wvl][t] for wvl in waveKeys])
+        rrs = np.array([li_cols[wvl][t] for wvl in waveKeys])
 
-    #     PT.PlotL1B(
-    #         node,
-    #         waveSubset,
-    #         xBreakdownUNC,
-    #         es,
-    #         li,
-    #         lt,
-    #     )
+        ancGroup = root.getGroup("ANCILLARY")
+        sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2)
+        if ConfigFile.settings['bL2Stations']: 
+            station = ancGroup.getDataset("STATION").columns["STATION"][k]
+        else:
+            station = cast
 
-    #     PT.PlotL2(
-    #         waveSubset, 
-    #         xBreakdownUNC, 
-    #         lw, 
-    #         rrs
-    #     )
-    elif ConfigFile.settings['fL1bCal'] == 3:
-            from Source.PIU.Breakdown_FRM import plottingToolsFRM as PT
-            
-    #     PT.plotL1B(
-    #         esXSlice.keys(), 
-    #         xBreakdownUNC,
-    #         dict(
-    #             ES=es,
-    #             LI=li,
-    #             LT=lt,
-    #         ),
-    #         waveSubset,
-    #     )
+        BD_UNCS = {}
+        for _id, ds in bd_grp.datasets.items():
+            if "Datetag" in list(ds.columns.keys()):  # remove datetag/timetag if required
+                ds.columns.pop("Datetag")
+                ds.columns.pop("Timetag2")
+            try:
+                s, _, src = _id.split('_')  # get uncertainty source and sensor from ds.id
+            except ValueError:
+                s, _, src1, src2 = _id.split('_')
+                src = f"{src1}_{src2}"  # if underscore in error name then handle it here
+            if s not in BD_UNCS:
+                BD_UNCS[s] = {}  # make new dict if required
+            BD_UNCS[s][src] = np.array([ds.columns[wvl][t] for wvl in waveKeys])  # use list comp to turn Odict to np.array per cast
 
-    #     PT.plotL2(
-    #         waveSubset, 
-    #         xBreakdownUNC, 
-    #         lw, 
-    #         rrs
-    #     )
+        if ConfigFile.settings['fL1bCal'] <= 2:
+            from Source.PIU.Breakdown_CB import plottingToolsCB
+            PT = plottingToolsCB(sza, station)
+
+            PT.PlotL1B(
+                node,
+                waveSubset,
+                BD_UNCS,
+                es,
+                li,
+                lt,
+            )
+            PT.PlotL2(
+                waveSubset, 
+                BD_UNCS, 
+                lw, 
+                rrs
+            )
+
+        elif ConfigFile.settings['fL1bCal'] == 3:
+            from Source.PIU.Breakdown_FRM import plottingToolsFRM
+            PT = plottingToolsFRM(sza, station)
+
+            PT.plotL1B(
+                waveSubset, 
+                BD_UNCS,
+                dict(
+                    ES=es,
+                    LI=li,
+                    LT=lt,
+                ),
+            )
+            PT.plotL2(
+                waveSubset, 
+                BD_UNCS, 
+                dict(
+                    Rrs=rrs,
+                    nLw=nlw,
+                ) 
+            )
 
 def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
 
