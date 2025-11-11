@@ -316,7 +316,7 @@ class ProcessL2:
                     "correlation": "not-implemented",
                     "discalimer": "components added in quadrature expected to be less accurate than Monte Carlo propagation due to lack of correlation effects"
                 })
-                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}, 'nLw': {}}
                 for key in xBreakdownUNC['ES'].keys():
                     BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
                 for key in xBreakdownUNC['LI'].keys():
@@ -324,6 +324,8 @@ class ProcessL2:
                     BDData['LT'][key] = newBreakdownGroup.addDataset(f"LT_{sensor}_{key}")
                 for key in xBreakdownUNC['Lw'].keys():
                     BDData['LW'][key]  = newBreakdownGroup.addDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownUNC['nLw'].keys():
+                    BDData['nLw'][key]  = newBreakdownGroup.addDataset(f"nLw_{sensor}_{key}")
                 for key in xBreakdownUNC['Rrs'].keys():
                     BDData['Rrs'][key] = newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}")
 
@@ -385,7 +387,7 @@ class ProcessL2:
             # add breakdowns to HDF
             if xBreakdownUNC is not None:
                 newBreakdownGroup = node.addGroup("BREAKDOWN")
-                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}, 'nLw': {}}
                 for key in xBreakdownUNC['ES'].keys():
                     BDData['ES'][key] = newBreakdownGroup.getDataset(f"ES_{sensor}_{key}")
                 for key in xBreakdownUNC['LI'].keys():
@@ -393,6 +395,8 @@ class ProcessL2:
                     BDData['LT'][key] = newBreakdownGroup.getDataset(f"LT_{sensor}_{key}")
                 for key in xBreakdownUNC['Lw'].keys():
                     BDData['LW'][key]  = newBreakdownGroup.getDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownUNC['nLw'].keys():
+                    BDData['nLw'][key]  = newBreakdownGroup.getDataset(f"nLw_{sensor}_{key}")
                 for key in xBreakdownUNC['Rrs'].keys():
                     BDData['Rrs'][key] = newBreakdownGroup.getDataset(f"Rrs_{sensor}_{key}")
 
@@ -523,6 +527,8 @@ class ProcessL2:
                             BDData['LT'][key].columns[k] = []
                         for key in BDData['LW']:
                             BDData['LW'][key].columns[k] = []
+                        for key in BDData['nLw']:
+                            BDData['nLw'][key].columns[k] = []
                         for key in BDData['Rrs']:
                             BDData['Rrs'][key].columns[k] = []
 
@@ -623,6 +629,8 @@ class ProcessL2:
                         BDData['LT'][key].columns[k].append(xBreakdownUNC['LT'][key][i])
                     for key in BDData['LW']:
                         BDData['LW'][key].columns[k].append(xBreakdownUNC['Lw'][key][i])
+                    for key in BDData['nLw']:
+                        BDData['nLw'][key].columns[k].append(xBreakdownUNC['nLw'][key][i])
                     for key in BDData['Rrs']:
                         BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][i])
 
@@ -730,6 +738,8 @@ class ProcessL2:
                 BDData['LT'][key].columnsToDataset()
             for key in BDData['LW']:
                 BDData['LW'][key].columnsToDataset()
+            for key in BDData['nLw']:
+                BDData['nLw'][key].columnsToDataset()
             for key in BDData['Rrs']:
                 BDData['Rrs'][key].columnsToDataset()
 
@@ -1426,6 +1436,7 @@ class ProcessL2:
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
             
             l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
+            x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
             x_unc = sensor.FRML2(pds, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
@@ -1945,15 +1956,20 @@ class ProcessL2:
             if ConfigFile.settings['bL2BRDF_fQ']:
                 logging.writeLogFileAndPrint("Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='M02')
+                # brdf_unc = node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER_unc_M02").columns
 
             if ConfigFile.settings['bL2BRDF_IOP']:
                 logging.writeLogFileAndPrint("Applying Lee et al. 2011 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
+                # brdf_unc = node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER_unc_L11").columns
 
             if ConfigFile.settings['bL2BRDF_O25']:
                 logging.writeLogFileAndPrint("Applying Pitarch et al. 2025 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='O25')
-
+                # brdf_unc = node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER_unc_O25").columns
+            
+            # BD_ds = node.getGroup("BREAKDOWN").addDataset("BRDF")
+            # BD_ds.columns['BRDF'] = brdf_unc
 
         # Strip out L1AQC data
         for gp in reversed(node.groups):

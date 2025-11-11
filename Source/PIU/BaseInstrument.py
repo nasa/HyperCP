@@ -503,7 +503,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     return_as_dict=False  # return as numpy array
                 )
 
-        BD_UNCS.update({k: {} for k in ['NLw', 'Lw', 'Rrs', 'rho']})
+        BD_UNCS.update({k: {} for k in ['nLw', 'Lw', 'Rrs', 'rho']})
 
         # organise data
         # cut data down to wavelengths where rho values exist -- should be no change for M99
@@ -540,12 +540,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_ES = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
         sample_LI = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         sample_LT = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
+        f0 = np.array(list(xSlice['f0'].values()))
         f0_unc = np.array(list(xSlice['f0_unc'].values()))
+        sample_f0 = cm.generate_sample(mdraws, np.array(f0), np.array(f0_unc), "syst")
 
         # no uncertainty in wavelengths
         sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
-        sample_Lw = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM, [sample_LT, sample_rho, sample_LI])
+        sample_Lw  = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM,  [sample_LT, sample_rho, sample_LI])
         sample_Rrs = UNC_Obj_FRM.MCP.run_samples(Propagate.Rrs_FRM, [sample_LT, sample_rho, sample_LI, sample_ES])
+        sample_nLw = UNC_Obj_FRM.MCP.run_samples(Propagate.nLw_FRM, [sample_Rrs, sample_f0])
+
         LPU.waterLeaving(BD_UNCS_common_wb, BD_UNCS, np.mean(sample_LI, axis=0), rho)
         LPU.reflectance(
             BD_UNCS_common_wb, 
@@ -555,7 +559,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             np.mean(sample_LT, axis=0),
             rho
         )
-        LPU.normalised_waterLeaving(BD_UNCS, f0_unc)
+        LPU.normalised_waterLeaving(BD_UNCS, np.mean(sample_Rrs, axis=0), f0, f0_unc)
 
         del BD_UNCS_common_wb  # no longer needed
 
@@ -565,16 +569,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         for s_key in self._SATELLITES.keys():
             UNCS.update(
                 self.get_band_outputs_FRM(
-                s_key, UNC_Obj_FRM, sample_ES, sample_LI, sample_LT, sample_rho, sample_wavelengths
+                s_key, UNC_Obj_FRM, sample_ES, sample_LI, sample_LT, sample_rho, sample_f0, sample_wavelengths
                 )
             )
 
-        lwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Lw)
+        lwDelta  = UNC_Obj_FRM.MCP.process_samples(None, sample_Lw)
         rrsDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Rrs)
+        nlwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_nLw)
 
         UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
-        UNCS["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error
+        UNCS["lwUNC"]  = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
+        UNCS["nlwUNC"] = nlwDelta
 
         return UNCS
 
@@ -660,7 +666,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         else:
             return {}
 
-    def get_band_outputs_FRM(self, sensor_key, MCP_obj, esSample, liSample, ltSample, rhoSample, sample_wavelengths
+    def get_band_outputs_FRM(self, sensor_key, MCP_obj, esSample, liSample, ltSample, rhoSample, f0_sample, sample_wavelengths
                              ) -> dict:
         """
         runs band convolution for FRM regime
@@ -684,6 +690,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             sample_lt_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [ltSample, sample_wavelengths])
 
             sample_rho_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [rhoSample, sample_wavelengths])
+            sample_f0_conv  = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [f0_sample, sample_wavelengths])
 
             esDeltaBand = MCP_obj.MCP.process_samples(None, sample_es_conv)
             liDeltaBand = MCP_obj.MCP.process_samples(None, sample_li_conv)
@@ -691,18 +698,20 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
             rhoDeltaBand = MCP_obj.MCP.process_samples(None, sample_rho_conv)
 
-            sample_lw_conv = MCP_obj.MCP.run_samples(MCP_obj.Lw_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv])
+            sample_lw_conv  = MCP_obj.MCP.run_samples(MCP_obj.Lw_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv])
             sample_rrs_conv = MCP_obj.MCP.run_samples(MCP_obj.Rrs_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv, sample_es_conv])
+            sample_nlw_conv = MCP_obj.MCP.run_samples(MCP_obj.nLw_FRM, [sample_rrs_conv, sample_f0_conv])
 
             # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
             # be returned to ProcessingL2 and used to update xSlice/xUNC
-            Band_Convolved_UNC[f"esUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
-            Band_Convolved_UNC[f"liUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
-            Band_Convolved_UNC[f"ltUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
+            Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+            Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
+            Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
             Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
             # L2 uncertainty products can be reported as np arrays
-            Band_Convolved_UNC[f"lwUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_lw_conv)
+            Band_Convolved_UNC[f"lwUNC_{sensor_name}"]  = MCP_obj.MCP.process_samples(None, sample_lw_conv)
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_rrs_conv)
+            Band_Convolved_UNC[f"nlwUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_nlw_conv)
 
             return Band_Convolved_UNC
         else:

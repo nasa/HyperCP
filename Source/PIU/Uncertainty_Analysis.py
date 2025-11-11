@@ -545,6 +545,10 @@ class Propagate:
         return (lt - (rho * li)) / es
 
     @staticmethod
+    def nLw_FRM(rrs, f0):
+        return rrs*f0
+
+    @staticmethod
     def rhoM99(windSpeedMean, SZAMean, relAzMean):
         """ Wrapper for Mobley 99 rho calculation to be called by punpy """
 

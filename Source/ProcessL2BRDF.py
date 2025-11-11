@@ -136,15 +136,22 @@ class ProcessL2BRDF():
                         for k in Rrs:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
                                 if 'unc' in ds:
-                                    Rrs_BRDF[k] = np.array(OC_BRDF.brdf_unc.sel(bands=float(k), n=0)).tolist()
+                                    Rrs_BRDF[k] = np.sqrt(OC_BRDF.brdf_unc.sel(bands=float(k)) * np.array(Rrs[k])).tolist()  # multiply by sensitivity coeff Rrs
                                     if not isinstance(Rrs_BRDF[k], list):
                                         Rrs_BRDF[k] = [Rrs_BRDF[k]]  # uncs not saved as list, perhaps numpy bug
                                 else:
                                     Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
                         
-                        Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
-                        Rrs_BRDF_ds.columns = Rrs_BRDF
-                        Rrs_BRDF_ds.columnsToDataset()
+                        if 'unc' in ds and 'HYPER' in ds:
+                            bd_grp = root.getGroup("BREAKDOWN")
+                            bd_ds = bd_grp.addDataset(f"BRDF")
+                            bd_ds.columns = Rrs_BRDF
+                            bd_grp.attributes['BRDF_method'] = BRDF_option
+                        else:
+                            Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
+                            Rrs_BRDF_ds.columns = Rrs_BRDF
+                            Rrs_BRDF_ds.columnsToDataset()
+
                         # Apply same factors to corresponding nLw
                         nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
                         nLw = nLw_ds.columns

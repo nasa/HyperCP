@@ -43,7 +43,8 @@ class plottingToolsFRM:
         
             self.plot_pie_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
 
-    def plotL2(self, waveSubset, BD_UNCS, rrs, nlw):
+    def plotL2(self, waveSubset, BD_UNCS, signal):
+        ylim = [0, 5]
         for meas in ['nLw', 'Rrs']:
             UNC = BD_UNCS[meas]
 
@@ -61,10 +62,12 @@ class plottingToolsFRM:
             self.plot(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim)
             
             # plot contributions that vary between sensors
-            if meas.upper() == 'RRS':
+            if meas.upper() != 'LW':
                 self.plot(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim)
                 self.plot(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
-            
+                if meas.upper() == 'NLW':
+                    self.plot(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
+
             self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
             
             self.save_figure(meas, level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
@@ -134,12 +137,12 @@ class plottingToolsFRM:
         else:
             keys = dict(
                 Lw =["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho"],
-                NLw=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
+                nLw=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
                 Rrs=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "cos_diff", "cos_dir", "rho"],
             )
             labels = dict(
                 Lw =["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho"],
-                NLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
+                nLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
                 Rrs=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
             )
 
@@ -184,7 +187,7 @@ class plottingToolsFRM:
 
             plt.tight_layout()  # for improved clarity and less overlapping of labels
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(fp, legend=False, grid=False, level=level)
+            self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
             # plt.close(fig)
 
     def get_figure(self, s: str) -> plt.figure:
@@ -558,7 +561,7 @@ class SolveLPU:
 
         LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], f0_unc: np.array) -> dict[str: np.array]:
+    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], rrs, f0, f0_unc: np.array) -> dict[str: np.array]:
         """
         Method to propagate L1B uncertainties to normalised water leaving radiance
 
@@ -568,8 +571,8 @@ class SolveLPU:
         """
         
         for k in LPU_UNCS['Rrs'].keys():
-            LPU_UNCS['NLw'][k] = np.sqrt(
-                LPU_UNCS['Rrs'][k]**2
+            LPU_UNCS['nLw'][k] = np.sqrt(
+               f0**2 * LPU_UNCS['Rrs'][k]**2
             )  # add in quadrature for NLw
 
-        LPU_UNCS['NLw']["f0"] = f0_unc
+        LPU_UNCS['nLw']["f0"] = np.sqrt(rrs**2 * f0_unc**2)
