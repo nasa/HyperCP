@@ -1426,7 +1426,7 @@ class ProcessL2:
                     from Source.PIU.PIUDataStore import PIUDataStore
                     pds = PIUDataStore(node, uncGroup)
                     
-                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, wavelengths.tolist(), x_slice)
+                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)
                 x_breakdown_unc.update(l2_bd)
             elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")

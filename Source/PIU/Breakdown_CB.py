@@ -41,13 +41,13 @@ class plottingToolsCB:
         except ValueError as err:
             writeLogFileAndPrint(f"unable to run uncertainty breakdown plots, error: {err}")
 
-    def PlotL2(self, node, wavelengths, BD_UNCS, lw, rrs, waveSubset):
+    def PlotL2(self, node, wavelengths, BD_UNCS, nlw, rrs):
         acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
         cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"#
 
         try:
             BD_VALS = {
-                "Lw": lw,
+                "nLw": nlw,
                 "Rrs": rrs,
             }
 
@@ -77,16 +77,17 @@ class plottingToolsCB:
             sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         else:
             keys = dict(
-                Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+                # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
                 Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+                nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
-            sensors = ['Lw', 'Rrs']
+            sensors = ['nLw', 'Rrs']
 
         # now we plot the result
         for sensor in sensors:
             plt.figure(f"{sensor}_{self.station}")
             for key in keys[sensor]:
-                plt.plot(wavelengths[sensor], 
+                plt.plot(wavelengths, 
                 PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]), 
                 label=key
                 )
@@ -150,17 +151,17 @@ class plottingToolsCB:
         #     [sst]
         # ]
 
-        for sensor in BD_UNCS.keys():
+        for sensor in labels.keys():
             indexes = [  # todo: add extra wavelengths
-                np.argmin(np.abs(wavelengths[sensor] - 670)),
-                np.argmin(np.abs(wavelengths[sensor] - 620)),
-                np.argmin(np.abs(wavelengths[sensor] - 560)),
-                np.argmin(np.abs(wavelengths[sensor] - 490)),
-                np.argmin(np.abs(wavelengths[sensor] - 442)),
-                np.argmin(np.abs(wavelengths[sensor] - 400)),
+                np.argmin(np.abs(wavelengths - 670)),
+                np.argmin(np.abs(wavelengths - 620)),
+                np.argmin(np.abs(wavelengths - 560)),
+                np.argmin(np.abs(wavelengths - 490)),
+                np.argmin(np.abs(wavelengths - 442)),
+                np.argmin(np.abs(wavelengths - 400)),
             ]
             for indx in indexes:
-                wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
+                wvl_at_indx = wavelengths[indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
                 # the_table = plt.table(cellText=table_vals,
@@ -178,7 +179,7 @@ class plottingToolsCB:
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{self.station}_{wvl_at_indx}.png")
-                self.save_figure(fp, legend=False, grid=False)
+                self.save_figure(s=sensor, fp=fp, legend=False, grid=False)
                 plt.close(fig)
                 
         return BD_UNCS
@@ -216,10 +217,11 @@ class plottingToolsCB:
         ]
 
         labels = dict(
-            Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-            Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
+            # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+            nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
         )
-        for product in BD_UNCS.keys():
+        for product in labels.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
                 np.argmin(np.abs(wavelengths - 620)),
@@ -248,7 +250,7 @@ class plottingToolsCB:
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
-                self.save_figure(fp, legend=False, grid=False)
+                self.save_figure(s=product, fp=fp, legend=False, grid=False)
                 plt.close(fig)
 
         return BD_UNCS

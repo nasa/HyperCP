@@ -231,7 +231,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         out['valid_pixels']=PDS.nan_mask
         return out, BD_UNCS
 
-    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
@@ -341,7 +341,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
-        
+
         # Use Law of propagation of uncertainty to add perturbation uncertainty to Rrs/Lw
         es_pert = stats['ES']["perturbations"] * es
         li_pert = stats['LI']["perturbations"] * li
@@ -366,6 +366,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             sc_4**2 * es_pert**2
         )
 
+        BD_UNCS['nLw'] = {}
+        for k in BD_UNCS['Rrs'].keys():
+            BD_UNCS['nLw'][k] = np.sqrt(BD_UNCS['Rrs'][k]**2 * np.array([val for val in f0.values()])**2)
+        BD_UNCS['nLw']['f0']  = np.sqrt(BD_VALS['Rrs']**2 * np.array([val for val in f0_unc.values()])**2)
+
         # these are absolute values!
         rhoUNC_CWB = utils.interp_common_wvls(
             rhoUNC,
@@ -376,6 +381,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # lwAbsUnc[PDS.nan_mask] = np.nan
         lwAbsUnc = utils.interp_common_wvls(
             lwAbsUnc,
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
+        nlwAbsUnc = utils.interp_common_wvls(
+            np.sqrt((rrsAbsUnc**2 * np.array([val for val in f0.values()])**2) +
+            (BD_VALS['Rrs']**2 * np.array([val for val in f0_unc.values()])**2)),
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False
@@ -415,7 +427,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNC.update(
             {"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC_CWB)},
             "lwUNC": lwAbsUnc,
-             "rrsUNC": rrsAbsUnc}
+             "rrsUNC": rrsAbsUnc,
+             "nlwUNC": nlwAbsUnc}
         )
 
         return UNC, BD_UNCS

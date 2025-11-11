@@ -653,9 +653,9 @@ def plotUncertainties(root, filename):
     for t, cast in enumerate(times):
         es  = np.array([es_cols[wvl][t] for wvl in waveKeys])
         li  = np.array([li_cols[wvl][t] for wvl in waveKeys])
-        lt  = np.array([li_cols[wvl][t] for wvl in waveKeys])
-        nlw = np.array([li_cols[wvl][t] for wvl in waveKeys])
-        rrs = np.array([li_cols[wvl][t] for wvl in waveKeys])
+        lt  = np.array([lt_cols[wvl][t] for wvl in waveKeys])
+        nlw = np.array([nlw_cols[wvl][t] for wvl in waveKeys])
+        rrs = np.array([rrs_cols[wvl][t] for wvl in waveKeys])
 
         ancGroup = root.getGroup("ANCILLARY")
         sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2)
@@ -683,7 +683,7 @@ def plotUncertainties(root, filename):
             PT = plottingToolsCB(sza, station)
 
             PT.PlotL1B(
-                node,
+                root,
                 waveSubset,
                 BD_UNCS,
                 es,
@@ -691,9 +691,10 @@ def plotUncertainties(root, filename):
                 lt,
             )
             PT.PlotL2(
+                root,
                 waveSubset, 
                 BD_UNCS, 
-                lw, 
+                nlw, 
                 rrs
             )
 
