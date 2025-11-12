@@ -14,15 +14,70 @@ from Source.PIU.PIUDataStore import PIUDataStore
 
 
 class plottingToolsFRM:
-    def __init__(self, s, PDS):
-        self.s = s
-        self.sza = PDS.sza
-        self.cast = PDS.cast
-        self.station = PDS.station
-
+    def __init__(self, sza, station):
+        self.sza = sza
+        self.station = station
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
-    def plot(self, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
+    def plotL1B(self, wvls, BD_UNCS, signal):
+        for s_type in ['ES', 'LI', 'LT']:
+            ## DO PLOTS ##
+            self.plot(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type])
+            self.plot(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type])
+            self.plot(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type])
+            self.plot(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type])
+            self.plot(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type])
+
+            # post normalisation
+            self.plot(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type])
+            self.plot(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type])
+            
+            # plot contributions that vary between sensors
+            if s_type.upper() == 'ES':
+                self.plot(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type])
+                self.plot(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type])
+            else:
+                self.plot(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type])
+            
+            self.save_figure(s_type)  # save the figure once all of the contributions have been added to the plot (will close the figure)
+        
+            self.plot_pie_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
+
+    def plotL2(self, waveSubset, BD_UNCS, signal):
+        ylim = [0, 5]
+        for meas in ['nLw', 'Rrs']:
+            UNC = BD_UNCS[meas]
+
+            ## DO PLOTS ##
+            wvls = np.array(waveSubset)
+            self.plot(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim)
+
+            # post normalisation
+            self.plot(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim)
+            self.plot(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim)
+            
+            # plot contributions that vary between sensors
+            if meas.upper() != 'LW':
+                self.plot(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim)
+                self.plot(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
+                if meas.upper() == 'NLW':
+                    self.plot(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
+                if 'BRDF' in UNC:
+                    self.plot(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
+
+            self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
+            
+            self.save_figure(meas, level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
+        
+            self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
+
+
+    def plot(self, s, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)
 
@@ -34,7 +89,7 @@ class plottingToolsFRM:
         :param ylim: y limits if required
         """
 
-        self.get_figure()  # create plt.figure with name based on sensor/station/cast
+        self.get_figure(s)  # create plt.figure with name based on sensor/station/cast
         if rel_to is not None:
             if len(rel_to.shape) > 1:
                 y_mean = np.mean(rel_to, axis=0)  # if rel_to is a sample/PDF make sure to get the mean 
@@ -52,7 +107,7 @@ class plottingToolsFRM:
             plt.plot(x, y, label=f"{name}")
             plt.ylabel(f"uncertainty ({unit})")
 
-        plt.title(f"FRM Breakdown: {self.s}, Solar Zenith: {round(self.sza,2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
+        plt.title(f"FRM Breakdown: {s}, Solar Zenith: {round(self.sza, 2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
         plt.xlabel("Wavelength (nm)")  # x lable always wavelength in uncertainty plotting in HyperCP
         
         plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
@@ -84,14 +139,19 @@ class plottingToolsFRM:
         else:
             keys = dict(
                 Lw =["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho"],
-                NLw=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
+                nLw=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "rho", "f0"],
                 Rrs=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "pol", "cos_diff", "cos_dir", "rho"],
             )
             labels = dict(
                 Lw =["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho"],
-                NLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
+                nLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
                 Rrs=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
             )
+            if "brdf" in BD_UNCS['Rrs']:
+                keys['nLw'].append("BRDF")
+                labels['nLw'].append("brdf correction")
+                keys['Rrs'].append("BRDF")
+                labels['Rrs'].append("brdf correction")
 
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),
@@ -103,7 +163,7 @@ class plottingToolsFRM:
         ]  # get closest wavelength available to the specific wavelengths which are to be outputted
         for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-            fig = self.get_figure()
+            fig = self.get_figure(s)
             ax = plt.gca()
 
             vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
@@ -133,25 +193,27 @@ class plottingToolsFRM:
                 plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
 
             plt.tight_layout()  # for improved clarity and less overlapping of labels
-            fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.cast}_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(fp, legend=False, grid=False, level=level)
+            fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
+            self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
             # plt.close(fig)
 
-    def get_figure(self) -> plt.figure:
+    def get_figure(self, s: str) -> plt.figure:
         """
         Helper method to return a figure with a specific naming convention
+
+        :param s: sensor type string
         """
         try:
-            fig = plt.figure(f"{self.s}_{self.cast}_{self.station}")
+            fig = plt.figure(f"{s}_{self.station}")
         except AttributeError:
             try:
-                fig = plt.figure(f"{self.s}_{self.cast}")
+                fig = plt.figure(f"{s}")
             except AttributeError:
-                fig = plt.figure(self.s)
+                fig = plt.figure(s)
         
         return fig
     
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B') -> None:
+    def save_figure(self, s: Optional[str]=None, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B') -> None:
         """
         Helper function to save figures based on cast/station information
         
@@ -161,6 +223,10 @@ class plottingToolsFRM:
         :param level: to determine which level is being saved so it can be included in savefilepath 
         """
 
+        if (not s) and (not fp):
+            print("either sensor or filepath must be defined to save a figure")
+            return False
+
         if legend:
             plt.legend()
         if grid:
@@ -168,9 +234,9 @@ class plottingToolsFRM:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{level}_{self.s}_{self.cast}_{self.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_{level}_{s}_{self.station}.png")
             except (AttributeError, ValueError):
-                fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
+                fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
         
         if not path.exists(self.plot_folder):
             try:
@@ -502,7 +568,7 @@ class SolveLPU:
 
         LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], f0_unc: np.array) -> dict[str: np.array]:
+    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], rrs, f0, f0_unc: np.array) -> dict[str: np.array]:
         """
         Method to propagate L1B uncertainties to normalised water leaving radiance
 
@@ -510,12 +576,10 @@ class SolveLPU:
         :param Li: Li signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
-
-        # TODO: should be f0 multiplied by Rrs
         
-        for k in LPU_UNCS['Lw'].keys():
-            LPU_UNCS['NLw'][k] = np.sqrt(
-                LPU_UNCS['Rrs'][k]**2
+        for k in LPU_UNCS['Rrs'].keys():
+            LPU_UNCS['nLw'][k] = np.sqrt(
+               f0**2 * LPU_UNCS['Rrs'][k]**2
             )  # add in quadrature for NLw
 
-        LPU_UNCS['NLw']["f0"] = f0_unc
+        LPU_UNCS['nLw']["f0"] = np.sqrt(rrs**2 * f0_unc**2)

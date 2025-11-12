@@ -1,5 +1,6 @@
 # Packages
 from os import path, makedirs, umask
+from datetime import datetime
 
 # linting
 from typing import Optional
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 # Source
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 # PIU
 from Source.PIU import PIUDataStore as pds
@@ -21,13 +23,49 @@ from Source.PIU import PIUDataStore as pds
 
 class plottingToolsCB:
 
-    def __init__(self, PDS: pds, sensor: str, prop: Optional[MCPropagation]=None):
-        self.Data = PDS  # TODO: get vals and uncs from self.Data and not inputs to the class_plotting funcs
-        self.s = sensor
-        # self.adjusted = None  # not implemented yet
+    def __init__(self, sza, station, prop: Optional[MCPropagation]=None):
+        self.sza = sza
+        self.station = station
         self.engine = prop if prop is not None else MCPropagation(100, parallel_cores=1)
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
+    def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
+        try:
+            BD_VALS = {
+                'ES': es,
+                'LI': li,
+                'LT': lt
+            }
+            self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
+            self.pie_plot_class(BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY"))
+        except ValueError as err:
+            writeLogFileAndPrint(f"unable to run uncertainty breakdown plots, error: {err}")
+
+    def PlotL2(self, node, wavelengths, BD_UNCS, nlw, rrs):
+        acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+        cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"#
+
+        try:
+            BD_VALS = {
+                "nLw": nlw,
+                "Rrs": rrs,
+            }
+
+            self.plot_CB_spectral(
+                BD_UNCS, 
+                BD_VALS,                     
+                wavelengths,
+                level='L2'
+            )
+            self.pie_plot_class_l2(
+                BD_UNCS,
+                BD_VALS,
+                wavelengths,  # pass radcal wavelengths
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+        except ValueError as err:
+            writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
 
     def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths, level='L1B'):
         if level == 'L1B':
@@ -39,16 +77,20 @@ class plottingToolsCB:
             sensors = ['ES'] if ConfigFile.settings["SensorType"].lower() == "trios es only" else ['ES', 'LI', 'LT']
         else:
             keys = dict(
-                Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+                # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
                 Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+                nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
-            sensors = ['Lw', 'Rrs']
+            sensors = ['nLw', 'Rrs']
+            if "brdf" in BD_UNCS['Rrs']:
+                keys['nLw'].append("BRDF")
+                keys['Rrs'].append("BRDF")
 
         # now we plot the result
         for sensor in sensors:
-            plt.figure(f"{sensor}_{self.Data.cast}")
+            plt.figure(f"{sensor}_{self.station}")
             for key in keys[sensor]:
-                plt.plot(wavelengths[sensor], 
+                plt.plot(wavelengths, 
                 PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]), 
                 label=key
                 )
@@ -61,11 +103,11 @@ class plottingToolsCB:
             plt.legend()
             plt.grid()
             
-            fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.Data.cast}.png")
+            fp = path.join(self.plot_folder, f"spectral_CB_{sensor}_{self.station}.png")
             if not path.exists(self.plot_folder):
                 makedirs(self.plot_folder)
             plt.savefig(fp)
-            plt.close(f"{sensor}_{self.Data.cast}")
+            plt.close(f"{sensor}_{self.station}")
 
     def pie_plot_class(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
@@ -112,17 +154,17 @@ class plottingToolsCB:
         #     [sst]
         # ]
 
-        for sensor in BD_UNCS.keys():
+        for sensor in labels.keys():
             indexes = [  # todo: add extra wavelengths
-                np.argmin(np.abs(wavelengths[sensor] - 670)),
-                np.argmin(np.abs(wavelengths[sensor] - 620)),
-                np.argmin(np.abs(wavelengths[sensor] - 560)),
-                np.argmin(np.abs(wavelengths[sensor] - 490)),
-                np.argmin(np.abs(wavelengths[sensor] - 442)),
-                np.argmin(np.abs(wavelengths[sensor] - 400)),
+                np.argmin(np.abs(wavelengths - 670)),
+                np.argmin(np.abs(wavelengths - 620)),
+                np.argmin(np.abs(wavelengths - 560)),
+                np.argmin(np.abs(wavelengths - 490)),
+                np.argmin(np.abs(wavelengths - 442)),
+                np.argmin(np.abs(wavelengths - 400)),
             ]
             for indx in indexes:
-                wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
+                wvl_at_indx = wavelengths[indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
                 # the_table = plt.table(cellText=table_vals,
@@ -139,8 +181,8 @@ class plottingToolsCB:
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
-                self.save_figure(fp, legend=False, grid=False)
+                fp = path.join(self.plot_folder, f"pie_chart_CB_{sensor}_{self.station}_{wvl_at_indx}.png")
+                self.save_figure(s=sensor, fp=fp, legend=False, grid=False)
                 plt.close(fig)
                 
         return BD_UNCS
@@ -178,10 +220,15 @@ class plottingToolsCB:
         ]
 
         labels = dict(
-            Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-            Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
+            # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+            nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
         )
-        for product in BD_UNCS.keys():
+        if "brdf" in BD_UNCS['Rrs']:
+            labels['nLw'].append("BRDF")
+            labels['Rrs'].append("BRDF")
+            
+        for product in labels.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
                 np.argmin(np.abs(wavelengths - 620)),
@@ -209,13 +256,13 @@ class plottingToolsCB:
                 #     print("all zeros encountered, cannot plot pie chart")
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
-                self.save_figure(fp, legend=False, grid=False)
+                fp = path.join(self.plot_folder,f"pie_chart_CB_{product}_{cast}_{wvl_at_indx}.png")
+                self.save_figure(s=product, fp=fp, legend=False, grid=False)
                 plt.close(fig)
 
         return BD_UNCS
 
-    def plot_sample(self, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
+    def plot_sample(self, s:str, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
         if rel_to is None:
             y_mean = np.mean(sample, axis=0)
         elif len(rel_to.shape) > 1:
@@ -230,14 +277,14 @@ class plottingToolsCB:
 
         u_rel = (y/np.abs(y_mean))*100 
         try:
-            plt.figure(f"{self.s}_{self.Data.cast}_{self.Data.station}")
+            plt.figure(f"{s}_{self.station}")
         except AttributeError:
             try:
-                plt.figure(f"{self.s}_{self.Data.cast}")
+                plt.figure(f"{s}")
             except AttributeError:
-                plt.figure(self.s)
+                plt.figure(s)
 
-        plt.title(f"FRM Breakdown: {self.s}")
+        plt.title(f"FRM Breakdown: {s}")
         plt.plot(x, u_rel, label=f"{name}")
         
         plt.xlabel("Wavelength (nm)")
@@ -245,7 +292,11 @@ class plottingToolsCB:
         plt.xlim(400,800)
         plt.ylim(0,5)
     
-    def save_figure(self, fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+    def save_figure(self, s: Optional[str], fp: Optional[str]=None, legend: bool=True, grid:bool=True):
+        if (not s) and (not fp):
+            print("either sensor or filepath must be defined to save a figure")
+            return False
+        
         if legend:
             plt.legend()
         if grid:
@@ -253,9 +304,9 @@ class plottingToolsCB:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.Data.cast}_{self.Data.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_CB_{s}_{self.station}.png")
             except (AttributeError, ValueError):
-                fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
+                fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
         
         if not path.exists(self.plot_folder):
             try:

@@ -480,6 +480,11 @@ class Controller:
             # Create Plots
             # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:
+                if (
+                    ConfigFile.settings['bL2UncertaintyBreakdownPlot'] 
+                    and ConfigFile.settings["SensorType"].lower() != "trios es only"
+                ):
+                    plotting.plotUncertainties(node, filename)
                 if ConfigFile.settings["SensorType"].lower() == "trios es only":
                     logging.writeLogFileAndPrint("Rrs plot is not available for TriOS ES-Only. Skipping plot.")
                 else:
@@ -517,6 +522,7 @@ class Controller:
                 if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                     and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
                     plotting.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                    # Plot uncertainties if selected in config
 
         # Write output file
         if node is not None:

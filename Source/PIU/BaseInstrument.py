@@ -178,7 +178,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
 
-        from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
+        from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
         
         BD_UNCS['ES']['pert'] = stats['ES']["perturbations"] * es
@@ -193,20 +193,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         is_negative = np.any([ x < 0 for x in means])
         if is_negative:
             print('WARNING: Negative uncertainty potential')
-
-        # TODO: when plotting include the UV. start at 350-360 nm
-        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            PT = plottingToolsCB(PDS, "", UNC_obj_CB)
-            try:
-                wavelengths = dict(
-                        ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                        LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
-                        LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
-                    )
-                PT.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
-                PT.pie_plot_class(BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY"))
-            except ValueError as err:
-                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots, error: {err}")
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -245,7 +231,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         out['valid_pixels']=PDS.nan_mask
         return out, BD_UNCS
 
-    def ClassBasedL2(self, node, uncGrp, stats, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
@@ -262,7 +248,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
             UNC_obj_CB = Propagate(M=100, cores=0)
-            PDS = pds(node, uncGrp)
         except NotImplementedError:
              print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
              return False
@@ -305,6 +290,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                      np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
                                      np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                               dtype=float)[PDS.ind_rad_wvl['LT']],
+                                     return_as_dict=False)
+        f0 = utils.interp_common_wvls(np.asarray(list(f0.values()), dtype=float).flatten(),
+                                     np.asarray(list(f0.keys()), dtype=float).flatten(),
+                                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                              dtype=float)[PDS.ind_rad_wvl['ES']],
+                                     return_as_dict=False)
+        f0_unc = utils.interp_common_wvls(np.asarray(list(f0_unc.values()), dtype=float).flatten(),
+                                     np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
+                                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                              dtype=float)[PDS.ind_rad_wvl['ES']],
                                      return_as_dict=False)
 
         ones = np.ones_like(es)
@@ -354,9 +349,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
-        from Source.PIU.Breakdown_CB import plottingToolsCB, PlotMaths
+        from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
-        
+
         # Use Law of propagation of uncertainty to add perturbation uncertainty to Rrs/Lw
         es_pert = stats['ES']["perturbations"] * es
         li_pert = stats['LI']["perturbations"] * li
@@ -381,29 +376,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             sc_4**2 * es_pert**2
         )
 
-        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
-            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            PT = plottingToolsCB(PDS, "", UNC_obj_CB)
-            try:
-                PT.plot_CB_spectral(
-                    BD_UNCS, 
-                    BD_VALS,                     
-                    dict(
-                        Lw =np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-                        Rrs=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-                    ),
-                    level='L2'
-                )
-                PT.pie_plot_class_l2(
-                    BD_UNCS,
-                    BD_VALS,
-                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
-                    cast,
-                    node.getGroup("ANCILLARY")
-                )
-            except ValueError as err:
-                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
+        BD_UNCS['nLw'] = {}
+        for k in BD_UNCS['Rrs'].keys():
+            BD_UNCS['nLw'][k] = np.sqrt(BD_UNCS['Rrs'][k]**2 * f0**2)
+        BD_UNCS['nLw']['f0']  = np.sqrt(BD_VALS['Rrs']**2 * f0_unc**2)
 
         # these are absolute values!
         rhoUNC_CWB = utils.interp_common_wvls(
@@ -415,6 +391,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # lwAbsUnc[PDS.nan_mask] = np.nan
         lwAbsUnc = utils.interp_common_wvls(
             lwAbsUnc,
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
+        nlwAbsUnc = utils.interp_common_wvls(
+            np.sqrt((rrsAbsUnc**2 * f0**2) +
+            (BD_VALS['Rrs']**2 * f0_unc**2)),
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False
@@ -454,7 +437,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNC.update(
             {"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC_CWB)},
             "lwUNC": lwAbsUnc,
-             "rrsUNC": rrsAbsUnc}
+             "rrsUNC": rrsAbsUnc,
+             "nlwUNC": nlwAbsUnc}
         )
 
         return UNC, BD_UNCS
@@ -529,7 +513,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         """
 
-        from Source.PIU.Breakdown_FRM import SolveLPU, plottingToolsFRM
+        from Source.PIU.Breakdown_FRM import SolveLPU
         LPU = SolveLPU()
 
         BD_UNCS_common_wb = {'ES': {}, 'LI': {}, 'LT': {}}
@@ -542,7 +526,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     return_as_dict=False  # return as numpy array
                 )
 
-        BD_UNCS.update({k: {} for k in ['NLw', 'Lw', 'Rrs', 'rho']})
+        BD_UNCS.update({k: {} for k in ['nLw', 'Lw', 'Rrs', 'rho']})
 
         # organise data
         # cut data down to wavelengths where rho values exist -- should be no change for M99
@@ -579,12 +563,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         sample_ES = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
         sample_LI = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         sample_LT = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
+        f0 = np.array(list(xSlice['f0'].values()))
         f0_unc = np.array(list(xSlice['f0_unc'].values()))
+        sample_f0 = cm.generate_sample(mdraws, np.array(f0), np.array(f0_unc), "syst")
 
         # no uncertainty in wavelengths
         sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
-        sample_Lw = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM, [sample_LT, sample_rho, sample_LI])
+        sample_Lw  = UNC_Obj_FRM.MCP.run_samples(Propagate.Lw_FRM,  [sample_LT, sample_rho, sample_LI])
         sample_Rrs = UNC_Obj_FRM.MCP.run_samples(Propagate.Rrs_FRM, [sample_LT, sample_rho, sample_LI, sample_ES])
+        sample_nLw = UNC_Obj_FRM.MCP.run_samples(Propagate.nLw_FRM, [sample_Rrs, sample_f0])
+
         LPU.waterLeaving(BD_UNCS_common_wb, BD_UNCS, np.mean(sample_LI, axis=0), rho)
         LPU.reflectance(
             BD_UNCS_common_wb, 
@@ -594,7 +582,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             np.mean(sample_LT, axis=0),
             rho
         )
-        LPU.normalised_waterLeaving(BD_UNCS, f0_unc)
+        LPU.normalised_waterLeaving(BD_UNCS, np.mean(sample_Rrs, axis=0), f0, f0_unc)
 
         del BD_UNCS_common_wb  # no longer needed
 
@@ -604,52 +592,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         for s_key in self._SATELLITES.keys():
             UNCS.update(
                 self.get_band_outputs_FRM(
-                s_key, UNC_Obj_FRM, sample_ES, sample_LI, sample_LT, sample_rho, sample_wavelengths
+                s_key, UNC_Obj_FRM, sample_ES, sample_LI, sample_LT, sample_rho, sample_f0, sample_wavelengths
                 )
             )
 
-        lwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Lw)
+        lwDelta  = UNC_Obj_FRM.MCP.process_samples(None, sample_Lw)
         rrsDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Rrs)
-
-        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:  # check if unc plots enabled
-            for meas in ['Lw', 'Rrs']:
-                UNC = BD_UNCS[meas]
-                PT = plottingToolsFRM(meas, PDS)
-
-                if meas.upper() == 'LW':
-                    signal = np.mean(sample_Lw,  axis=0)
-                    ylim = [0, 5]
-                else:
-                    signal = np.mean(sample_Rrs, axis=0)
-                    ylim = [0, 5]
-
-                ## DO PLOTS ##
-                wvls = np.array(waveSubset)
-                PT.plot(wvls, UNC['noise'],  "noise",                   rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['pert'],   "env perturbations",       rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['clin'],   "non-linearity",           rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['cSl'],    "straylight",              rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['radcal'], "radiometric calibration", rel_to=signal, ylim=ylim)
-
-                # post normalisation
-                PT.plot(wvls, UNC['stab'], "stability", rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['ct'],   "ct",        rel_to=signal, ylim=ylim)
-                PT.plot(wvls, UNC['rho'],  "rho",       rel_to=signal, ylim=ylim)
-                
-                # plot contributions that vary between sensors
-                if meas.upper() == 'RRS':
-                    PT.plot(wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal, ylim=ylim)
-                    PT.plot(wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal, ylim=ylim)
-                
-                PT.plot(wvls, UNC['pol'], "polarisation", rel_to=signal, ylim=ylim)
-                
-                PT.save_figure(level=meas)  # save the figure once all of the contributions have been added to the plot (will close the figure)
-            
-                PT.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal, 'L2')
+        nlwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_nLw)
 
         UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
-        UNCS["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error
+        UNCS["lwUNC"]  = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
+        UNCS["nlwUNC"] = nlwDelta
 
         return UNCS
 
@@ -735,7 +689,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         else:
             return {}
 
-    def get_band_outputs_FRM(self, sensor_key, MCP_obj, esSample, liSample, ltSample, rhoSample, sample_wavelengths
+    def get_band_outputs_FRM(self, sensor_key, MCP_obj, esSample, liSample, ltSample, rhoSample, f0_sample, sample_wavelengths
                              ) -> dict:
         """
         runs band convolution for FRM regime
@@ -759,6 +713,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             sample_lt_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [ltSample, sample_wavelengths])
 
             sample_rho_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [rhoSample, sample_wavelengths])
+            sample_f0_conv  = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key), [f0_sample, sample_wavelengths])
 
             esDeltaBand = MCP_obj.MCP.process_samples(None, sample_es_conv)
             liDeltaBand = MCP_obj.MCP.process_samples(None, sample_li_conv)
@@ -766,18 +721,20 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
             rhoDeltaBand = MCP_obj.MCP.process_samples(None, sample_rho_conv)
 
-            sample_lw_conv = MCP_obj.MCP.run_samples(MCP_obj.Lw_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv])
+            sample_lw_conv  = MCP_obj.MCP.run_samples(MCP_obj.Lw_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv])
             sample_rrs_conv = MCP_obj.MCP.run_samples(MCP_obj.Rrs_FRM, [sample_lt_conv, sample_rho_conv, sample_li_conv, sample_es_conv])
+            sample_nlw_conv = MCP_obj.MCP.run_samples(MCP_obj.nLw_FRM, [sample_rrs_conv, sample_f0_conv])
 
             # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
             # be returned to ProcessingL2 and used to update xSlice/xUNC
-            Band_Convolved_UNC[f"esUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
-            Band_Convolved_UNC[f"liUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
-            Band_Convolved_UNC[f"ltUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
+            Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+            Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
+            Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
             Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
             # L2 uncertainty products can be reported as np arrays
-            Band_Convolved_UNC[f"lwUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_lw_conv)
+            Band_Convolved_UNC[f"lwUNC_{sensor_name}"]  = MCP_obj.MCP.process_samples(None, sample_lw_conv)
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_rrs_conv)
+            Band_Convolved_UNC[f"nlwUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_nlw_conv)
 
             return Band_Convolved_UNC
         else:
