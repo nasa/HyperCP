@@ -291,6 +291,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                      np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                               dtype=float)[PDS.ind_rad_wvl['LT']],
                                      return_as_dict=False)
+        f0 = utils.interp_common_wvls(np.asarray(list(f0.values()), dtype=float).flatten(),
+                                     np.asarray(list(f0.keys()), dtype=float).flatten(),
+                                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                              dtype=float)[PDS.ind_rad_wvl['ES']],
+                                     return_as_dict=False)
+        f0_unc = utils.interp_common_wvls(np.asarray(list(f0_unc.values()), dtype=float).flatten(),
+                                     np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
+                                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                                              dtype=float)[PDS.ind_rad_wvl['ES']],
+                                     return_as_dict=False)
 
         ones = np.ones_like(es)
 
@@ -368,8 +378,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         BD_UNCS['nLw'] = {}
         for k in BD_UNCS['Rrs'].keys():
-            BD_UNCS['nLw'][k] = np.sqrt(BD_UNCS['Rrs'][k]**2 * np.array([val for val in f0.values()])**2)
-        BD_UNCS['nLw']['f0']  = np.sqrt(BD_VALS['Rrs']**2 * np.array([val for val in f0_unc.values()])**2)
+            BD_UNCS['nLw'][k] = np.sqrt(BD_UNCS['Rrs'][k]**2 * f0**2)
+        BD_UNCS['nLw']['f0']  = np.sqrt(BD_VALS['Rrs']**2 * f0_unc**2)
 
         # these are absolute values!
         rhoUNC_CWB = utils.interp_common_wvls(
@@ -386,8 +396,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return_as_dict=False
         )
         nlwAbsUnc = utils.interp_common_wvls(
-            np.sqrt((rrsAbsUnc**2 * np.array([val for val in f0.values()])**2) +
-            (BD_VALS['Rrs']**2 * np.array([val for val in f0_unc.values()])**2)),
+            np.sqrt((rrsAbsUnc**2 * f0**2) +
+            (BD_VALS['Rrs']**2 * f0_unc**2)),
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False

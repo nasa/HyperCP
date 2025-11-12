@@ -100,7 +100,7 @@ class plottingToolsCB:
             plt.legend()
             plt.grid()
             
-            fp = path.join(self.plot_folder,f"spectral_{sensor}_{self.station}.png")
+            fp = path.join(self.plot_folder, f"spectral_CB_{sensor}_{self.station}.png")
             if not path.exists(self.plot_folder):
                 makedirs(self.plot_folder)
             plt.savefig(fp)
@@ -178,7 +178,7 @@ class plottingToolsCB:
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = path.join(self.plot_folder, f"pie_{sensor}_{self.station}_{wvl_at_indx}.png")
+                fp = path.join(self.plot_folder, f"pie_chart_CB_{sensor}_{self.station}_{wvl_at_indx}.png")
                 self.save_figure(s=sensor, fp=fp, legend=False, grid=False)
                 plt.close(fig)
                 
@@ -249,7 +249,7 @@ class plottingToolsCB:
                 #     print("all zeros encountered, cannot plot pie chart")
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
+                fp = path.join(self.plot_folder,f"pie_chart_CB_{product}_{cast}_{wvl_at_indx}.png")
                 self.save_figure(s=product, fp=fp, legend=False, grid=False)
                 plt.close(fig)
 
@@ -297,7 +297,7 @@ class plottingToolsCB:
 
         if fp is None:
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{s}_{self.station}.png")
+                fp = path.join(self.plot_folder, f"BD_plot_CB_{s}_{self.station}.png")
             except (AttributeError, ValueError):
                 fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
         
