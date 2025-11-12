@@ -233,3 +233,77 @@ def filterData(group, badTimes, level = None):
     logging.writeLogFileAndPrint(\
         f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed')
     return finalCount/originalLength
+
+def filterDataL2(group, badTimes, sensor = None):
+    ''' Delete L2 flagged records. Sensor is only specified to get the timestamp.
+        All data in the group (including satellite sensors) will be deleted. '''
+
+    logging.writeLogFileAndPrint(f'Remove {group.id} Data')
+    timeStamp = None
+    if sensor is None:
+        if group.id == "ANCILLARY":
+            timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+        if group.id == "IRRADIANCE":
+            timeStamp = group.getDataset("ES").data["Datetime"]
+        if group.id == "RADIANCE":
+            timeStamp = group.getDataset("LI").data["Datetime"]
+        if group.id == "SIXS_MODEL":
+            timeStamp = group.getDataset("direct_ratio").data["Datetime"]
+    else:
+        if group.id == "IRRADIANCE":
+            timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
+        if group.id == "RADIANCE":
+            timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
+        if group.id == "REFLECTANCE":
+            timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
+
+    startLength = len(timeStamp)
+    logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
+
+    # Delete the records in badTime ranges from each dataset in the group
+    finalCount = 0
+    originalLength = len(timeStamp)
+    for dateTime in badTimes:
+        # Need to reinitialize for each loop
+        startLength = len(timeStamp)
+        newTimeStamp = []
+
+        # logging.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
+
+        start = dateTime[0]
+        stop = dateTime[1]
+
+        if startLength > 0:
+            rowsToDelete = []
+            for i in range(startLength):
+                # Unclear why there are sometimes millisecond difference between groups, 
+                #   but non-equivalence of datetimes is a problem for the screening.
+                tDiffStart = abs(start - timeStamp[i]).total_seconds()
+                tDiffStop = abs(stop - timeStamp[i]).total_seconds()
+                # if start <= timeStamp[i] and stop >= timeStamp[i]:
+                if (start < timeStamp[i] or tDiffStart < 1.0) and \
+                    (stop > timeStamp[i] or tDiffStop < 1.0):
+                    try:
+                        rowsToDelete.append(i)
+                        finalCount += 1
+                    except Exception as err:
+                        print(err)
+                else:
+                    newTimeStamp.append(timeStamp[i])
+            group.datasetDeleteRow(rowsToDelete)
+        else:
+            logging.writeLogFileAndPrint('Data group is empty. Continuing.')
+        timeStamp = newTimeStamp.copy()
+
+    if len(badTimes) == 0:
+        startLength = 1 # avoids div by zero below when finalCount is 0
+
+    for ds in group.datasets:
+        # if ds != "STATION":
+        try:
+            group.datasets[ds].datasetToColumns()
+        except Exception as err:
+            print(err)
+
+    logging.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed')
+    return finalCount/originalLength

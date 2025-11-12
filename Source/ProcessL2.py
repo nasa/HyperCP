@@ -27,6 +27,7 @@ from Source.PIU.DALEC import Dalec
 #Utilities
 from Source.utils import loggingHCP as logging
 from Source.utils import dating
+from Source.utils import filtering
 from Source.utils import comparing
 from Source.utils import F0ing
 
@@ -864,74 +865,74 @@ class ProcessL2:
         newESUNCData.columnsToDataset()
 
 
-    @staticmethod
-    def filterData(group, badTimes, sensor = None):
-        ''' Delete flagged records. Sensor is only specified to get the timestamp.
-            All data in the group (including satellite sensors) will be deleted. '''
+    # @staticmethod
+    # def filterData(group, badTimes, sensor = None):
+    #     ''' Delete flagged records. Sensor is only specified to get the timestamp.
+    #         All data in the group (including satellite sensors) will be deleted. '''
 
-        logging.writeLogFileAndPrint(f'Remove {group.id} Data')
-        timeStamp = None
-        if sensor is None:
-            if group.id == "ANCILLARY":
-                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
-            if group.id == "IRRADIANCE":
-                timeStamp = group.getDataset("ES").data["Datetime"]
-            if group.id == "RADIANCE":
-                timeStamp = group.getDataset("LI").data["Datetime"]
-            if group.id == "SIXS_MODEL":
-                timeStamp = group.getDataset("direct_ratio").data["Datetime"]
-        else:
-            if group.id == "IRRADIANCE":
-                timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
-            if group.id == "RADIANCE":
-                timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
-            if group.id == "REFLECTANCE":
-                timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
+    #     logging.writeLogFileAndPrint(f'Remove {group.id} Data')
+    #     timeStamp = None
+    #     if sensor is None:
+    #         if group.id == "ANCILLARY":
+    #             timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+    #         if group.id == "IRRADIANCE":
+    #             timeStamp = group.getDataset("ES").data["Datetime"]
+    #         if group.id == "RADIANCE":
+    #             timeStamp = group.getDataset("LI").data["Datetime"]
+    #         if group.id == "SIXS_MODEL":
+    #             timeStamp = group.getDataset("direct_ratio").data["Datetime"]
+    #     else:
+    #         if group.id == "IRRADIANCE":
+    #             timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
+    #         if group.id == "RADIANCE":
+    #             timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
+    #         if group.id == "REFLECTANCE":
+    #             timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
 
-        startLength = len(timeStamp)
-        logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
+    #     startLength = len(timeStamp)
+    #     logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
 
-        # Delete the records in badTime ranges from each dataset in the group
-        finalCount = 0
-        originalLength = len(timeStamp)
-        for dateTime in badTimes:
-            # Need to reinitialize for each loop
-            startLength = len(timeStamp)
-            newTimeStamp = []
+    #     # Delete the records in badTime ranges from each dataset in the group
+    #     finalCount = 0
+    #     originalLength = len(timeStamp)
+    #     for dateTime in badTimes:
+    #         # Need to reinitialize for each loop
+    #         startLength = len(timeStamp)
+    #         newTimeStamp = []
 
-            # logging.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
+    #         # logging.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
 
-            start = dateTime[0]
-            stop = dateTime[1]
+    #         start = dateTime[0]
+    #         stop = dateTime[1]
 
-            if startLength > 0:
-                rowsToDelete = []
-                for i in range(startLength):
-                    if start <= timeStamp[i] and stop >= timeStamp[i]:
-                        try:
-                            rowsToDelete.append(i)
-                            finalCount += 1
-                        except Exception as err:
-                            print(err)
-                    else:
-                        newTimeStamp.append(timeStamp[i])
-                group.datasetDeleteRow(rowsToDelete)
-            else:
-                logging.writeLogFileAndPrint('Data group is empty. Continuing.')
-            timeStamp = newTimeStamp.copy()
+    #         if startLength > 0:
+    #             rowsToDelete = []
+    #             for i in range(startLength):
+    #                 if start <= timeStamp[i] and stop >= timeStamp[i]:
+    #                     try:
+    #                         rowsToDelete.append(i)
+    #                         finalCount += 1
+    #                     except Exception as err:
+    #                         print(err)
+    #                 else:
+    #                     newTimeStamp.append(timeStamp[i])
+    #             group.datasetDeleteRow(rowsToDelete)
+    #         else:
+    #             logging.writeLogFileAndPrint('Data group is empty. Continuing.')
+    #         timeStamp = newTimeStamp.copy()
 
-        if len(badTimes) == 0:
-            startLength = 1 # avoids div by zero below when finalCount is 0
+    #     if len(badTimes) == 0:
+    #         startLength = 1 # avoids div by zero below when finalCount is 0
 
-        for ds in group.datasets:
-            # if ds != "STATION":
-            try:
-                group.datasets[ds].datasetToColumns()
-            except Exception as err:
-                print(err)
+    #     for ds in group.datasets:
+    #         # if ds != "STATION":
+    #         try:
+    #             group.datasets[ds].datasetToColumns()
+    #         except Exception as err:
+    #             print(err)
 
-        logging.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed')
-        return finalCount/originalLength
+    #     logging.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed')
+    #     return finalCount/originalLength
 
 
     @staticmethod
@@ -1719,15 +1720,15 @@ class ProcessL2:
 
             if badTimes is not None and len(badTimes) != 0:
                 print('Removing records...')
-                check = ProcessL2.filterData(referenceGroup, badTimes)
+                check = filtering.filterDataL2(referenceGroup, badTimes)
                 if check == 1.0:
                     logging.writeLogFileAndPrint("100% of irradiance data removed. Abort.")
                     return False
                 if sasGroup is not None:
-                    ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
+                    filtering.filterDataL2(sasGroup, badTimes)
+                filtering.filterDataL2(ancGroup, badTimes)
                 if sixS_available:
-                    ProcessL2.filterData(sixSGroup, badTimes)
+                    filtering.filterDataL2(sixSGroup, badTimes)
 
         #####################################################################
         #
@@ -1852,15 +1853,15 @@ class ProcessL2:
 
                 # Even though HYPER is specified here, ALL data at badTimes in the group,
                 # including satellite data, will be removed.
-                check = ProcessL2.filterData(newReflectanceGroup, badTimes, sensor = "HYPER")
+                check = filtering.filterDataL2(newReflectanceGroup, badTimes, sensor = "HYPER")
                 if check > 0.99:
                     logging.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
-                ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
-                ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
-                ProcessL2.filterData(node.getGroup("ANCILLARY"), badTimes)
+                filtering.filterDataL2(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
+                filtering.filterDataL2(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
+                filtering.filterDataL2(node.getGroup("ANCILLARY"), badTimes)
                 if sixS_available:
-                    ProcessL2.filterData(node.getGroup("SIXS_MODEL"), badTimes)
+                    filtering.filterDataL2(node.getGroup("SIXS_MODEL"), badTimes)
 
         return True
 
