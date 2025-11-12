@@ -67,6 +67,8 @@ class plottingToolsFRM:
                 self.plot(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
                 if meas.upper() == 'NLW':
                     self.plot(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
+                if 'BRDF' in UNC:
+                    self.plot(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
 
             self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
             
