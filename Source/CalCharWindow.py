@@ -116,14 +116,14 @@ class CalCharWindow(QtWidgets.QDialog):
         # Class
         self.ClassCalRadioButton = QtWidgets.QRadioButton(
             f"FRM Class-Specific characterisations\n"# (in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})\n"
-                "    Sensor-Specific cal/char files with uncertainties in FidRadDB format required" )
+                "    Sensor-specific calibrations with uncertainties in FidRadDB format required" )
         self.ClassCalRadioButton.setAutoExclusive(False)
         self.ClassCalRadioButton.clicked.connect(self.ClassCalRadioButtonClicked)
 
          # Full
         self.FullCalRadioButton = QtWidgets.QRadioButton(
             "FRM Sensor-Specific characterisations (highest quality)\n"
-                "    Sensor-Specific calibrations with uncertainties in FidRadDB format required")
+                "    Sensor-specific calibrations and characterisations with uncertainties in FidRadDB format required")
         self.FullCalRadioButton.setAutoExclusive(False)
         self.FullCalRadioButton.clicked.connect(self.FullCalRadioButtonClicked)
 
