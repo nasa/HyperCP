@@ -82,7 +82,7 @@ class plottingToolsCB:
                 nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
             sensors = ['nLw', 'Rrs']
-            if "brdf" in BD_UNCS['Rrs']:
+            if "BRDF" in BD_UNCS['Rrs']:
                 keys['nLw'].append("BRDF")
                 keys['Rrs'].append("BRDF")
 
@@ -224,10 +224,10 @@ class plottingToolsCB:
             Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
             nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
         )
-        if "brdf" in BD_UNCS['Rrs']:
+        if "BRDF" in BD_UNCS['Rrs']:
             labels['nLw'].append("BRDF")
             labels['Rrs'].append("BRDF")
-            
+
         for product in labels.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),

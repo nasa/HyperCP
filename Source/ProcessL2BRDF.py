@@ -144,7 +144,7 @@ class ProcessL2BRDF():
                         
                         if 'unc' in ds and 'HYPER' in ds:
                             bd_grp = root.getGroup("BREAKDOWN")
-                            bd_ds = bd_grp.addDataset(f"{ds}_BRDF")
+                            bd_ds = bd_grp.addDataset(f"{ds.replace('_unc', '')}_BRDF")
                             bd_ds.columns = Rrs_BRDF
                             bd_grp.attributes['BRDF_method'] = BRDF_option
                         else:
@@ -168,7 +168,7 @@ class ProcessL2BRDF():
                         # Store BRDF corrected nLw
                         if 'unc' in ds and 'HYPER' in ds:
                             bd_grp = root.getGroup("BREAKDOWN")
-                            bd_ds = bd_grp.addDataset(f"{ds.replace('Rrs','nLw')}_BRDF")
+                            bd_ds = bd_grp.addDataset(f"{ds.replace('Rrs','nLw').replace('_unc', '')}_BRDF")
                             bd_ds.columns = nLw_BRDF
                         else:
                             nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
