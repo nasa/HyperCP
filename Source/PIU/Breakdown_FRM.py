@@ -145,6 +145,11 @@ class plottingToolsFRM:
                 nLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
                 Rrs=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
             )
+            if "brdf" in BD_UNCS['Rrs']:
+                keys['nLw'].append("BRDF")
+                labels['nLw'].append("brdf correction")
+                keys['Rrs'].append("BRDF")
+                labels['Rrs'].append("brdf correction")
 
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),

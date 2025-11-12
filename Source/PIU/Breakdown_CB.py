@@ -82,6 +82,9 @@ class plottingToolsCB:
                 nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
             sensors = ['nLw', 'Rrs']
+            if "brdf" in BD_UNCS['Rrs']:
+                keys['nLw'].append("BRDF")
+                keys['Rrs'].append("BRDF")
 
         # now we plot the result
         for sensor in sensors:
