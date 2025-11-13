@@ -96,10 +96,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
         
         try:
-            for s_type in self.sensors:
-                stats[s_type]['std_Signal_Interpolated'] = utils.interp_common_wvls(
-                    stats[s_type]['std_Signal'],
-                    np.asarray(list(stats[s_type]['std_Signal'].keys()), dtype=float),
+            for s_type in self.sensors:  # we want the std at common wavebands for outputting in hdf file
+                stats[s_type]['Signal_std_Interpolated'] = utils.interp_common_wvls(
+                    stats[s_type]['Signal_std'],
+                    np.asarray(list(stats[s_type]['Signal_noise'].keys()), dtype=float),  # wavelengths available in Signal noise keys
                     newWaveBands,
                     return_as_dict=True)
             
@@ -180,10 +180,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
-        
-        BD_UNCS['ES']['pert'] = stats['ES']["perturbations"] * es
-        BD_UNCS['LI']['pert'] = stats['LI']["perturbations"] * li if 'LI' in PDS.uncs else zeroes
-        BD_UNCS['LT']['pert'] = stats['LT']["perturbations"] * lt if 'LT' in PDS.uncs else zeroes
+
+        BD_tot = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
+
+        BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"] * es
+        BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] * li if 'LI' in PDS.uncs else zeroes
+        BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] * lt if 'LT' in PDS.uncs else zeroes
 
         es_unc = np.sqrt(es_unc**2 + BD_UNCS['ES']['pert']**2)
         li_unc = np.sqrt(li_unc**2 + BD_UNCS['LI']['pert']**2)
@@ -313,9 +315,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ones, ones
                     ]
 
-        lw_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
+        lw_uncertainties = [np.abs(np.array(list(stats['LT']['signal_noise'].values())).flatten() * lt),
                             rhoUNC,
-                            np.abs(np.array(list(liXstd.values())).flatten() * li),
+                            np.abs(np.array(list(stats['LI']['signal_noise'].values())).flatten() * li),
                             PDS.uncs['LI']['cal'] / 200, PDS.uncs['LT']['cal'] / 200,
                             PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
                             PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
@@ -335,10 +337,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                      ones, ones, ones
                      ]
 
-        rrs_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
+        rrs_uncertainties = [np.abs(np.array(list(stats['LT']['signal_noise'].values())).flatten() * lt),
                              rhoUNC,
-                             np.abs(np.array(list(liXstd.values())).flatten() * li),
-                             np.abs(np.array(list(esXstd.values())).flatten() * es),
+                             np.abs(np.array(list(stats['LI']['signal_noise'].values())).flatten() * li),
+                             np.abs(np.array(list(stats['ES']['signal_noise'].values())).flatten() * es),
                              PDS.uncs['ES']['cal'] / 200, PDS.uncs['LI']['cal'] / 200, PDS.uncs['LT']['cal'] / 200,
                              PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
                              PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],

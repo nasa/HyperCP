@@ -60,34 +60,33 @@ class TriOS(BaseInstrument):
 
         # Data conversion
         mesure = raw_data/65535.0
-        calibrated_mesure = np.zeros((nmes, nband))
-        calibrated_light_measure = np.zeros((nmes, nband))
+        # calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
+        back_corrected_mesure   = np.zeros((nmes, nband))
+        offset_corrected_mesure = np.zeros((nmes, nband))
 
         for n in range(nmes):
+            # std(back) + std(raw) add in quad  - what about normalise and cal?
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n, :] = raw_back[:, 0] + raw_back[:, 1]*(int_time[n]/int_time_t0)
-            back_corrected_mesure = mesure[n] - back_mesure[n, :]
+            back_corrected_mesure[n, :] = mesure[n] - back_mesure[n, :]
 
             # Offset substraction : dark index read from attribute
-            offset = np.mean(back_corrected_mesure[DarkPixelStart:DarkPixelStop])
-            offset_corrected_mesure = back_corrected_mesure - offset
+            offset = np.mean(back_corrected_mesure[n, DarkPixelStart:DarkPixelStop])
+            offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset
 
             # Normalization for integration time
-            normalized_mesure = offset_corrected_mesure*int_time_t0/int_time[n]
-            normalised_light_measure = back_corrected_mesure*int_time_t0/int_time[n]  # do not do the dark substitution as we need light data
+            # normalized_mesure = offset_corrected_mesure*int_time_t0/int_time[n]
 
             # Sensitivity calibration
-            calibrated_mesure[n, :] = normalized_mesure/raw_cal  # uncommented /raw_cal L1985-6
-            calibrated_light_measure[n, :] = normalised_light_measure/raw_cal
+            # calibrated_mesure[n, :] = normalized_mesure/raw_cal  # uncommented /raw_cal L1985-6
 
         # get light and dark data before correction
-        light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        env_pert = np.abs(np.std(calibrated_light_measure, axis=0) / light_avg)
+        light_avg = np.mean(back_corrected_mesure, axis=0)  # [ind_nocal == False]
         if nmes > 25:
-            light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+            light_std = np.std(back_corrected_mesure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
-            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(calibrated_light_measure, axis=0) / np.sqrt(nmes))**2)
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2)
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
@@ -95,24 +94,26 @@ class TriOS(BaseInstrument):
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * offset
         if nmes > 25:
-            dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+            dark_std = ones * (np.std(np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0) / pow(nmes, 0.5))
         else:  # already checked for light data so we know nmes > 3
-            dark_std = np.sqrt(((nmes-1)/(nmes-3))*(
-                    ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0)/np.sqrt(nmes))**2)
-        # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
+            dark_std = np.sqrt(((nmes-1)/(nmes-3))*
+            (ones * (np.std(np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/np.sqrt(nmes)**2)))
+            # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
-        std_signal = {}
+        signal_noise = {}
         for i, wvl in enumerate(raw_wvl):
-            std_signal[wvl] = pow(
-                (pow(light_std[i], 2) + pow(dark_std[i], 2)), 0.5) / np.average(calibrated_mesure, axis=0)[i]
+            signal_noise[wvl] = pow(
+                (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
+        
+        std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
 
         return dict(
             ave_Light=np.array(light_avg),
             ave_Dark=np.array(dark_avg),
             std_Light=np.array(light_std),
             std_Dark=np.array(dark_std),
-            std_Signal=std_signal,
-            perturbations=np.array(env_pert)
+            Signal_std=np.array(std_signal),
+            Signal_noise=signal_noise,
         )
 
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
@@ -205,7 +206,7 @@ class TriOS(BaseInstrument):
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
             # dark correction
-            std_light = stats[s_type]['std_Light'] / 65535.0 # standard deviations are taken from generateSensorStats
+            std_light = stats[s_type]['std_Light'] # / 65535.0 # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
 
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
@@ -213,14 +214,8 @@ class TriOS(BaseInstrument):
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
             BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
 
-            # environmental perturbations
-            perturbations = stats[s_type]['perturbations'] / 65535.0  # lets not have giant uncertainties due to a TriOS only correction factor, yes?
-            sample_env_pert = cm.generate_sample(mDraws, np.mean(sample_dark_corr, axis=0), stats[s_type]['perturbations'], "rand")
-            sample_envp_sig = prop.combine_samples([sample_dark_corr, sample_env_pert])
-            BD_UNCS['pert'] = perturbations
-
             # Non-Linearity Correction
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_envp_sig, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
@@ -302,7 +297,7 @@ class TriOS(BaseInstrument):
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
             
-            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["perturbations"])
+            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty

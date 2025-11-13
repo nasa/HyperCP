@@ -1244,8 +1244,8 @@ class ProcessL2:
         if not stats:
             logging.writeLogFileAndPrint("statistics not generated")
             return False
-        slice_std = {k: {str(wl): [std_interp[0]] for wl, std_interp in stats[k]['std_Signal_Interpolated'].items()}
-                     for k, sliceData in data_slice.items()}
+        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
+                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
 
@@ -1407,7 +1407,7 @@ class ProcessL2:
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},
             **{k.lower() + 'STD': v for k, v in slice_std.items()},
-            **{k.lower() + 'STD_RAW': v['std_Signal'] for k, v in stats.items()}, # Check output is reliable
+            **{k.lower() + 'STD_RAW': v['Signal_std'] for k, v in stats.items()}, # Check output is reliable
             **{k.lower() + 'Remaining': v for k, v in slice_remaining.items()},
         }
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None

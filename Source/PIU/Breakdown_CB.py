@@ -98,7 +98,7 @@ class plottingToolsCB:
             plt.xlabel("Wavelengths")
             plt.xlim(350, 900)
             plt.ylabel("Relative Uncertainty (%)")
-            plt.ylim(0, 15)
+            plt.ylim(0, 5)
             plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
             plt.legend()
             plt.grid()

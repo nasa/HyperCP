@@ -497,7 +497,7 @@ class SolveLPU:
         """
 
         if len(signal.shape) > 1:
-            signal = np.mean(signal, axis=0)
+            signal = np.abs(np.mean(signal, axis=0))
 
         # environmental perturbations is caluclated relative to DN, multiply by corrected signal to recover abs units
         LPU_UNCS['pert'] = pert * signal  # signal standard deviation.
