@@ -644,7 +644,7 @@ def plotUncertainties(root, filename):
             casts = []
             dates = cols.pop("Datetag")
             times = cols.pop("Timetag2")  # convert from timetag to time
-            for date, tt2 in zip(dates, times)
+            for date, tt2 in zip(dates, times):
                 casts.append(timeTag2ToDateTime(dateTagToDateTime(date), tt2))
         else:
             cols.pop("Datetag")

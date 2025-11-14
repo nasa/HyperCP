@@ -1406,10 +1406,15 @@ class ProcessL2:
         x_slice = {
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},
-            **{k.lower() + 'STD': v for k, v in slice_std.items()},
-            **{k.lower() + 'STD_RAW': v['Signal_std'] for k, v in stats.items()}, # Check output is reliable
+            **{k.lower() + 'STD': {
+                ave[0]: [std[0]*ave[1][0]] for std, ave in zip(v['Signal_std_Interpolated'].values(), slice_mean[k].items())} for k, v in stats.items()
+                },  # changed to convert relative numpy array to (ir)rad signal standard deviation as dict
+            **{k.lower() + 'STD_RAW': {
+                wvl: [std] for std, wvl in zip(v['Signal_std'], stats[k]['Signal_noise'].keys())} for k, v in stats.items()
+                },  # this is relative and not in DN
             **{k.lower() + 'Remaining': v for k, v in slice_remaining.items()},
         }
+        
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
