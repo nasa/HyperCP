@@ -181,14 +181,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
 
-        BD_UNCS['ES'][k] = {k: es*BD_UNCS['ES'][k] for k in BD_UNCS['ES']}  # convert all to relative units
-        BD_UNCS['LI'][k] = {k: li*BD_UNCS['LI'][k] for k in BD_UNCS['LI']}
-        BD_UNCS['LT'][k] = {k: lt*BD_UNCS['LT'][k] for k in BD_UNCS['LT']}
-
-        # then add perturbation (already relative)
-        BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
-        BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
-        BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
 
         # check if negative signal for any pixels
         is_negative = np.any([ x < 0 for x in means])
@@ -203,6 +195,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ES_unc = es_unc / np.abs(es)
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
+
+            BD_UNCS['ES'] = {k: BD_UNCS['ES'][k] / np.abs(es) for k in BD_UNCS['ES']}  # convert all to relative units
+            BD_UNCS['LI'] = {k: BD_UNCS['LI'][k] / np.abs(li) for k in BD_UNCS['LI']}
+            BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
+
+            # then add perturbation (already relative)
+            BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
+            BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
+            BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),

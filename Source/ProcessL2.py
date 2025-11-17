@@ -1423,8 +1423,14 @@ class ProcessL2:
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                 for k, v in slice_mean.items():
-                    x_slice[k.lower() + 'Unc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in
-                                                  zip(x_slice[k.lower() + 'Unc'].items(), v.values())}
+                    x_slice[k.lower() + 'Unc'] = {
+                        u[0]: [u[1][0] * np.abs(s[0])] for u, s in
+                        zip(x_slice[k.lower() + 'Unc'].items(), v.values())
+                    }
+                    x_breakdown_unc[k.upper()] = {
+                        u[0]: u[1] * np.abs(s[0]) for s, u in 
+                        zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
+                    }
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
