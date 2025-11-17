@@ -1244,8 +1244,8 @@ class ProcessL2:
         if not stats:
             logging.writeLogFileAndPrint("statistics not generated")
             return False
-        slice_std = {k: {str(wl): [std_interp[0]] for wl, std_interp in stats[k]['std_Signal_Interpolated'].items()}
-                     for k, sliceData in data_slice.items()}
+        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
+                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
 
@@ -1406,10 +1406,15 @@ class ProcessL2:
         x_slice = {
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},
-            **{k.lower() + 'STD': v for k, v in slice_std.items()},
-            **{k.lower() + 'STD_RAW': v['std_Signal'] for k, v in stats.items()}, # Check output is reliable
+            **{k.lower() + 'STD': {
+                ave[0]: [std[0]*ave[1][0]] for std, ave in zip(v['Signal_std_Interpolated'].values(), slice_mean[k].items())} for k, v in stats.items()
+                },  # changed to convert relative numpy array to (ir)rad signal standard deviation as dict
+            **{k.lower() + 'STD_RAW': {
+                wvl: [std] for std, wvl in zip(v['Signal_std'], stats[k]['Signal_noise'].keys())} for k, v in stats.items()
+                },  # this is relative and not in DN
             **{k.lower() + 'Remaining': v for k, v in slice_remaining.items()},
         }
+        
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
@@ -1418,8 +1423,14 @@ class ProcessL2:
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                 for k, v in slice_mean.items():
-                    x_slice[k.lower() + 'Unc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in
-                                                  zip(x_slice[k.lower() + 'Unc'].items(), v.values())}
+                    x_slice[k.lower() + 'Unc'] = {
+                        u[0]: [u[1][0] * np.abs(s[0])] for u, s in
+                        zip(x_slice[k.lower() + 'Unc'].items(), v.values())
+                    }
+                    x_breakdown_unc[k.upper()] = {
+                        u[0]: u[1] * np.abs(s[0]) for s, u in 
+                        zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
+                    }
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}

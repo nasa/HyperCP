@@ -67,7 +67,8 @@ class HyperOCR(BaseInstrument):
         ave_light=[]
         ave_dark = []
         env_pert = []
-        std_signal = {}
+        std_signal = []
+        signal_noise = {}
 
         # number of replicates for light and dark readings
         N = np.asarray(list(lightData.values())).shape[1]
@@ -98,21 +99,23 @@ class HyperOCR(BaseInstrument):
                     return False
             
 
-            signalAve = np.average(lightData[k])
+            signalAve = np.average(lightData[k])  # at this point in the code lightdata is light-dark see line 95
 
-            # Normalised signal standard deviation =
             if signalAve:
-                std_signal[wvl] = pow((pow(std_light[i], 2) + pow(std_dark[i], 2))/pow(signalAve, 2), 0.5)
+                signal_noise[wvl] = pow((pow(std_light[i], 2) + pow(std_dark[i], 2))/pow(signalAve, 2), 0.5)
+                # this should be divided by 
             else:
-                std_signal[wvl] = 0.0
+                signal_noise[wvl] = 0.0
+            
+            std_signal.append(np.std(lightData[k])/signalAve)  # as % of Dark corrected signal
 
         return dict(
             ave_Light=np.array(ave_light),
             ave_Dark=np.array(ave_dark),
             std_Light=np.array(std_light),
             std_Dark=np.array(std_dark),
-            std_Signal=std_signal,
-            perturbations=np.array(env_pert)
+            Signal_std=np.array(std_signal),
+            Signal_noise=signal_noise,
             )  # output as dictionary for use in ProcessL2/PIU
 
     def FRM(self, PDS: pds, stats, newWaveBands) -> dict[str, np.array]:
@@ -231,13 +234,8 @@ class HyperOCR(BaseInstrument):
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
             BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
 
-            # environmental perturbations
-            sample_env_pert = cm.generate_sample(mDraws, np.mean(sample_dark_corr, axis=0), stats[s_type]['perturbations'], "rand")
-            sample_envp_sig = prop.combine_samples([sample_dark_corr, sample_env_pert])
-            BD_UNCS['pert'] = stats[s_type]['perturbations']
-
             # Non-Linearity
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_envp_sig, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
@@ -313,7 +311,7 @@ class HyperOCR(BaseInstrument):
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
 
-            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["perturbations"])
+            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty

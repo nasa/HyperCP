@@ -14,6 +14,7 @@ from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
 import Source.utils.comparing as comparing
 import Source.utils.averaging as averaging
+from Source.utils.dating import dateTagToDateTime, timeTag2ToDateTime
 
 register_matplotlib_converters()
 
@@ -640,8 +641,11 @@ def plotUncertainties(root, filename):
         [es_cols, li_cols, lt_cols, nlw_cols, rrs_cols]
     ):
         if sensor == 'ES':
+            casts = []
             dates = cols.pop("Datetag")
-            times = cols.pop("Timetag2")
+            times = cols.pop("Timetag2")  # convert from timetag to time
+            for date, tt2 in zip(dates, times):
+                casts.append(timeTag2ToDateTime(dateTagToDateTime(date), tt2))
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
@@ -650,7 +654,7 @@ def plotUncertainties(root, filename):
     bd_grp = root.getGroup("BREAKDOWN")
     waveSubset = np.array(list(es_cols.keys()), float)
     waveKeys   = np.array(list(es_cols.keys()))
-    for t, cast in enumerate(times):
+    for t, cast in enumerate(casts):
         es  = np.array([es_cols[wvl][t] for wvl in waveKeys])
         li  = np.array([li_cols[wvl][t] for wvl in waveKeys])
         lt  = np.array([lt_cols[wvl][t] for wvl in waveKeys])

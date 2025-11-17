@@ -147,7 +147,7 @@ class plottingToolsFRM:
                 nLw=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "rho", "f0"],
                 Rrs=["noise", "env perturbations", "calibration", "stability", "non-linearity", "temperature", "strayLight", "polarisation", "cosine (diffuse)", "cosine (direct)", "rho"],
             )
-            if "brdf" in BD_UNCS['Rrs']:
+            if "BRDF" in BD_UNCS:
                 keys['nLw'].append("BRDF")
                 labels['nLw'].append("brdf correction")
                 keys['Rrs'].append("BRDF")
@@ -497,7 +497,7 @@ class SolveLPU:
         """
 
         if len(signal.shape) > 1:
-            signal = np.mean(signal, axis=0)
+            signal = np.abs(np.mean(signal, axis=0))
 
         # environmental perturbations is caluclated relative to DN, multiply by corrected signal to recover abs units
         LPU_UNCS['pert'] = pert * signal  # signal standard deviation.

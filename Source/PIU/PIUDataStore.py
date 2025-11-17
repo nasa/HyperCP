@@ -142,13 +142,11 @@ class PIUDataStore:
         
         self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_nocal'] == False], dtype=float)
         
-        # Stability is handled with Class Based processing
-
-
         # non-lin CB correction currently implemented the same for all sensor
         self.coeff[s_type]['cb_alpha'] = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '2')[1:]
         self.uncs[s_type]['cb_alpha']  = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '3')[1:]
 
+        # Stability is handled with Class Based processing
         cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")
         meas_date = dt.strptime(self.cast.split('_')[-1], "%Y%m%d%H%M%S")
         deltaTCal = meas_date - cal_date

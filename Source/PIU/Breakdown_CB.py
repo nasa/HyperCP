@@ -82,7 +82,7 @@ class plottingToolsCB:
                 nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
             sensors = ['nLw', 'Rrs']
-            if "brdf" in BD_UNCS['Rrs']:
+            if "BRDF" in BD_UNCS['Rrs']:
                 keys['nLw'].append("BRDF")
                 keys['Rrs'].append("BRDF")
 
@@ -98,7 +98,7 @@ class plottingToolsCB:
             plt.xlabel("Wavelengths")
             plt.xlim(350, 900)
             plt.ylabel("Relative Uncertainty (%)")
-            plt.ylim(0, 15)
+            plt.ylim(0, 5)
             plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
             plt.legend()
             plt.grid()
@@ -224,10 +224,10 @@ class plottingToolsCB:
             Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
             nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
         )
-        if "brdf" in BD_UNCS['Rrs']:
+        if "BRDF" in BD_UNCS['Rrs']:
             labels['nLw'].append("BRDF")
             labels['Rrs'].append("BRDF")
-            
+
         for product in labels.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
