@@ -106,23 +106,6 @@ class O25:
         # Local renaming of bands 
         b442, b490, b560, b665 = self.b442, self.b490, self.b560, self.b665
 
-        # Apply upper and lower limits to Rrs(665) #TODO currently not applied
-        #"""
-        Rrs442 = Rrs.sel(bands=b442)
-        Rrs490 = Rrs.sel(bands=b490)
-        Rrs560 = Rrs.sel(bands=b560)
-        Rrs665 = Rrs.sel(bands=b665)
-        mask= ((Rrs665 > 20*np.power(Rrs560,1.5)) | (Rrs665 < 0.9*np.power(Rrs560, 1.7)))
-        if np.any(mask):
-            Rrs665_ = 1.27*np.power(Rrs560, 1.47) + 0.00018*np.power(Rrs490/Rrs560,-3.19)
-            # Redefine Rrs665 and Rrs[bands=b665] (both important for computations below)
-            Rrs665 = xr.where(mask, Rrs665_, Rrs665)
-            Rrs.loc[dict(bands=b665)] = Rrs665
-        #"""
-
-        # Calculate rrs below water for absorption computation
-        rrs = Rrs / (0.52 + 1.7*Rrs)
-
         # Define reference band band0 at 560 nm
         # and compute total absorption
         Rrs0 = Rrs.sel(bands=b560)
@@ -130,11 +113,11 @@ class O25:
         aw0 = xr.zeros_like(Rrs0) + self.aw.sel(bands=b560)
         bbw0 = xr.zeros_like(Rrs0) + self.bbw.sel(bands=b560)
         # Compute a0 when band0 = b560
-        rrs442 = rrs.sel(bands=b442)
-        rrs490 = rrs.sel(bands=b490)
-        rrs560 = rrs.sel(bands=b560)
-        rrs665 = rrs.sel(bands=b665)
-        chi = np.log10((rrs442 + rrs490) / (rrs560 + 5.0 * rrs665*rrs665 / rrs490))
+        Rrs442 = Rrs.sel(bands=b442)
+        Rrs490 = Rrs.sel(bands=b490)
+        Rrs560 = Rrs.sel(bands=b560)
+        Rrs665 = Rrs.sel(bands=b665)
+        chi = np.log10((Rrs442 + Rrs490) / (Rrs560 + 5.0 * Rrs665*Rrs665 / Rrs490))
         poly = np.polynomial.polynomial.polyval(chi, self.a0)
         a0 = aw0 + np.power(10., poly)
 
@@ -151,7 +134,7 @@ class O25:
         bbp0 = xr.where(bbp0_fail, 0, bbp0)
 
         # Compute bbp slope and extrapolate at all bands
-        gamma = self.gamma[0] * (1.0 - self.gamma[1] * np.power(rrs442 / rrs560, -self.gamma[2]))
+        gamma = self.gamma[0] * (1.0 - self.gamma[1] * np.power(Rrs442 / Rrs560, -self.gamma[2]))
         bbp = bbp0 * np.power(band0 / self.bands, gamma)
 
         # Compute total bb
