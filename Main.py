@@ -398,10 +398,8 @@ class Window(QtWidgets.QWidget):
 
     def inDirButtonPressed(self):
         temp = self.inputDirectory
-        
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Choose Directory.", self.inputDirectory,
-            # options=self.options
+            self, "Choose Directory.", self.inputDirectory
         )
         if self.inputDirectory == "":
             self.inputDirectory = temp
@@ -519,15 +517,13 @@ class Window(QtWidgets.QWidget):
         subInputDir = os.path.join(self.inputDirectory, inLevel)
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-                self, "Open File", subInputDir, 
-                # options=self.options
+                self, "Open File", subInputDir
             )
             fileNames = openFileNames[0]  # The first element is the whole list
 
         else:
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-                self, "Open File", self.inputDirectory, 
-                # options=self.options
+                self, "Open File", self.inputDirectory
             )
             fileNames = openFileNames[0]  # The first element is the whole list
 
@@ -611,7 +607,7 @@ class Window(QtWidgets.QWidget):
             return
 
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-            self, "Open File", self.inputDirectory, 
+            self, "Open File", self.inputDirectory
             # options=self.options
             )
 

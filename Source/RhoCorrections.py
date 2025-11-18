@@ -24,7 +24,7 @@ class RhoCorrections:
         ''' Mobley 1999 AO'''
 
         logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
-        
+
         theta = 40 # viewing nadir angle of Lt or VZA of Li (TODO: tweak to allow theta=30)
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
@@ -56,70 +56,77 @@ class RhoCorrections:
 
         rhoScalar = row[0][5]
 
-        Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
-                                              uncertainties=[2, 0.5, 3])/rhoScalar
+        if not ConfigFile.settings["bL2RhoUnc10"]:
 
-        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
-        # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
-        if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
-                ((ConfigFile.settings["fL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird") \
-                 or (ConfigFile.settings['SensorType'].lower() == "dalec")):
-            # Fix: Truncate input parameters to stay within Zhang ranges:
-            # AOD
-            if AOD > 0.5:
-                logging.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
-                AOD = 0.5
-            # SZA
-            if SZAMean > 60:
-                logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
-                # raise ValueError('SZAMean is too high (%s), Zhang correction cannot be performed above SZA=70.')
-                SZAMean = 60
-            # wavelengths in range [350-1000] nm
-            newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
-            # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
-            # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
+            Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
+                                                uncertainties=[2, 0.5, 3])/rhoScalar
 
-            SVA = ConfigFile.settings['fL2SVA']
+            # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
+            # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
+            if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
+                    ((ConfigFile.settings["fL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird") \
+                    or (ConfigFile.settings['SensorType'].lower() == "dalec")):
+                # Fix: Truncate input parameters to stay within Zhang ranges:
+                # AOD
+                if AOD > 0.5:
+                    logging.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
+                    AOD = 0.5
+                # SZA
+                if SZAMean > 60:
+                    logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
+                    # raise ValueError('SZAMean is too high (%s), Zhang correction cannot be performed above SZA=70.')
+                    SZAMean = 60
+                # wavelengths in range [350-1000] nm
+                newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
+                # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
+                # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
-            try:
-                # raise InterpolationError("Forcing full model")
-                # Z17 LUT interpolation
-                logging.writeLogFileAndPrint('Using LUT interpolations.')
-                zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
-            except (InterpolationError, NotImplementedError) as err:
-                # Full Z17 model
-                logging.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
-                zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
+                SVA = ConfigFile.settings['fL2SVA']
 
-            if isinstance(zhang, float):
-                raise ValueError("Interpolation of zhang lookup table failed")
+                try:
+                    # raise InterpolationError("Forcing full model")
+                    # Z17 LUT interpolation
+                    logging.writeLogFileAndPrint('Using LUT interpolations.')
+                    zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
+                except (InterpolationError, NotImplementedError) as err:
+                    # Full Z17 model
+                    logging.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+                    zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
 
-            # |M99 - Z17| is an estimation of model error added to MC M99 uncertainty 
-            # in quadrature to give combined uncertainty
-            pct_diff = np.abs(rhoScalar - zhang) / rhoScalar  # relative units
-            tot_diff = np.sqrt(Delta ** 2 + pct_diff ** 2)
-            tot_diff[np.isnan(tot_diff) is True] = 0  # ensure no NaNs are present in the uncertainties.
-            tot_diff = tot_diff * rhoScalar  # ensure difference is in proper units
-            # add back in filtered wavelengths
-            rhoDelta = []
-            i = 0
-            for w in waveBands:
-                if w >= 350 and w <= 1000:
-                    rhoDelta.append(tot_diff[i])
-                    i += 1
-                else:
-                    # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
-                    rhoDelta.append(np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar)
-                    # necessary to convert to relative before propagating, then converted back to absolute
+                if isinstance(zhang, float):
+                    raise ValueError("Interpolation of zhang lookup table failed")
+
+                # |M99 - Z17| is an estimation of model error added to MC M99 uncertainty
+                # in quadrature to give combined uncertainty
+                pct_diff = np.abs(rhoScalar - zhang) / rhoScalar  # relative units
+                tot_diff = np.sqrt(Delta ** 2 + pct_diff ** 2)
+                tot_diff[np.isnan(tot_diff) is True] = 0  # ensure no NaNs are present in the uncertainties.
+                tot_diff = tot_diff * rhoScalar  # ensure difference is in proper units
+                # add back in filtered wavelengths
+                rhoDelta = []
+                i = 0
+                for w in waveBands:
+                    if w >= 350 and w <= 1000:
+                        rhoDelta.append(tot_diff[i])
+                        i += 1
+                    else:
+                        # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
+                        rhoDelta.append(np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar)
+                        # necessary to convert to relative before propagating, then converted back to absolute            
+            else:
+                # NOTE: It is possible for users to not select any ancillary data in the config, meaning Zhang Rho
+                # will fail. It is far too easy for a user to do this, so I added the following line to make sure the
+                # processor doesn't break.
+                logging.writeLogFileAndPrint("Z17 innaccessible likely from lack of ancillary data. Fall back on rho_unc est. by Ruddick 2006")
+
+                # 0.003 was chosen because it is the only number with any scientific justification
+                # (estimated from Ruddick 2006).
+                rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
         else:
-            # NOTE: It is possible for users to not select any ancillary data in the config, meaning Zhang Rho 
-            # will fail. It is far too easy for a user to do this, so I added the following line to make sure the
-            # processor doesn't break.
-            logging.writeLogFileAndPrint("Z17 innaccessible likely from lack of ancillary data. Fall back on rho_unc est. by Ruddick 2006")
-
-            # 0.003 was chosen because it is the only number with any scientific justification
-            # (estimated from Ruddick 2006).
-            rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
+            # TODO: Check this placeholder for forced 10% Rho uncertainty:
+            rhoDelta = []
+            for w in waveBands:
+                rhoDelta.append(0.10 * rhoScalar)         
 
         return rhoScalar, rhoDelta
 
@@ -172,7 +179,7 @@ class RhoCorrections:
         elif weighting_option == 'uniform':
             weights = np.ones((len(wl),))
         else:
-            raise ValueError('weighting option %s not implemented!' % weighting_option)
+            raise ValueError(f'weighting option {weighting_option} not implemented!')
 
         reg, R_rs_mod, R_g, Lumod, LuEd_meas = model.fit_LuEd(wl, Ls, Lu, Ed, params, weights, geom, anc=(am, rh, pressure))
 
@@ -182,7 +189,7 @@ class RhoCorrections:
 
         # TODO: an initial guess on rhoDelta ...
         # TODO! Decide what to do if R_g<0!
-        rhoDelta = np.abs(0.1 * rhoVector)
+        rhoDelta = np.abs(0.10 * rhoVector)
         rhoVector[rhoVector < 0] = 0
 
         return rhoVector, rhoDelta
@@ -212,18 +219,19 @@ class RhoCorrections:
         # logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
         logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.time() - tic:.1f} s')
 
-        # Presumably obsolete (Ashley)? -DAA
-        # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
-        # It will be once the LUT  is finished, right now the Z17 without a propagate object is important for the
-        # Monte Carlo runs
         if Propagate is None:
-            rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+            # rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+            rhoDelta = 0.10 * rhoVector
         else:
-            tic = time.time()
-            rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
-                                                       uncertainties=ulist,
-                                                       )
-            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.time() - tic:.1f} s')
+            if not ConfigFile.settings["bL2RhoUnc10"]:
+                tic = time.time()
+                rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
+                                                        uncertainties=ulist,
+                                                        )
+                logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.time() - tic:.1f} s')
+            else:
+                # TODO: Check this placeholder for forced 10% Rho uncertainty:
+                rhoDelta = 0.10 * rhoVector
 
         return rhoVector, rhoDelta
 

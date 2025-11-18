@@ -151,6 +151,8 @@ class ConfigFile:
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
 
+        ConfigFile.settings["bL2RhoUnc10"] = 0 # GZ recommends using flat 10% uncertainty for rho...
+
         ConfigFile.settings["bL2PerformNIRCorrection"] = 1
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0 # Mobley 1999 adapted to minimum 700-800, not 750 nm
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1 # Ruddick 2005, Ruddick 2006 similarity spectrum

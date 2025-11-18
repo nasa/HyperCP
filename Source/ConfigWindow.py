@@ -329,7 +329,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecQualityCheckPlotBoxUpdate()
 
         # L1BQC Meteorology Flags
-        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Flags (Experimental/Non-exclusive)", self)
+        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Flags (Experimental)", self)
         self.l1bqcQualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableQualityFlags"]) == 1:
             self.l1bqcQualityFlagCheckBox.setChecked(True)
@@ -362,10 +362,10 @@ class ConfigWindow(QtWidgets.QDialog):
         # L2
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
         l2Label.setFont(l1aLabel_font)
-        l2Sublabel = QtWidgets.QLabel(" Temporal binning, glitter reduction, glint", self)
-        l2Sublabel2 = QtWidgets.QLabel("  correction, residual correction, QC,", self)
-        l2Sublabel3 = QtWidgets.QLabel("  satellite convolution, OC product generation,", self)
-        l2Sublabel4 = QtWidgets.QLabel("  SeaBASS file output.", self)
+        l2Sublabel = QtWidgets.QLabel(" Temporal binning, glint/glitter/NIR-residual correction, ", self)
+        l2Sublabel2 = QtWidgets.QLabel("  BRDF, QC, satellite convolution, uncertainty update, ", self)
+        l2Sublabel3 = QtWidgets.QLabel("  OC products, SeaBASS file output.", self)
+        # l2Sublabel4 = QtWidgets.QLabel("  SeaBASS file output.", self)
 
         # L2 Sensor Viewing Angle
         l2SVALabel = QtWidgets.QLabel("Sensor Viewing Angle", self)
@@ -470,6 +470,14 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2M99Rho"] = 1
 
         #   L2 NIR AtmoCorr
+        l2RhoUnc10Label = QtWidgets.QLabel("    Force ρ uncertainty to 10%", self)
+        self.l2RhoUnc10CheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2RhoUnc10"]) == 1:
+            self.l2RhoUnc10CheckBox.setChecked(True)
+
+        self.l2RhoUnc10CheckBoxUpdate()
+
+        #   L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
         self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
@@ -485,12 +493,6 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)
-        # self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your NIR Residual (2023) (universal)")
-        # self.YourNIRRadioButton.setAutoExclusive(False)
-        # if ConfigFile.settings["bL2YourNIRCorrection"] == 1:
-        #     self.YourNIRRadioButton.setChecked(True)
-        # self.YourNIRRadioButton.clicked.connect(self.l2YourNIRRadioButtonClicked)
-        # self.YourNIRRadioButton.setDisabled(True)
 
         self.l2NIRCorrectionCheckBoxUpdate()
 
@@ -565,7 +567,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
         #   Plots
-        l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
+        l2PlotsLabel = QtWidgets.QLabel("Generate Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)
         self.l2PlotRrsCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PlotRrs"]) == 1:
@@ -591,7 +593,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
 
-        self.l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc. Plots", self)
+        self.l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc.", self)
         self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2UncertaintyBreakdownPlot"]) == 1:
             self.l2UncertaintyBreakdownPlotCheckBox.setChecked(True)
@@ -600,10 +602,10 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
             self.l2UncertaintyBreakdownPlotCheckBox.setChecked(False)
             self.l2UncertaintyBreakdownPlotCheckBox.setDisabled(True)
-            
 
         self.l2StationsCheckBox.clicked.connect(self.l2StationsCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
+        self.l2RhoUnc10CheckBox.clicked.connect(self.l2RhoUnc10CheckBoxUpdate)
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
         self.l2BRDFCheckBox.clicked.connect(self.l2BRDFCheckBoxUpdate)
@@ -857,6 +859,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Third Vertical box
         VBox3 = QtWidgets.QVBoxLayout()
+        # VBox3.setContentsMargins(0,0,0,0)        
         # VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
          #  Spectral Outlier Filter
@@ -904,15 +907,12 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox3.addLayout(RainFlagHBox)
 
-        # VBox3.addSpacing(30)
-        # VBox3.addStretch()
-
         # L2
         VBox3.addWidget(l2Label)
         VBox3.addWidget(l2Sublabel)
         VBox3.addWidget(l2Sublabel2)
         VBox3.addWidget(l2Sublabel3)
-        VBox3.addWidget(l2Sublabel4)
+        # VBox3.addWidget(l2Sublabel4)
 
         # Lt SVA
         SVAHBox = QtWidgets.QHBoxLayout()
@@ -956,30 +956,34 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
         RhoHBox3.addWidget(self.RhoRadioButton3C)
-        RhoHBox3.addWidget(self.RhoRadioButtonYour)
+        # RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 
-        #   L2 NIR AtmoCorr
+        #   Rho Uncertainty
+        RhoUnc10HBox = QtWidgets.QHBoxLayout()
+        RhoUnc10HBox.addWidget(l2RhoUnc10Label)
+        RhoUnc10HBox.addWidget(self.l2RhoUnc10CheckBox)
+        VBox3.addLayout(RhoUnc10HBox)
+
+        VBox3.addStretch()
+
+        # Right Vertical box
+        VBox4 = QtWidgets.QVBoxLayout()
+
+         #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
         NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
-        VBox3.addLayout(NIRCorrectionHBox)
-        VBox3.addWidget(self.SimpleNIRRadioButton)
-        VBox3.addWidget(self.SimSpecNIRRadioButton)
+        VBox4.addLayout(NIRCorrectionHBox)
+        VBox4.addWidget(self.SimpleNIRRadioButton)
+        VBox4.addWidget(self.SimSpecNIRRadioButton)
         # VBox3.addWidget(self.YourNIRRadioButton)
-
-        VBox3.addSpacing(5)
 
         #   L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
-        VBox3.addLayout(NegativeSpecHBox)
-
-        # VBox3.addStretch()
-
-        # Right Vertical box
-        VBox4 = QtWidgets.QVBoxLayout()
+        VBox4.addLayout(NegativeSpecHBox)
 
         #   L2 BRDF
         BRDFVBox = QtWidgets.QVBoxLayout()
@@ -1021,12 +1025,8 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)
         VBox4.addLayout(l2WeightHBox2)
         VBox4.addWidget(l2WeightMODISALabel2)
-        # l2WeightHBox3 = QtWidgets.QHBoxLayout()
-        # l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
-        # l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
-        # VBox4.addLayout(l2WeightHBox3)
 
-        VBox4.addSpacing(5)
+        # VBox4.addSpacing(5)
 
         #   L2 Plotting
         VBox4.addWidget(l2PlotsLabel)
@@ -1042,15 +1042,17 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLiCheckBox)
         l2PlotHBox.addWidget(l2PlotLtLabel)
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
+        l2PlotHBox.addWidget(self.l2UncertaintyBreakdownPlotsLabel)
+        l2PlotHBox.addWidget(self.l2UncertaintyBreakdownPlotCheckBox)
         VBox4.addLayout(l2PlotHBox)
 
-        VBox4.addWidget(self.l2UncertaintyBreakdownPlotsLabel)
-        l2PlotUncHBox = QtWidgets.QHBoxLayout()
-        l2PlotUncHBox.addSpacing(45)
-        l2PlotUncHBox.addWidget(self.l2UncertaintyBreakdownPlotCheckBox)
-        VBox4.addLayout(l2PlotUncHBox)
+        # VBox4.addWidget(self.l2UncertaintyBreakdownPlotsLabel)
+        # l2PlotUncHBox = QtWidgets.QHBoxLayout()
+        # l2PlotUncHBox.addSpacing(45)
+        # l2PlotUncHBox.addWidget(self.l2UncertaintyBreakdownPlotCheckBox)
+        # VBox4.addLayout(l2PlotUncHBox)
 
-        VBox4.addSpacing(5)
+        # VBox4.addSpacing(5)
 
         l2OCproductsHBox = QtWidgets.QHBoxLayout()
         l2OCproductsHBox.addWidget(self.l2OCproducts)
@@ -1400,7 +1402,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Erase pre-existing credentials, open pop-up window and untick resp. options if credentials not set...
         if ancillarySource:
-            print('Reset %s credentials' % ancillarySource.replace('_', ' '))
+            print(f"Reset {ancillarySource.replace('_', ' ')} credentials")
             GetAnc_credentials.erase_user_credentials(ancillarySource)
             GetAnc_credentials.credentialsWindow(ancillarySource)
             self.l1bGetAncUntickIfNoCredentials(ancillarySource)
@@ -1607,6 +1609,14 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1 # This is a mock up. Use Default
 
+    def l2RhoUnc10CheckBoxUpdate(self):
+        print("ConfigWindow - l2RhoUnc10CheckBoxUpdate")
+        disabled = not self.l2RhoUnc10CheckBox.isChecked()
+        if disabled:
+            ConfigFile.settings["bL2RhoUnc10"] = 0
+        else:
+            ConfigFile.settings["bL2RhoUnc10"] = 1
+
     def l2SimpleNIRRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
@@ -1630,7 +1640,7 @@ class ConfigWindow(QtWidgets.QDialog):
     #     ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
-        disabled = (not self.l2NIRCorrectionCheckBox.isChecked())
+        disabled = not self.l2NIRCorrectionCheckBox.isChecked()
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
         # self.YourNIRRadioButton.setDisabled(True)
@@ -1642,7 +1652,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l2NegativeSpecCheckBoxUpdate(self):
         print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")
 
-        disabled = (not self.l2NegativeSpecCheckBox.isChecked())
+        disabled = not self.l2NegativeSpecCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2NegativeSpec"] = 0
         else:
@@ -1651,7 +1661,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l2BRDFCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDFCheckBoxUpdate")
 
-        disabled = (not self.l2BRDFCheckBox.isChecked())
+        disabled = not self.l2BRDFCheckBox.isChecked()
         self.l2BRDF_fQCheckBox.setDisabled(disabled)
         self.l2BRDF_fQLabel.setDisabled(disabled)
         self.l2BRDF_IOPCheckBox.setDisabled(disabled)
@@ -1678,7 +1688,7 @@ class ConfigWindow(QtWidgets.QDialog):
     #   Reprocess to change to another BRDF type
     def l2BRDF_fQCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
-        disabled = (not self.l2BRDF_fQCheckBox.isChecked())
+        disabled = not self.l2BRDF_fQCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
@@ -1692,7 +1702,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
-        disabled = (not self.l2BRDF_IOPCheckBox.isChecked())
+        disabled = not self.l2BRDF_IOPCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_IOP"] = 0
             self.l2BRDF_IOPCheckBox.setChecked(False)
@@ -1706,7 +1716,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l2BRDF_O25CheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_O25CheckBoxUpdate")
-        disabled = (not self.l2BRDF_O25CheckBox.isChecked())
+        disabled = not self.l2BRDF_O25CheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_O25CheckBox.setChecked(False)
