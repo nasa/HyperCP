@@ -38,8 +38,8 @@ class Window(QtWidgets.QWidget):
         self.inputDirectory = ""
         self.outputDirectory = ""
         self.ancFileDir = ""
-        self.options = QtWidgets.QFileDialog.Options()
-        self.options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        # self.options = QtWidgets.QFileDialog.Options()
+        # self.options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
         super().__init__(parent)
         # self.setStyleSheet("background-color: #e3e6e1;")
@@ -401,7 +401,7 @@ class Window(QtWidgets.QWidget):
         
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Choose Directory.", self.inputDirectory,
-            options=self.options
+            # options=self.options
         )
         if self.inputDirectory == "":
             self.inputDirectory = temp
@@ -420,7 +420,7 @@ class Window(QtWidgets.QWidget):
             self,
             "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
             self.outputDirectory,
-            options=self.options
+            # options=self.options
         )
         if self.outputDirectory == "":
             self.outputDirectory = temp
@@ -463,7 +463,7 @@ class Window(QtWidgets.QWidget):
 
         fnames = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select Ancillary Data File", self.ancFileDir,
-            options=self.options
+            # options=self.options
         )
         if any(fnames):
             print(fnames)
@@ -519,13 +519,15 @@ class Window(QtWidgets.QWidget):
         subInputDir = os.path.join(self.inputDirectory, inLevel)
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-                self, "Open File", subInputDir, options=self.options
+                self, "Open File", subInputDir, 
+                # options=self.options
             )
             fileNames = openFileNames[0]  # The first element is the whole list
 
         else:
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-                self, "Open File", self.inputDirectory, options=self.options
+                self, "Open File", self.inputDirectory, 
+                # options=self.options
             )
             fileNames = openFileNames[0]  # The first element is the whole list
 
@@ -609,7 +611,9 @@ class Window(QtWidgets.QWidget):
             return
 
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-            self, "Open File", self.inputDirectory, options=self.options)
+            self, "Open File", self.inputDirectory, 
+            # options=self.options
+            )
 
         print("Files:", openFileNames)
 
