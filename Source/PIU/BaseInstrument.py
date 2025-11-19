@@ -47,9 +47,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             BaseInstrument.sensors = ['ES']
         # use this to switch the straylight correction method -> FOR UNCERTAINTY PROPAGATION ONLY <- between SLAPER and
         # ZONG. Not added to config file settings because this isn't intended for the end user.
-        self.sl_method: str = 'ZONG'
-        warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positive definite. It has been slightly changed")
-        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite. It has been slightly changed")
+        self.sl_method: str = 'ZONG'        
+        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite.",category=UserWarning)
     ## Regime Agnostic Methods ##
 
     @abstractmethod

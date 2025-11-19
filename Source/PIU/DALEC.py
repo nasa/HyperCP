@@ -14,8 +14,6 @@ from Source.utils.loggingHCP import writeLogFileAndPrint
 
 class Dalec(BaseInstrument):
 
-    warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
-    warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite. It has been slightly changed")
     def __init__(self):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
