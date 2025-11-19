@@ -113,7 +113,7 @@ class Propagate:
             self.MCP = punpy.MCPropagation(M)
 
     # Main functions
-    def propagate_Instrument_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+    def propagate_Instrument_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals:  list (normally numpy array) of input means matching the arguments of
         Source.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, 
@@ -132,12 +132,16 @@ class Propagate:
 
         corr_list = ['rand', 'rand', 'rand', 'rand', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
-
+        if corr_between:
+            corr_between = self.corr_matrix_Default_Instruments
+        else:
+            corr_between = None
+            
         # NOTE: ISSUE #95
         unc = self.MCP.propagate_random(self.instruments,
                                         mean_vals,
                                         uncertainties,
-                                        corr_between=self.corr_matrix_Default_Instruments,
+                                        corr_between=corr_between,
                                         corr_x=corr_list,
                                         output_vars=3,
                                         # pdf_shape="truncated_gaussian",
@@ -149,7 +153,7 @@ class Propagate:
 
         return Es_unc, Li_unc, Lt_unc
 
-    def Propagate_Lw_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+    def Propagate_Lw_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
         Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
@@ -166,11 +170,14 @@ class Propagate:
 
         corr_list = ['rand', 'syst', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
-
+        if corr_between:
+            corr_between = self.corr_matrix_Default_Lw
+        else:
+            corr_between = None
         return self.MCP.propagate_standard(self.Lw,
                                          mean_vals,
                                          uncertainties,
-                                         corr_between=self.corr_matrix_Default_Lw,
+                                         corr_between=corr_between,
                                          corr_x=corr_list)
 
     def Propagate_Lw_Convolved(self, mean_vals: list[np.array], uncertainties: list[np.array],
@@ -222,7 +229,7 @@ class Propagate:
 
         return np.sqrt(random ** 2 + systematic ** 2)
 
-    def Propagate_RRS_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+    def Propagate_RRS_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
         Source.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
@@ -241,12 +248,15 @@ class Propagate:
 
         corr_list = ['rand', 'syst', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
-
+        if corr_between:
+            corr_between = self.corr_matrix_Default_RRS
+        else:
+            corr_between = None
         return self.MCP.propagate_standard(
             self.RRS,
             mean_vals,
             uncertainties,
-            corr_between=self.corr_matrix_Default_RRS,
+            corr_between=corr_between,
             corr_x=corr_list,
             # pdf_shape="truncated_gaussian",
             # pdf_params={"min": 0},

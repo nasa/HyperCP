@@ -343,11 +343,21 @@ class PlotMaths:
                 p_uncs[0:6] = uncs[0:6]
             else:
                 p_uncs[i:i+3] = uncs[i:i+3]
-            (
-                UNCS['ES'][keys['ES'][indx]],
-                UNCS['LI'][keys['LI'][indx]],
-                UNCS['LT'][keys['LT'][indx]]
-            ) = prop.propagate_Instrument_Uncertainty(vals, p_uncs)
+            try:
+                (
+                    UNCS['ES'][keys['ES'][indx]],
+                    UNCS['LI'][keys['LI'][indx]],
+                    UNCS['LT'][keys['LT'][indx]]
+                ) = prop.propagate_Instrument_Uncertainty(vals, p_uncs)
+            except ValueError as err:
+                from Source.utils.loggingHCP import writeLogFileAndPrint
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys['ES'][indx]}")
+                (
+                    UNCS['ES'][keys['ES'][indx]],
+                    UNCS['LI'][keys['LI'][indx]],
+                    UNCS['LT'][keys['LT'][indx]]
+                ) = prop.propagate_Instrument_Uncertainty(vals, p_uncs, corr_between=False)
+
             if not cul:
                 p_uncs = np.zeros_like(np.asarray(uncs))  # reset uncertaitnies
 
@@ -372,8 +382,12 @@ class PlotMaths:
             else:
                 uLw[i:i + 2] = lw_uncs[i:i + 2]
 
-            UNCS['Lw'][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw)
-
+            try:
+                UNCS['Lw'][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw)
+            except ValueError as err:
+                from Source.utils.loggingHCP import writeLogFileAndPrint
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_lw[i]}")
+                UNCS['Lw'][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw, corr_between=False)
             if not cul:
                 uLw = np.zeros_like(np.asarray(lw_uncs))  # reset uncertaitnies
 
@@ -394,8 +408,12 @@ class PlotMaths:
             else:
                 uRrs[i:i+3] = rrs_uncs[i:i+3]
 
-            UNCS['Rrs'][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(rrs_vals, uRrs)
-
+            try:
+                UNCS['Rrs'][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(rrs_vals, uRrs)
+            except ValueError as err:
+                from Source.utils.loggingHCP import writeLogFileAndPrint
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[i]}")
+                UNCS['Rrs'][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(rrs_vals, uRrs, corr_between=False)
             if not cul:
                 uRrs = np.zeros_like(np.asarray(rrs_uncs))  # reset uncertaitnies
 
