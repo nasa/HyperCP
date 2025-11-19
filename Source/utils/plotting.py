@@ -625,6 +625,7 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
 def plotUncertainties(root, filename):
     # read in required values and uncs from root
     # import relevant methods
+    from datetime import datetime as dt
     
     irrGrp = root.getGroup("IRRADIANCE")
     radGrp = root.getGroup("RADIANCE")
@@ -645,7 +646,12 @@ def plotUncertainties(root, filename):
             dates = cols.pop("Datetag")
             times = cols.pop("Timetag2")  # convert from timetag to time
             for date, tt2 in zip(dates, times):
-                casts.append(timeTag2ToDateTime(dateTagToDateTime(date), tt2))
+                casts.append(
+                    dt.strftime(
+                        timeTag2ToDateTime(dateTagToDateTime(date), tt2),
+                        "%Y-%m-%dT%H%M%S"
+                    )
+                )
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
