@@ -228,10 +228,10 @@ class ProcessL1b:
                         chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
                         filing.read_char(chosen_file, gp)
-                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
-                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
-                        else:
-                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        # if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                        #     root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        # else:
+                        #     root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
 
                 elif calCharType == 'RADCAL':
                     # RADCAL files to be ingested depend on the multical options

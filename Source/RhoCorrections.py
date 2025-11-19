@@ -126,7 +126,7 @@ class RhoCorrections:
             # TODO: Check this placeholder for forced 10% Rho uncertainty:
             rhoDelta = []
             for w in waveBands:
-                rhoDelta.append(0.10 * rhoScalar)         
+                rhoDelta.append(0.10 * rhoScalar)
 
         return rhoScalar, rhoDelta
 

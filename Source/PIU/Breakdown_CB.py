@@ -115,12 +115,12 @@ class plottingToolsCB:
         else:
             regime = 'Class'
         
-        if np.any(BD_VALS['ES'] < 0):
-            print('WARNING: Negative uncertainty potential')
-        if np.any(BD_VALS['LI'] < 0):
-            print('WARNING: Negative uncertainty potential')
-        if np.any(BD_VALS['LT'] < 0):
-            print('WARNING: Negative uncertainty potential')
+        # if np.any(BD_VALS['ES'] < 0):
+        #     print('WARNING: Negative uncertainty potential')
+        # if np.any(BD_VALS['LI'] < 0):
+        #     print('WARNING: Negative uncertainty potential')
+        # if np.any(BD_VALS['LT'] < 0):
+        #     print('WARNING: Negative uncertainty potential')
         
         labels = dict(
             ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],

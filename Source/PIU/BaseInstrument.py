@@ -163,9 +163,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es_unc, li_unc, lt_unc = UNC_obj_CB.propagate_Instrument_Uncertainty(means, uncertainties)
 
         # NOTE: Debugging check
-        is_negative = np.any([ x < 0 for x in means])
-        if is_negative:
-            print('WARNING: Negative uncertainty potential')
+        # is_negative = np.any([ x < 0 for x in means])
+        # if is_negative:
+        #     print('WARNING: Negative uncertainty potential')
         is_negative = np.any([ x < 0 for x in uncertainties])
         if is_negative:
             print('WARNING: Negative uncertainty potential')
@@ -182,10 +182,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
 
 
-        # check if negative signal for any pixels
-        is_negative = np.any([ x < 0 for x in means])
-        if is_negative:
-            print('WARNING: Negative uncertainty potential')
+        # # check if negative signal for any pixels
+        # is_negative = np.any([ x < 0 for x in means])
+        # if is_negative:
+        #     print('WARNING: Negative uncertainty potential')
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
