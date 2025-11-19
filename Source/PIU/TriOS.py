@@ -2,6 +2,7 @@
 import pandas as pd
 from copy import deepcopy
 from collections import OrderedDict
+import warnings
 
 # maths
 import numpy as np
@@ -28,6 +29,7 @@ class TriOS(BaseInstrument):
     def __init__(self):
         super().__init__()
         self.name = "TriOS"
+        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite. It has been slightly changed")
 
     def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> dict[str: Union[np.array, dict]]:
         """

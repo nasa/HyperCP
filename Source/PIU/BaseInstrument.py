@@ -48,8 +48,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # use this to switch the straylight correction method -> FOR UNCERTAINTY PROPAGATION ONLY <- between SLAPER and
         # ZONG. Not added to config file settings because this isn't intended for the end user.
         self.sl_method: str = 'ZONG'
-        warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
-
+        warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positive definite. It has been slightly changed")
+        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite. It has been slightly changed")
     ## Regime Agnostic Methods ##
 
     @abstractmethod
@@ -168,9 +168,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         #     print('WARNING: Negative uncertainty potential')
         is_negative = np.any([ x < 0 for x in uncertainties])
         if is_negative:
-            print('WARNING: Negative uncertainty potential')
+            print('WARNING: Potential negative input uncertainties encountered.')
         if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
-            print('WARNING: Negative uncertainty potential')
+            print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
         es, li, lt = UNC_obj_CB.instruments(*means)
 

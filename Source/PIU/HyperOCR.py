@@ -3,6 +3,7 @@
 from copy import deepcopy
 import calendar
 from inspect import currentframe, getframeinfo
+import warnings
 
 # typing
 from typing import Union, Any, Optional
@@ -31,6 +32,7 @@ class HyperOCR(BaseInstrument):
     def __init__(self):
         super().__init__()
         self.name = "HyperOCR"
+        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite. It has been slightly changed")
 
     def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
         """
