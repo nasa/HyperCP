@@ -350,8 +350,8 @@ class PlotMaths:
                     UNCS['LT'][keys['LT'][indx]]
                 ) = prop.propagate_Instrument_Uncertainty(vals, p_uncs)
             except ValueError as err:
-                from Source.utils.loggingHCP import writeLogFileAndPrint
-                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys['ES'][indx]}")
+                # from Source.utils.loggingHCP import writeLogFileAndPrint
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys['ES'][indx]}: {err}")
                 (
                     UNCS['ES'][keys['ES'][indx]],
                     UNCS['LI'][keys['LI'][indx]],
@@ -385,8 +385,8 @@ class PlotMaths:
             try:
                 UNCS['Lw'][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw)
             except ValueError as err:
-                from Source.utils.loggingHCP import writeLogFileAndPrint
-                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_lw[i]}")
+                from Source.utils.loggingHCP import writeLogFileAndPrint # why is linter requiring this and also scolding about it?
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_lw[indx]}: {err}")
                 UNCS['Lw'][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw, corr_between=False)
             if not cul:
                 uLw = np.zeros_like(np.asarray(lw_uncs))  # reset uncertaitnies
