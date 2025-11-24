@@ -626,7 +626,6 @@ def plotUncertainties(root, filename):
     # read in required values and uncs from root
     # import relevant methods
     from datetime import datetime as dt
-    
     irrGrp = root.getGroup("IRRADIANCE")
     radGrp = root.getGroup("RADIANCE")
     refGrp = root.getGroup("REFLECTANCE")
@@ -649,7 +648,7 @@ def plotUncertainties(root, filename):
                 casts.append(
                     dt.strftime(
                         timeTag2ToDateTime(dateTagToDateTime(date), tt2),
-                        "%Y-%m-%dT%H%M%S"
+                        "%Y%m%dT%H%M%S",
                     )
                 )
         else:

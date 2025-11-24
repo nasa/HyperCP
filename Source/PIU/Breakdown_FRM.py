@@ -77,10 +77,10 @@ class plottingToolsFRM:
                 if 'BRDF' in UNC:
                     self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
 
-            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
-
-            self.save_figure(meas, level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
-
+            self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
+            
+            self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
+        
             self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
 
 
@@ -213,48 +213,10 @@ class plottingToolsFRM:
 
             #     plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
 
-            # plt.tight_layout()  # for improved clarity and less overlapping of labels
-            # # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
-            labels_list = labels[s]
-            colors = [LABEL_COLORS[lab] for lab in labels_list]
-
-            # Safety: handle empty or all-zero data
-            if not vals or sum(vals) == 0:
-                ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
-                plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
-                plt.axis('off')
-                plt.tight_layout()
-                return
-
-            # Combined uncertainty
-            combined = (sum(v**2 for v in vals)) ** 0.5
-
-            # --- Sort by value descending for readability ---       
-            sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
-            vals_sorted, labels_sorted = zip(*sorted_data)
-            colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
-
-            # --- Plot horizontal bars ---
-            ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
-
-            # --- Add percentage labels to the right of each bar ---
-            total = sum(vals_sorted)
-            x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
-            for i, v in enumerate(vals_sorted):
-                pct = (v / total) * 100
-                ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
-
-            # --- Styling ---
-            ax.invert_yaxis()  # largest at top
-            ax.set_xlabel("Uncertainty Contribution")
-            ax.set_ylabel("Contributors")
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
-
-            plt.tight_layout()
-            # fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
-            fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
-                # plt.close(fig)
+            plt.tight_layout()  # for improved clarity and less overlapping of labels
+            fp = path.join(self.plot_folder, f"{s}_pie_chart_SB_{self.station}_{wvl_at_indx}.png")
+            self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 
+            # plt.close(fig)
 
     def get_figure(self, s: str) -> plt.figure:
         """
@@ -271,8 +233,8 @@ class plottingToolsFRM:
                 fig = plt.figure(s)
 
         return fig
-
-    def save_figure(self, s: Optional[str]=None, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B') -> None:
+    
+    def save_figure(self, s: Optional[str]=None, fp: Optional[str]=None, legend: bool=True, grid: bool=True, measurement='L1B') -> None:
         """
         Helper function to save spectral and pie figures based on cast/station information
         
@@ -294,8 +256,9 @@ class plottingToolsFRM:
         if fp is None:
             # Case for spectral plots
             try:
-                # fp = path.join(self.plot_folder, f"BD_plot_{level}_{s}_{self.station}.png")
-                fp = path.join(self.plot_folder, f"{s}_SB_spectral_{level}_{self.station}.png")
+                
+                # Sensor_plot-type_regime_datetime.png
+                fp = path.join(self.plot_folder, f"{s}_{measurement}_SB_{self.station}.png")
             except (AttributeError, ValueError):
                 fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
 
