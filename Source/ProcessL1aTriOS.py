@@ -116,11 +116,13 @@ class ProcessL1aTriOS:
                     root.attributes["FRAME_TYPE"] = 'light'
                 for file in ffp:
                     # Regex accomodate both SAM_1234_ and SAM1234 conventions
-                    serialNumber = re.findall(r'SAM_?(\d+)_', os.path.basename(file))
+                    # serialNumber = re.findall(r'SAM_?(\d+)_', os.path.basename(file))
+                    serialNumber = re.findall(r'SAM_?(\w{4})_', os.path.basename(file))
                     if serialNumber:
                         serialNumber = serialNumber[0]
                     else:
                         logging.writeLogFileAndPrint("ERROR : naming convention is not respected")
+                        logging.writeLogFileAndPrint("      : expecting 4 alphanumeric characters")
                         serialNumber = None
 
                     start,stop = ProcessL1aTriOS.formatting_instrument(serialNumber,cal_path,file,root,configPath)
