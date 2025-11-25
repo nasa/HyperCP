@@ -1587,7 +1587,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2Z17Rho"] = 1
         ConfigFile.settings["bL2M99Rho"] = 0
         if ConfigFile.settings["fL1bqcSZAMax"] > 60:
-            print("SZA outside model limits; adjusting to 60")
+            print("###### SZA outside Zhang model limits; adjusting. ########")
             ConfigFile.settings["fL1bqcSZAMax"] = 60
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
 
@@ -1842,7 +1842,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bqcMaxWind"] = float(self.l1bqcMaxWindLineEdit.text())
         ConfigFile.settings["fL1bqcSZAMin"] = float(self.l1bqcSZAMinLineEdit.text())
         if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l1bqcSZAMaxLineEdit.text()) > 60:
-            print("SZA outside Zhang model limits; adjusting.")
+            print("###### SZA outside Zhang model limits; adjusting. ########")
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
         ConfigFile.settings["fL1bqcSZAMax"] = float(self.l1bqcSZAMaxLineEdit.text())
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = int(self.l1bqcSpecQualityCheckBox.isChecked())

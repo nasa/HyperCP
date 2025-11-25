@@ -126,7 +126,7 @@ class ConfigFile:
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
         ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
         ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016, max for Z17
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
         ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
