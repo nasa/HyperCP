@@ -197,7 +197,7 @@ class plottingToolsFRM:
 
             plt.tight_layout()  # for improved clarity and less overlapping of labels
             # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
-            fp = path.join(self.plot_folder, f"{s}_SB_pie__{self.station}_{wvl_at_indx}.png")
+            fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
             # plt.close(fig)
 

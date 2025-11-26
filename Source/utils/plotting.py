@@ -663,10 +663,11 @@ def plotUncertainties(root, filename):
 
         ancGroup = root.getGroup("ANCILLARY")
         sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2)
-        if ConfigFile.settings['bL2Stations']: 
-            station = ancGroup.getDataset("STATION").columns["STATION"][k]
+        # station is a string moniker for the ensemble, either a station number or a timestamp
+        if ConfigFile.settings['bL2Stations']:
+            station = f"Station_{ancGroup.getDataset('STATION').columns['STATION'][t]}"
         else:
-            station = cast
+            station = cast.strftime("%Y%m%d_%H%M%S")
 
         BD_UNCS = {}
         for _id, ds in bd_grp.datasets.items():
