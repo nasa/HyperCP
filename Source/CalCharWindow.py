@@ -516,6 +516,9 @@ class CalCharWindow(QtWidgets.QDialog):
                 # outdatedFiles: Updated file list in FidRadDB exists wrt local DB.
                 outdatedFiles = []
 
+                # missingInFidRadDBFiles: File also missing in FidRadDB!
+                missingInFidRadDBFiles = []
+
                 # Loop over serialNumber-cal./char. type combinations
                 for serialNumber_calCharType in serialNumber_calCharTypes:
 
@@ -534,32 +537,35 @@ class CalCharWindow(QtWidgets.QDialog):
                     filesDatesFidRadDB = np.array([int(f.split('_')[-1].split('.')[0]) for f in filesInFidRadDB])
                     filesDatesLocalDB = np.array([int(f.split('_')[-1].split('.')[0]) for f in filesInLocalDB])
 
-                    # WARNING should be raised if no files are available in FidRadDB when mandatory files are missing locally!
-                    FidRadDBwarning = len(filesInFidRadDB)==0
-
-                    # Decide whether files are missing (cannot process!) or are outdated ("new" or other files available in FidRadDB)
+                    # Files can be available or:
+                    # - missing both locally and in FidRadDF (cannot process)  (missingInFidRadDBFiles)
+                    # - missing locally (cannot process unless download from FidRadDB) (missingFiles)
+                    # - outdated ("new" or other files available in FidRadDB) (outdatedFiles)
                     if len(filesDatesLocalDB) == 0:
-                        missingFiles = missingFiles + filesInFidRadDB
-                    elif is_RADCAL or (not is_RADCAL and (np.max(filesDatesFidRadDB) > np.max(filesDatesLocalDB))):
-                        outdatedFiles = outdatedFiles + [f for f in filesInFidRadDB if f not in filesInLocalDB]
+                        if len(filesInFidRadDB) > 0:
+                            missingFiles = missingFiles + filesInFidRadDB
+                        else:
+                            missingInFidRadDBFiles = missingInFidRadDBFiles + [serialNumber_calCharType]
                     else:
-                        FidRadDBwarning = False
-
-                    # RAISE warning if mandatory file is missing in FidRadDB!!
-                    if FidRadDBwarning:
-                        # WARNING
-                        QtWidgets.QMessageBox.warning(None, "No match", 'No files corresponding to serial number and cal/char type combination %s present in FidRadDB!!' % serialNumber_calCharType)
+                        if is_RADCAL:
+                            outdatedFiles = outdatedFiles + [f for f in filesInFidRadDB if f not in filesInLocalDB]
+                        else:
+                            if (len(filesDatesFidRadDB) > 0) and (np.nanmax(filesDatesFidRadDB) > np.max(filesDatesLocalDB)):
+                                outdatedFiles = outdatedFiles + [f for f in filesInFidRadDB if f not in filesInLocalDB]
 
                 # Output string
-                if len(missingFiles)>0 or len(outdatedFiles)>0:
+                if len(missingFiles)>0 or len(outdatedFiles)>0 or len(missingInFidRadDBFiles) > 0:
                     missingFilesStrings[sensorType] = ''
+
+                if len(missingInFidRadDBFiles)>0:
+                    missingFilesStrings[sensorType] = 'Files not available neither locally nor in FidRadDB!: %s ' % ' '.join(missingInFidRadDBFiles)
                 if len(missingFiles)>0:
-                    missingFilesStrings[sensorType] = 'Must download files from FidRadDB: %s' % ' '.join(missingFiles)
+                    missingFilesStrings[sensorType] = missingFilesStrings[sensorType] + 'Must download files from FidRadDB: %s ' % ' '.join(missingFiles)
                 if len(outdatedFiles)>0:
-                    missingFilesStrings[sensorType] = missingFilesStrings[sensorType] + 'Suggest download updated files from FidRadDB: %s' % ' '.join(outdatedFiles)
+                    missingFilesStrings[sensorType] = missingFilesStrings[sensorType] + 'Suggest download updated files from FidRadDB: %s ' % ' '.join(outdatedFiles)
 
                 # Missing file list
-                missingFilesList = missingFilesList + missingFiles + outdatedFiles
+                missingFilesList = missingFilesList + missingFiles + outdatedFiles + missingInFidRadDBFiles
 
         # Update line edits
         self.FidRadDBcalCharDirCheckES.setText(missingFilesStrings['ES'])
@@ -791,7 +797,7 @@ class CalCharWindow(QtWidgets.QDialog):
         missingFilesStrings, missingFilesList = self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
         if len(missingFilesList) != 0:
 
-            cannot_process_flag = np.any([True if 'Must' in string else False for string in missingFilesStrings.values()])
+            cannot_process_flag = np.any([True if ('Must' in string or 'neither' in string) else False for string in missingFilesStrings.values()])
 
             if cannot_process_flag:
                 # WARNING
