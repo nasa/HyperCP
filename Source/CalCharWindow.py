@@ -500,7 +500,8 @@ class CalCharWindow(QtWidgets.QDialog):
             missingFilesList = []
         else:
 
-            api = new_api()
+            # api = new_api()
+            api = new_api(server_url='https://ocdb.eumetsat.int')
 
             # Loop over sensorType
             for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
