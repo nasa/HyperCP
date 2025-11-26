@@ -2,6 +2,8 @@
 import os
 import glob
 import shutil
+import re
+import numpy as np
 from pathlib import Path
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -497,22 +499,67 @@ class CalCharWindow(QtWidgets.QDialog):
             missingFilesStrings = {k:'No FidRadDB cal./char. files needed' for k in missingFilesStrings.keys()}
             missingFilesList = []
         else:
-            # Loop over sensorType
-            for sensorType, files in ConfigFile.settings['neededCalCharsFRM'].items():
-                # Check for all files required for the given sensor in full FRM regime
-                # missingFullFRM0 = [f for f in files if len(glob.glob(os.path.join(Path(ConfigFile.getCalibrationDirectory()), '*%s*.[tT][xX][tT]' % f))) == 0]
-                missingFullFRM0 = [f for f in files if len(glob.glob(os.path.join(Path(self.path_FidRadDB), '*%s*.[tT][xX][tT]' % f))) == 0]
-                missingFullFRM = None
-                if fL1bCal == 2:
-                    # Keep only the RADCALs
-                    missingFullFRM = [f for f in missingFullFRM0 if f.split('_')[-1] == 'RADCAL']
-                elif fL1bCal == 3:
-                    missingFullFRM = missingFullFRM0
 
-                # Output missing files
-                if len(missingFullFRM)>0:
-                    missingFilesStrings[sensorType] = 'Missing files: %s' % ' '.join(missingFullFRM)
-                    missingFilesList = missingFilesList + missingFullFRM
+            api = new_api()
+
+            # Loop over sensorType
+            for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+
+                # If ES only: Skip if sensor is not ES
+                if 'es only' in ConfigFile.settings['SensorType'].lower():
+                    if sensorType != 'ES':
+                        continue
+
+                # missingFiles: 0 of the needed files found locally... cannot be processed
+                missingFiles = []
+
+                # outdatedFiles: Updated file list in FidRadDB exists wrt local DB.
+                outdatedFiles = []
+
+                # Loop over serialNumber-cal./char. type combinations
+                for serialNumber_calCharType in serialNumber_calCharTypes:
+
+                    # RADCAL follows different rules: All RADCAL files in FidRadDB should be available locally
+                    is_RADCAL = serialNumber_calCharType.split('_')[-1] == 'RADCAL'
+
+                    # Skip if class-based and file is not RADCAL
+                    if fL1bCal == 2 and not is_RADCAL:
+                        continue
+
+                    # List all files available in FidRadDB and locally
+                    filesInFidRadDB = OCDBApi.fidrad_list_files(api, serialNumber_calCharType)
+                    filesInLocalDB = sorted([f for f in os.listdir(Path(self.path_FidRadDB)) if (re.match('[C][P][_]%s[_][0-9]{14}[\.][tT][xX][tT]' % serialNumber_calCharType, f) is not None)])
+
+                    # Dates of files in FidRadDB and locally
+                    filesDatesFidRadDB = np.array([int(f.split('_')[-1].split('.')[0]) for f in filesInFidRadDB])
+                    filesDatesLocalDB = np.array([int(f.split('_')[-1].split('.')[0]) for f in filesInLocalDB])
+
+                    # WARNING should be raised if no files are available in FidRadDB when mandatory files are missing locally!
+                    FidRadDBwarning = len(filesInFidRadDB)==0
+
+                    # Decide whether files are missing (cannot process!) or are outdated ("new" or other files available in FidRadDB)
+                    if len(filesDatesLocalDB) == 0:
+                        missingFiles = missingFiles + filesInFidRadDB
+                    elif is_RADCAL or (not is_RADCAL and (np.max(filesDatesFidRadDB) > np.max(filesDatesLocalDB))):
+                        outdatedFiles = outdatedFiles + [f for f in filesInFidRadDB if f not in filesInLocalDB]
+                    else:
+                        FidRadDBwarning = False
+
+                    # RAISE warning if mandatory file is missing in FidRadDB!!
+                    if FidRadDBwarning:
+                        # WARNING
+                        QtWidgets.QMessageBox.warning(None, "No match", 'No files corresponding to serial number and cal/char type combination %s present in FidRadDB!!' % serialNumber_calCharType)
+
+                # Output string
+                if len(missingFiles)>0 or len(outdatedFiles)>0:
+                    missingFilesStrings[sensorType] = ''
+                if len(missingFiles)>0:
+                    missingFilesStrings[sensorType] = 'Must download files from FidRadDB: %s' % ' '.join(missingFiles)
+                if len(outdatedFiles)>0:
+                    missingFilesStrings[sensorType] = missingFilesStrings[sensorType] + 'Suggest download updated files from FidRadDB: %s' % ' '.join(outdatedFiles)
+
+                # Missing file list
+                missingFilesList = missingFilesList + missingFiles + outdatedFiles
 
         # Update line edits
         self.FidRadDBcalCharDirCheckES.setText(missingFilesStrings['ES'])
@@ -582,7 +629,7 @@ class CalCharWindow(QtWidgets.QDialog):
                 cal_char_files_remote = OCDBApi.fidrad_list_files(api, serialNumber_calCharType)
                 cal_char_files_remote = [os.path.basename(file) for file in cal_char_files_remote]
             except:
-                print('File %s not available at FidRadDB (https://ocdb.eumetsat.int) or not reachable.')
+                print('File %s not available at FidRadDB (https://ocdb.eumetsat.int) or not reachable.' % serialNumber_calCharType)
                 cal_char_files_remote = []
             else:
                 print('File(s) found at FidRadDB (https://ocdb.eumetsat.int) for tag %s.' % serialNumber_calCharType)
@@ -608,7 +655,7 @@ class CalCharWindow(QtWidgets.QDialog):
                         OCDBApi.fidrad_download_file(api, file, self.path_FidRadDB)
                     except:
                         print('Unable to download file %s from FidRadDB. Maybe file does not exist. '
-                              'Also check your internet connection, if problem persists, provide cal/char file manually.')
+                              'Also check your internet connection, if problem persists, provide cal/char file manually.' % file)
                     else:
                         print(f'File {file} successfully downloaded from FidRadDB')
 
@@ -741,13 +788,17 @@ class CalCharWindow(QtWidgets.QDialog):
         closeFlag = True
 
         # Checks if missing cal/char files, if yes raise a Warning!!
-        _, missingFilesList = self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
+        missingFilesStrings, missingFilesList = self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
         if len(missingFilesList) != 0:
-            # WARNING
-            QtWidgets.QMessageBox.warning(None, "No match", "Missing FidRadDB cal/char files:<br>%s<br>"
-                                                            "<br>Please copy them to %s from local source or FidRadDB (https://ocdb.eumetsat.int)." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
 
-            closeFlag = False
+            cannot_process_flag = np.any([True if 'Must' in string else False for string in missingFilesStrings.values()])
+
+            if cannot_process_flag:
+                # WARNING
+                QtWidgets.QMessageBox.warning(None, "No match", "Missing FidRadDB cal/char files:<br>%s<br>"
+                                                                "<br>Please copy them to %s from local source or FidRadDB (https://ocdb.eumetsat.int)." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
+
+                closeFlag = False
 
         # Checks if missing multi. cal selections, if yes, raise a warning
         if ConfigFile.settings['MultiCal'] == 1:
