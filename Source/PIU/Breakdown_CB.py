@@ -49,7 +49,13 @@ class plottingToolsCB:
         acqTime = datetime.strptime(
             node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y"
         )
-        cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"  #
+        # cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"
+        # TODO: Needs to be updated to accomodate multiple ensembles/stations within a file
+        # station is a string moniker for the ensemble, either a station number or a timestamp
+        # if ConfigFile.settings['bL2Stations']:
+        #     cast = f"Station_{ancGroup.getDataset('STATION').columns['STATION'][t]}"
+        # else:
+        cast = acqTime.strftime("%Y%m%d_%H%M%S") #
 
         try:
             BD_VALS = {
