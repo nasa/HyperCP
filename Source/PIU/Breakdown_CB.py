@@ -1,3 +1,4 @@
+''' Generate and plot spectral and pie breakdowns for class-based FRM uncertainties'''
 # Packages
 from os import path, makedirs, umask
 from datetime import datetime
@@ -18,10 +19,11 @@ from Source.ConfigFile import ConfigFile
 from Source.utils.loggingHCP import writeLogFileAndPrint
 
 # PIU
-from Source.PIU import PIUDataStore as pds
+# from Source.PIU import PIUDataStore as pds
 
 
 class plottingToolsCB:
+    '''Class for class-based uncertainty plotting tools'''
 
     def __init__(self, sza, station, prop: Optional[MCPropagation] = None):
         self.sza = sza
@@ -83,31 +85,8 @@ class plottingToolsCB:
         else:
             keys = dict(
                 # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-                Rrs=[
-                    "noise",
-                    "pert",
-                    "Cal",
-                    "Stab",
-                    "Lin",
-                    "cT",
-                    "Stray",
-                    "pol",
-                    "cosine",
-                    "rho",
-                ],
-                nLw=[
-                    "noise",
-                    "pert",
-                    "Cal",
-                    "Stab",
-                    "Lin",
-                    "cT",
-                    "Stray",
-                    "pol",
-                    "cosine",
-                    "rho",
-                    "f0",
-                ],
+                Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
+                nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
             sensors = ["nLw", "Rrs"]
             if "BRDF" in BD_UNCS["Rrs"]:
@@ -139,9 +118,7 @@ class plottingToolsCB:
             plt.savefig(fp)
             plt.close(f"{sensor}_{self.station}")
 
-    def pie_plot_class(
-        self, BD_UNCS, BD_VALS, wavelengths, ancGrp
-    ) -> dict[str : np.array]:
+    def pie_plot_class(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str : np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = "Factory"
         else:
@@ -187,7 +164,8 @@ class plottingToolsCB:
         # ]
 
         for sensor, component in labels.items():
-            indexes = [  # todo: add extra wavelengths
+            # TODO: add extra wavelengths
+            indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
                 np.argmin(np.abs(wavelengths - 620)),
                 np.argmin(np.abs(wavelengths - 560)),
@@ -294,7 +272,7 @@ class plottingToolsCB:
                     autopct="%1.1f%%",
                 )
                 # except ValueError:
-                #     # todo discuss a better solution to issue #262 with programming team
+                #     # TODO: discuss a better solution to issue #262 with programming team
                 #     print("all zeros encountered, cannot plot pie chart")
 
                 plt.title(
@@ -461,9 +439,7 @@ class PlotMaths:
             try:
                 UNCS["Lw"][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw)
             except ValueError as err:
-                from Source.utils.loggingHCP import (
-                    writeLogFileAndPrint,
-                )  # why is linter requiring this and also scolding about it?
+                from Source.utils.loggingHCP import writeLogFileAndPrint  # why is linter requiring this and also scolding about it?
 
                 writeLogFileAndPrint(
                     f"Error in Class Based Breakdown - {keys_lw[indx]}: {err}"
@@ -506,7 +482,7 @@ class PlotMaths:
             except ValueError as err:
                 from Source.utils.loggingHCP import writeLogFileAndPrint
 
-                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[i]}")
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[i]}: {err}")
                 UNCS["Rrs"][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(
                     rrs_vals, uRrs, corr_between=False
                 )
@@ -524,9 +500,9 @@ class PlotMaths:
     @staticmethod
     def getpct(v1, v2):
         pct = []
-        for i in range(len(v1)):
+        for i,v1i in enumerate(v1):
             if v2[i] != 0:  # ignore wavelengths where we do not have an output
-                pct.append(v1[i] / v2[i])
+                pct.append(v1i / v2[i])
             else:
                 pct.append(
                     0
