@@ -272,6 +272,10 @@ class ProcessL1b:
                         if chooseCal is None:
                             raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(chooseCal, gp)
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = os.path.basename(chooseCal).split('_')[-1].split('.')[0]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = os.path.basename(chooseCal).split('_')[-1].split('.')[0]
 
         return root
 
