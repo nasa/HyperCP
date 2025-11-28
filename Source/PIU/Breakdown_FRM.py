@@ -1,11 +1,14 @@
+''' Generate and plot spectral and pie breakdowns for sensor-based FRM uncertainties'''
 from os import path, makedirs, umask
+from typing import Optional, Union
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from itertools import cycle
 
 import comet_maths as cm
-from typing import Optional, Union
 
 # Source
 from Source.MainConfig import MainConfig
@@ -17,6 +20,7 @@ from Source.PIU.PIUDataStore import PIUDataStore
 
 
 class plottingToolsFRM:
+    '''Class for sensor-based uncertainty plotting tools'''
     def __init__(self, sza, station):
         self.sza = sza
         self.station = station
@@ -25,25 +29,25 @@ class plottingToolsFRM:
     def plotL1B(self, wvls, BD_UNCS, signal):
         for s_type in ['ES', 'LI', 'LT']:
             ## DO PLOTS ##
-            self.plot(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type])
-            self.plot(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type])
-            self.plot(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type])
-            self.plot(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type])
-            self.plot(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type])
 
             # post normalisation
-            self.plot(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type])
-            self.plot(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type])
-            
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type])
+
             # plot contributions that vary between sensors
             if s_type.upper() == 'ES':
-                self.plot(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type])
-                self.plot(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type])
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type])
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type])
             else:
-                self.plot(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type])
-            
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type])
+
             self.save_figure(s_type)  # save the figure once all of the contributions have been added to the plot (will close the figure)
-        
+
             self.plot_pie_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
 
     def plotL2(self, waveSubset, BD_UNCS, signal):
@@ -53,34 +57,34 @@ class plottingToolsFRM:
 
             ## DO PLOTS ##
             wvls = np.array(waveSubset)
-            self.plot(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim)
 
             # post normalisation
-            self.plot(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim)
-            self.plot(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim)
-            
+            self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim)
+
             # plot contributions that vary between sensors
             if meas.upper() != 'LW':
-                self.plot(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim)
-                self.plot(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim)
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
                 if meas.upper() == 'NLW':
-                    self.plot(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
+                    self.plot_spectral_FRM(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
                 if 'BRDF' in UNC:
-                    self.plot(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
+                    self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
 
-            self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
-            
+            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
+
             self.save_figure(meas, level='L2')  # save the figure once all of the contributions have been added to the plot (will close the figure)
-        
+
             self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
 
 
-    def plot(self, s, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
+    def plot_spectral_FRM(self, s, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)
 
@@ -95,10 +99,10 @@ class plottingToolsFRM:
         self.get_figure(s)  # create plt.figure with name based on sensor/station/cast
         if rel_to is not None:
             if len(rel_to.shape) > 1:
-                y_mean = np.mean(rel_to, axis=0)  # if rel_to is a sample/PDF make sure to get the mean 
+                y_mean = np.mean(rel_to, axis=0)  # if rel_to is a sample/PDF make sure to get the mean
             else:  # if we have a signal to put uncs in relative units
                 y_mean = rel_to  # otherwise we just use rel_to directly
-            
+
             u_rel = (y/y_mean)*100  # calculate relative uncertainty
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")  # unit is always % if relative uncertainties used
@@ -112,7 +116,7 @@ class plottingToolsFRM:
 
         plt.title(f"FRM Breakdown: {s}, Solar Zenith: {round(self.sza, 2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
         plt.xlabel("Wavelength (nm)")  # x lable always wavelength in uncertainty plotting in HyperCP
-        
+
         plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
 
     def plot_pie_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str: np.array], signal: np.array, level: str='L1B') -> None:
@@ -127,7 +131,7 @@ class plottingToolsFRM:
 
         """
 
-        # select appropriate keys and lable names for given level (based on how BD_UNCS is filled in BaseInstrument, HyperOCR and TriOS classes. 
+        # select appropriate keys and lable names for given level (based on how BD_UNCS is filled in BaseInstrument, HyperOCR and TriOS classes.
         if level.upper() == 'L1B':
             keys = dict(
                 ES=["noise", "pert", "radcal", "stab", "clin", "ct", "cSl", "cos_diff", "cos_dir"],
@@ -180,10 +184,14 @@ class plottingToolsFRM:
         ]  # get closest wavelength available to the specific wavelengths which are to be outputted
         for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
+<<<<<<< HEAD
             
             # --- Build figure and axis ---
             fig = self.get_figure(s)
             fig.set_size_inches(12, 8)
+=======
+            self.get_figure(s)
+>>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
             ax = plt.gca()
 
             # --- Data ---
@@ -207,6 +215,7 @@ class plottingToolsFRM:
             vals_sorted, labels_sorted = zip(*sorted_data)
             colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
 
+<<<<<<< HEAD
             # --- Plot horizontal bars ---
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
     
@@ -216,6 +225,13 @@ class plottingToolsFRM:
             for i, v in enumerate(vals_sorted):
                 pct = (v / total) * 100
                 ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+=======
+            # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
+            for label, t in zip(labels[s], l[1]):
+                x, y = t.get_position()
+                angle = int(math.degrees(math.atan2(y, x)))
+                ha = "left"
+>>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
 
             # --- Styling ---
             ax.invert_yaxis()  # largest at top
@@ -225,6 +241,7 @@ class plottingToolsFRM:
 
             plt.tight_layout()
 
+<<<<<<< HEAD
                 # fig = self.get_figure(s)
                 # fig.set_size_inches(12, 8)
                 # ax = plt.gca()
@@ -315,6 +332,11 @@ class plottingToolsFRM:
 
         # plt.tight_layout()  # for improved clarity and less overlapping of labels
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
+=======
+            plt.tight_layout()  # for improved clarity and less overlapping of labels
+            # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
+            fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
+>>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
                 # plt.close(fig)
 
@@ -331,12 +353,12 @@ class plottingToolsFRM:
                 fig = plt.figure(f"{s}")
             except AttributeError:
                 fig = plt.figure(s)
-        
+
         return fig
-    
+
     def save_figure(self, s: Optional[str]=None, fp: Optional[str]=None, legend: bool=True, grid: bool=True, level='L1B') -> None:
         """
-        Helper function to save figures based on cast/station information
+        Helper function to save spectral and pie figures based on cast/station information
         
         :param fp: optional, save path for figure
         :param legend: bool to add legend to plot - default = True
@@ -354,21 +376,24 @@ class plottingToolsFRM:
             plt.grid('both')
 
         if fp is None:
+            # Case for spectral plots
             try:
-                fp = path.join(self.plot_folder, f"BD_plot_{level}_{s}_{self.station}.png")
+                # fp = path.join(self.plot_folder, f"BD_plot_{level}_{s}_{self.station}.png")
+                fp = path.join(self.plot_folder, f"{s}_SB_spectral_{level}_{self.station}.png")
             except (AttributeError, ValueError):
                 fp = path.join(self.plot_folder, f"plot_sample_{s}.png")
-        
+
         if not path.exists(self.plot_folder):
+            orig_umask = None
             try:
                 orig_umask = umask(0)
                 makedirs(self.plot_folder, 0o777)
             finally:
                 umask(orig_umask)
-        
+
         plt.savefig(fp)
         plt.close()
-    
+
     @staticmethod
     def getpct(v1: Union[float, np.array], v2: Union[float, np.array]) -> np.array:
         """
@@ -379,9 +404,9 @@ class plottingToolsFRM:
         
         """
         pct = []
-        for i in range(len(v1)):
+        for i,v1i in enumerate(v1):
             if v2[i] != 0:  # ignore wavelengths where we do not have an output
-                pct.append(v1[i]/v2[i])
+                pct.append(v1i/v2[i])
             else:
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
         return np.array(pct) * 100  # convert to np array so we can use numpy broadcasting
@@ -396,7 +421,7 @@ class SolveLPU:
     def __init__(self, prop=None):
         if prop is not None:
             self.prop = prop
-    
+
     @staticmethod
     def S12_alpha(PDS: PIUDataStore, s: str) -> dict[str: np.array]:
         """
@@ -412,14 +437,14 @@ class SolveLPU:
 
         k = DATA['t1']/(DATA['t2'] - DATA['t1'])
         S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
-        
+
         # TODO: comment equations and sensitivity coeffs
         LPU_UNCS['S12'] = np.sqrt(
-            ((1 + k)**2)*(UNC['S1']**2) + 
+            ((1 + k)**2)*(UNC['S1']**2) +
             (k**2)*(UNC['S2']**2)
         )
         LPU_UNCS['alpha'] = np.sqrt(
-            (1/S12**2)**2 * UNC['S1']**2 + 
+            (1/S12**2)**2 * UNC['S1']**2 +
             ((S12 - 2*DATA['S1']) / S12**3)**2 * LPU_UNCS['S12']
         )
 
@@ -455,8 +480,8 @@ class SolveLPU:
             sensitivity_coefficient_2 = (np.pi*S12_sl_corr/(DATA['PANEL'] * lamp_2))*(10*DATA['cal_int']/DATA['t1'])
             sensitivity_coefficient_3 = (np.pi*S12_sl_corr/(panel_2 * DATA['LAMP']))*(10*DATA['cal_int']/DATA['t1'])
             LPU_UNCS['radcal'] = np.sqrt(
-                sensitivity_coefficient_1**2 * S12_sl_unc**2 + 
-                sensitivity_coefficient_2**2 * UNC['LAMP']**2 + 
+                sensitivity_coefficient_1**2 * S12_sl_unc**2 +
+                sensitivity_coefficient_2**2 * UNC['LAMP']**2 +
                 sensitivity_coefficient_3**2 * UNC['PANEL']**2
             )
 
@@ -470,7 +495,7 @@ class SolveLPU:
         :param signal: raw signal
         :param signal_unc: raw signal uncertainty
         """
-        
+
         signal = np.mean(sample_signal, axis=0)
         # f = signal - signal*alpha
         # sen coef 1 = 1 - 2*alpha*signal
@@ -504,7 +529,7 @@ class SolveLPU:
         LPU_UNCS['noise'] = self._slMC(sample_lpu_dark, c_zong_no_unc)
         LPU_UNCS['clin']  = self._slMC(sample_lpu_nlin, c_zong_no_unc)
         LPU_UNCS['cSl']   = self._slMC(sample_signal_no_unc, sample_C_zong)
-        
+
         return LPU_UNCS
 
     def _slMC(self, sample_signal, sample_zong):
@@ -513,7 +538,7 @@ class SolveLPU:
         """
         sample_out = self.prop.run_samples(mf.Zong_SL_correction, [sample_signal, sample_zong])
         return self.prop.process_samples(None, sample_out)
-    
+
     def calibration(self, LPU_UNCS: dict[str: np.array], updated_gain: np.array, signal: np.ndarray) -> dict[str: np.array]:
         """
         :param LPU_UNCS: breakdown uncertainties generated from LPU
@@ -522,15 +547,15 @@ class SolveLPU:
         """
 
         sen_coef1 = 1/updated_gain
-        sen_coef2 = (np.mean(signal, axis=0) / updated_gain**2)
-        
+        sen_coef2 = np.mean(signal, axis=0) / updated_gain**2
+
         LPU_UNCS['noise']  = np.sqrt(sen_coef1**2 * LPU_UNCS['noise']**2)
         LPU_UNCS['clin']   = np.sqrt(sen_coef1**2 * LPU_UNCS['clin']**2)
         LPU_UNCS['cSl']    = np.sqrt(sen_coef1**2 * LPU_UNCS['cSl']**2)
         LPU_UNCS['radcal'] = np.sqrt(sen_coef2**2 * LPU_UNCS['radcal']**2)
 
         return LPU_UNCS
-    
+
     @staticmethod
     def get_original_gains(s, S1, sample_LAMP, sample_PANEL=None):
         """
@@ -547,7 +572,7 @@ class SolveLPU:
             return LAMP_mag / (S1*10)
         else:  # Radiance
             return (LAMP_mag * np.mean(sample_PANEL, axis=0)) / (np.pi*S1*10)
-        
+
     def temperature(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, radcal_signal) -> dict[str: np.array]:
         """
         uses LPU to calculate temperature uncertainty as well as propagate uncertainties through the temperature correction
@@ -591,11 +616,11 @@ class SolveLPU:
         sample_sig_cal    = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['radcal'], "syst")
         sample_sig_stab   = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['stab'],   "syst")
         sample_sig_ct     = cm.generate_sample(mDraws, np.mean(sample_ct_corr, axis=0), LPU_UNCS['ct'],     "syst")
-        
+
         dir_rat_no_unc  = cm.generate_sample(mDraws, np.mean(dir_ratio), None, None)
         cos_corr_no_unc = cm.generate_sample(mDraws, np.mean(sample_cos_corr, axis=0), None, None)
         fhemi_no_unc    = cm.generate_sample(mDraws, np.mean(sample_fhemi, axis=0), None, None)
-        
+
         LPU_UNCS['noise']    = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_dark,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
         LPU_UNCS['clin']     = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_clin,   dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
         LPU_UNCS['cSl']      = self.prop.process_samples(None, self.prop.run_samples(mf.cos_corr, [sample_sig_sl,     dir_rat_no_unc, cos_corr_no_unc, fhemi_no_unc]))
@@ -633,7 +658,7 @@ class SolveLPU:
         :param Li: Li signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
-        
+
         # f = Lt - rho*Li
         sc_1 = 1  # df/dLt
         sc_2 = Li**2  # df/drho
@@ -643,9 +668,9 @@ class SolveLPU:
         for k in LPU_common_wb['LI'].keys():  # pass all uncs through sen coeffs for LW
             LPU_UNCS['Lw'][k] = np.sqrt(
                 (sc_1 * LPU_common_wb['LT'][k]**2) +
-                (sc_3 * LPU_common_wb['LI'][k]**2) 
+                (sc_3 * LPU_common_wb['LI'][k]**2)
             )
-            
+
         LPU_UNCS['Lw']['rho'] = np.sqrt(sc_2 * LPU_UNCS['rho']['rho_unc']**2)
 
     def reflectance(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Es: np.array, Li: np.array, Lt: np.array, rho: np.array) -> dict[str: np.array]:
@@ -659,7 +684,7 @@ class SolveLPU:
         :param Lt: Lt signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
-        
+
         # Y = f(x) ==> Rrs =  LT - rho*LI / ES
         sc_1 = 1 / Es   # df/dLT
         sc_2 = rho / Es # df/dLI
@@ -670,13 +695,13 @@ class SolveLPU:
             if k != 'pol' and k != 'rho':
                 LPU_UNCS['Rrs'][k] = np.sqrt(
                     sc_1**2 * LPU_common_wb['LT'][k]**2 +
-                    sc_2**2 * LPU_common_wb['LI'][k]**2 + 
+                    sc_2**2 * LPU_common_wb['LI'][k]**2 +
                     sc_4**2 * LPU_common_wb['ES'][k]**2
                 )
-            
+
         LPU_UNCS['Rrs']['pol'] = np.sqrt(
             # es does not have pol
-            sc_1**2 * LPU_common_wb['LT']['pol']**2 + 
+            sc_1**2 * LPU_common_wb['LT']['pol']**2 +
             sc_2**2 * LPU_common_wb['LI']['pol']**2
         )
 
@@ -697,7 +722,7 @@ class SolveLPU:
         :param Li: Li signal for caluclating sensitivity coefficients
         :param rho: rho values for caluclating sensitivity coefficients
         """
-        
+
         for k in LPU_UNCS['Rrs'].keys():
             LPU_UNCS['nLw'][k] = np.sqrt(
                f0**2 * LPU_UNCS['Rrs'][k]**2
