@@ -184,14 +184,10 @@ class plottingToolsFRM:
         ]  # get closest wavelength available to the specific wavelengths which are to be outputted
         for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-<<<<<<< HEAD
-            
+
             # --- Build figure and axis ---
             fig = self.get_figure(s)
             fig.set_size_inches(12, 8)
-=======
-            self.get_figure(s)
->>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
             ax = plt.gca()
 
             # --- Data ---
@@ -215,7 +211,6 @@ class plottingToolsFRM:
             vals_sorted, labels_sorted = zip(*sorted_data)
             colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
 
-<<<<<<< HEAD
             # --- Plot horizontal bars ---
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
     
@@ -225,13 +220,6 @@ class plottingToolsFRM:
             for i, v in enumerate(vals_sorted):
                 pct = (v / total) * 100
                 ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
-=======
-            # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
-            for label, t in zip(labels[s], l[1]):
-                x, y = t.get_position()
-                angle = int(math.degrees(math.atan2(y, x)))
-                ha = "left"
->>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
 
             # --- Styling ---
             ax.invert_yaxis()  # largest at top
@@ -241,30 +229,29 @@ class plottingToolsFRM:
 
             plt.tight_layout()
 
-<<<<<<< HEAD
-                # fig = self.get_figure(s)
-                # fig.set_size_inches(12, 8)
-                # ax = plt.gca()
+            # fig = self.get_figure(s)
+            # fig.set_size_inches(12, 8)
+            # ax = plt.gca()
 
-                # vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
-                # combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
-                # labels_list = labels[s]
-                # # Sort by value for clarity (optional)
-                # sorted_data = sorted(zip(vals, labels_list, colors), reverse=True)
-                # vals_sorted, labels_sorted, colors_sorted = zip(*sorted_data)
+            # vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
+            # combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
+            # labels_list = labels[s]
+            # # Sort by value for clarity (optional)
+            # sorted_data = sorted(zip(vals, labels_list, colors), reverse=True)
+            # vals_sorted, labels_sorted, colors_sorted = zip(*sorted_data)
 
-                # # Horizontal bar chart
-                # ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
+            # # Horizontal bar chart
+            # ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
-                # # Add percentage labels on bars
-                # for i, v in enumerate(vals_sorted):
-                #     pct = v / sum(vals_sorted) * 100
-                #     ax.text(v + max(vals_sorted)*0.01, i, f'{pct:.1f}%', va='center', fontsize=11)
+            # # Add percentage labels on bars
+            # for i, v in enumerate(vals_sorted):
+            #     pct = v / sum(vals_sorted) * 100
+            #     ax.text(v + max(vals_sorted)*0.01, i, f'{pct:.1f}%', va='center', fontsize=11)
 
-                # # Title and legend
-                # plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
-                # plt.xlabel("Uncertainty Contribution")
-                # plt.ylabel("Contributors")
+            # # Title and legend
+            # plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+            # plt.xlabel("Uncertainty Contribution")
+            # plt.ylabel("Contributors")
             
             #     # Explode slices with < 3% for emphasis
             #     explode = [0.15 if (v / sum(vals) * 100) < 3 else 0 for v in vals]
@@ -332,11 +319,6 @@ class plottingToolsFRM:
 
         # plt.tight_layout()  # for improved clarity and less overlapping of labels
             fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
-=======
-            plt.tight_layout()  # for improved clarity and less overlapping of labels
-            # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
-            fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
->>>>>>> 8b7dd882f5a03b73a6a8955f282b30afaba45077
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
                 # plt.close(fig)
 
