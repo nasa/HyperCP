@@ -669,7 +669,10 @@ def plotUncertainties(root, filename):
         if ConfigFile.settings['bL2Stations']:
             station = f"Station_{ancGroup.getDataset('STATION').columns['STATION'][t]}"
         else:
-            station = cast.strftime("%Y%m%d_%H%M%S")
+            try:
+                station = cast.strftime("%Y%m%d_%H%M%S")
+            except:
+                station = cast.replace('-','').replace('T','')
 
         BD_UNCS = {}
         for _id, ds in bd_grp.datasets.items():
