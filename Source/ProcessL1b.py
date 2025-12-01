@@ -268,10 +268,17 @@ class ProcessL1b:
                     elif ConfigFile.settings["MultiCal"] == 2: # Choose-cal
 
                         # Read specific chosen cal into gp
-                        chooseCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("chooseCal_%s" % sensorType))
+                        chooseCal = os.path.join(CODE_HOME,fidRadPath,
+                                                 ConfigFile.settings.get(f'chooseCal_{sensorType}'))
                         if chooseCal is None:
                             raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(chooseCal, gp)
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] =\
+                                  os.path.basename(chooseCal).split('_')[-1].split('.')[0]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = \
+                                os.path.basename(chooseCal).split('_')[-1].split('.')[0]
 
         return root
 

@@ -5,6 +5,8 @@ import math
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+# from itertools import cycle
 
 import comet_maths as cm
 
@@ -156,6 +158,17 @@ class plottingToolsFRM:
                 labels['nLw'].append("brdf correction")
                 keys['Rrs'].append("BRDF")
                 labels['Rrs'].append("brdf correction")
+        
+        # ✅ Build global color map OUTSIDE the if/else
+        from itertools import cycle
+        all_labels = []
+        for group in labels.values():
+            all_labels.extend(group)
+        all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
+
+        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        color_cycle = cycle(palette)
+        LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
 
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),
@@ -168,35 +181,76 @@ class plottingToolsFRM:
         for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
             self.get_figure(s)
+
+            # --- Build figure and axis ---
+            fig = self.get_figure(s)
+            fig.set_size_inches(12, 8)
             ax = plt.gca()
 
+            # --- Data ---
             vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
-            combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
+            # combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
 
-            l = ax.pie(
-                vals,
-                # labels=labels[s],
-                autopct='%1.1f%%',
-                pctdistance=1.1,
-                labeldistance=1.2,
-            )
+            # l = ax.pie(
+            #     vals,
+            #     # labels=labels[s],
+            #     autopct='%1.1f%%',
+            #     pctdistance=1.1,
+            #     labeldistance=1.2,
+            # )
 
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
+            # plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
 
-            # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
-            for label, t in zip(labels[s], l[1]):
-                x, y = t.get_position()
-                angle = int(math.degrees(math.atan2(y, x)))
-                ha = "left"
+            # # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
+            # for label, t in zip(labels[s], l[1]):
+            #     x, y = t.get_position()
+            #     angle = int(math.degrees(math.atan2(y, x)))
+            #     ha = "left"
 
-                if x<0:
-                    angle -= 180
-                    ha = "right"
+            #     if x<0:
+            #         angle -= 180
+            #         ha = "right"
 
-                plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
+            #     plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
 
-            plt.tight_layout()  # for improved clarity and less overlapping of labels
-            # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
+            # plt.tight_layout()  # for improved clarity and less overlapping of labels
+            # # fp = path.join(self.plot_folder, f"Sensor_pie_{s}_{self.station}_{wvl_at_indx}.png")
+            labels_list = labels[s]
+            colors = [LABEL_COLORS[lab] for lab in labels_list]
+
+            # Safety: handle empty or all-zero data
+            if not vals or sum(vals) == 0:
+                ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
+                plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
+                plt.axis('off')
+                plt.tight_layout()
+                return
+
+            # Combined uncertainty
+            combined = (sum(v**2 for v in vals)) ** 0.5
+
+            # --- Sort by value descending for readability ---       
+            sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
+            vals_sorted, labels_sorted = zip(*sorted_data)
+            colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
+
+            # --- Plot horizontal bars ---
+            ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
+
+            # --- Add percentage labels to the right of each bar ---
+            total = sum(vals_sorted)
+            x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
+            for i, v in enumerate(vals_sorted):
+                pct = (v / total) * 100
+                ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+
+            # --- Styling ---
+            ax.invert_yaxis()  # largest at top
+            ax.set_xlabel("Uncertainty Contribution")
+            ax.set_ylabel("Contributors")
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+
+            plt.tight_layout()
             fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
             # plt.close(fig)
