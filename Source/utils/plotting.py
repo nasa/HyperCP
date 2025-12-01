@@ -636,8 +636,6 @@ def plotUncertainties(root, filename):
     nlw_cols = refGrp.getDataset("nLw_HYPER").columns
     rrs_cols = refGrp.getDataset("Rrs_HYPER").columns
 
-    from datetime import datetime as dt
-
     for sensor, cols in zip(
         ['ES', 'LI', 'LT', 'Rrs', 'nLw'],
         [es_cols, li_cols, lt_cols, nlw_cols, rrs_cols]
@@ -647,7 +645,7 @@ def plotUncertainties(root, filename):
             dates = cols.pop("Datetag")
             times = cols.pop("Timetag2")  # convert from timetag to time
             for date, tt2 in zip(dates, times):
-                casts.append(dt.strftime(timeTag2ToDateTime(dateTagToDateTime(date), tt2), "%Y-%m-%dT%H%M%S"))
+                casts.append(timeTag2ToDateTime(dateTagToDateTime(date), tt2))
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
@@ -669,10 +667,7 @@ def plotUncertainties(root, filename):
         if ConfigFile.settings['bL2Stations']:
             station = f"Station_{ancGroup.getDataset('STATION').columns['STATION'][t]}"
         else:
-            try:
-                station = cast.strftime("%Y%m%d_%H%M%S")
-            except:
-                station = cast.replace('-','').replace('T','')
+            station = cast.strftime("%Y%m%d_%H%M%S")
 
         BD_UNCS = {}
         for _id, ds in bd_grp.datasets.items():
