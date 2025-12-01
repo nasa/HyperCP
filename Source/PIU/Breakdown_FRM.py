@@ -18,6 +18,7 @@ from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
 from Source.PIU.PIUDataStore import PIUDataStore
 
 
+
 class plottingToolsFRM:
     '''Class for sensor-based uncertainty plotting tools'''
     def __init__(self, sza, station):
@@ -180,7 +181,6 @@ class plottingToolsFRM:
         ]  # get closest wavelength available to the specific wavelengths which are to be outputted
         for indx in indexes:  # loop through indexes
             wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-            self.get_figure(s)
 
             # --- Build figure and axis ---
             fig = self.get_figure(s)
@@ -253,7 +253,7 @@ class plottingToolsFRM:
             plt.tight_layout()
             fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
-            # plt.close(fig)
+                # plt.close(fig)
 
     def get_figure(self, s: str) -> plt.figure:
         """
