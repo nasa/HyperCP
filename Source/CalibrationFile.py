@@ -105,8 +105,7 @@ class CalibrationFile:
         try:
             nRead = 0
             for i, cd in enumerate(self.data):
-                v = 0 # for debugging; ignore
-                # cd = self.data[i]
+                v = 0 # for testing convertRaw on b
 
                 # Read variable length message frames (field length == -1)
                 if cd.fieldLength == -1:
@@ -115,15 +114,13 @@ class CalibrationFile:
                     #print("delimiter:", delimiter)
 
                     ender = msg[nRead:].find(delimiter)
-                    # print("read:", nRead, end)
-                    # if end == 0:
-                    #     v = 0.0
-                    # else:
                     if ender != 0:
                         b = msg[nRead:nRead+ender]
                         v = cd.convertRaw(b)
-
-                    nRead += ender
+                        nRead += ender
+                    else:
+                        #expected data field is empty
+                        nRead += 1
 
                 # Read fixed length message frames
                 else:

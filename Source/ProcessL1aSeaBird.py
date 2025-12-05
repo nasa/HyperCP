@@ -63,7 +63,7 @@ class ProcessL1aSeaBird:
             # Don't add contexts that did not match any data in RawFileReader
             if 'CalFileName' not in gp.attributes:
                 continue
-            if calibrationMap[gp.attributes['CalFileName']].sensorType is not 'None':
+            if calibrationMap[gp.attributes['CalFileName']].sensorType != 'None':
                 gp.attributes["CalibrationDate"] = calibrationMap[gp.attributes['CalFileName']].CalibrationDate
             gp.attributes["InstrumentType"] = cf.instrumentType
             gp.attributes["Media"] = cf.media
