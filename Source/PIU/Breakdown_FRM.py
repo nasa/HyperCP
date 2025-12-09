@@ -251,7 +251,8 @@ class plottingToolsFRM:
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
             plt.tight_layout()
-            fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
+            # fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
+            fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, level=level)
                 # plt.close(fig)
 
