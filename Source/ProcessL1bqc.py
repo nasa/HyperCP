@@ -174,6 +174,7 @@ class ProcessL1bqc:
         esColumns.pop('Timetag2')
         esTime = esColumns.pop('Datetime')
 
+        li750 = None
         if sasGroup is not None:
             liData = sasGroup.getDataset("LI")
             liData.datasetToColumns()
@@ -206,7 +207,7 @@ class ProcessL1bqc:
 
         for indx, dateTime in enumerate(esTime):
             # Flag spectra affected by clouds (Compare with 6S Es). Placeholder while under development
-            # Need to propagate 6S even in Default and Class for this to work
+            # Need to propagate 6S even in Default and Class for this to work            
             if sixSGroup is not None:
                 if li750[indx]/es750[indx] >= cloudFLAG:
                     badTimes.append(dateTime)
@@ -258,8 +259,7 @@ class ProcessL1bqc:
         ''' Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters'''
         print("Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters")
 
-        referenceGroup = node.getGroup("IRRADIANCE")
-        gpsGroup = node.getGroup('GPS')
+        referenceGroup = node.getGroup("IRRADIANCE")        
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             sasGroup = node.getGroup("RADIANCE")
             esDarkGroup = node.getGroup('ES_DARK_L1AQC')
@@ -280,13 +280,11 @@ class ProcessL1bqc:
         else:
             raise AssertionError(f"SensorType not supported: {ConfigFile.settings['SensorType']}")
 
-        robotGroup = None
+        # gpsGroup = node.getGroup('GPS')
         ancGroup = None
         pyrGroup = None
         sixSGroup = None
         for gp in node.groups:
-            if gp.id.startswith("SunTracker"):
-                robotGroup = gp
             if gp.id.startswith("ANCILLARY"):
                 ancGroup = gp
                 ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
@@ -295,131 +293,71 @@ class ProcessL1bqc:
             if gp.id.startswith("SIXS"):
                 sixSGroup = gp
 
-        # # Regardless of whether SunTracker is used, Ancillary data will have been already been
-        # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
-        # # to have model data and/or default values incorporated.
+        # # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
+        # #
+        # # GPS Group
+        # # These have TT2/Datetag incorporated in arrays
+        # # Change their column names from NONE to something appropriate to be consistent in
+        # # ancillary group going forward.
+        # # Replace metadata lat/long with GPS lat/long, in case the former is from the ancillary file
+        # ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
+        # ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
+        # ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
+        # ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
 
-        # # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-        # # is provided in Main Window, then use the model data to fill in gaps in the field
-        # # record. Otherwise, use the selected default values from ConfigWindow
+        # # Take Course (presumably COG) and SOG preferentially from GPS
+        # if 'COURSE' in gpsGroup.datasets:
+        #     # These have TT2/Datetag incorporated in arrays
+        #     ancGroup.addDataset('COURSE')
+        #     ancGroup.datasets['COURSE'] = gpsGroup.getDataset('COURSE')
+        #     ancGroup.datasets['COURSE'].changeColName('TRUE','COURSE')
+        # if 'SOG' in gpsGroup.datasets:
+        #     ancGroup.addDataset('SOG')
+        #     ancGroup.datasets['SOG'] = gpsGroup.getDataset('SOG')
+        #     ancGroup.datasets['SOG'].changeColName('NONE','SOG')
 
-        # # This step is only necessary for the ancillary datasets that REQUIRE
-        # # either field or GMAO or GUI default values. The remaining ancillary data
-        # # are culled from datasets in groups in L1B
-        # ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
+        # # Finished with GPS group. Delete
+        # for gp in node.groups:
+        #     if gp.id == gpsGroup.id:
+        #         node.removeGroup(gp)
 
-        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
-        #
-        # GPS Group
-        # These have TT2/Datetag incorporated in arrays
-        # Change their column names from NONE to something appropriate to be consistent in
-        # ancillary group going forward.
-        # Replace metadata lat/long with GPS lat/long, in case the former is from the ancillary file
-        ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
-        ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
-        ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
-        ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
+        # if 'SPEED_F_W' in ancGroup.datasets:
+        #     ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
+        # if 'SZA'in ancGroup.datasets:
+        #     ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+        # if 'SOLAR_AZ'in ancGroup.datasets:
+        #     ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+        # if 'REL_AZ'in ancGroup.datasets:
+        #     ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+        # if 'HUMIDITY' in ancGroup.datasets:
+        #     ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
+        # if 'CLOUD' in ancGroup.datasets:
+        #     ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
+        # if 'PITCH' in ancGroup.datasets:
+        #     ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
+        # if 'ROLL' in ancGroup.datasets:
+        #     ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
+        # if 'STATION' in ancGroup.datasets:
+        #     ancGroup.datasets['STATION'].changeColName('NONE','STATION')
+        # if 'WAVE_HT' in ancGroup.datasets:
+        #     ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
+        # if 'SALINITY'in ancGroup.datasets:
+        #     ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
+        # if 'WINDSPEED'in ancGroup.datasets:
+        #     ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
+        # if 'SST'in ancGroup.datasets:
+        #     ancGroup.datasets['SST'].changeColName('NONE','SST')
 
-        # Take Course (presumably COG) and SOG preferentially from GPS
-        if 'COURSE' in gpsGroup.datasets:
-            # These have TT2/Datetag incorporated in arrays
-            ancGroup.addDataset('COURSE')
-            ancGroup.datasets['COURSE'] = gpsGroup.getDataset('COURSE')
-            ancGroup.datasets['COURSE'].changeColName('TRUE','COURSE')
-        if 'SOG' in gpsGroup.datasets:
-            ancGroup.addDataset('SOG')
-            ancGroup.datasets['SOG'] = gpsGroup.getDataset('SOG')
-            ancGroup.datasets['SOG'].changeColName('NONE','SOG')
+        # if pyrGroup is not None:
+        #     #PYROMETER
+        #     ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")
+        #     ancGroup.datasets['SST_IR'].datasetToColumns()
+        #     ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
 
-        # Finished with GPS group. Delete
-        for gp in node.groups:
-            if gp.id == gpsGroup.id:
-                node.removeGroup(gp)
-
-        if 'SPEED_F_W' in ancGroup.datasets:
-            ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
-
-        if robotGroup is not None:
-            # Take REL_AZ, SZA, SOLAR_AZ, HEADING, POINTING, HUMIDITY, PITCH and ROLL
-            #  preferentially from tracker data. Some of these might change as
-            #  new instruments are added that don't fit the SunTracker/pySAS
-            #  robot model.
-            #
-            # Keep in mind these may overwrite ancillary data from outside sources.
-            ancGroup.addDataset('SZA')
-            ancGroup.datasets['SZA'] = robotGroup.getDataset('SZA')
-            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-            ancGroup.addDataset('SOLAR_AZ')
-            ancGroup.datasets['SOLAR_AZ'] = robotGroup.getDataset('SOLAR_AZ')
-            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
-            ancGroup.addDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'] = robotGroup.getDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
-            # ancGroup.datasets['REL_AZ'].datasetToColumns()
-            if 'HEADING' in robotGroup.datasets:
-                ancGroup.addDataset('HEADING')
-                ancGroup.datasets['HEADING'] = robotGroup.getDataset('HEADING')
-            if 'POINTING' in robotGroup.datasets:
-                ancGroup.addDataset('POINTING')
-                ancGroup.datasets['POINTING'] = robotGroup.getDataset('POINTING')
-                ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
-            if 'HUMIDITY' in robotGroup.datasets:
-                ancGroup.addDataset('HUMIDITY')
-                ancGroup.datasets['HUMIDITY'] = robotGroup.getDataset('HUMIDITY')
-            if 'PITCH' in robotGroup.datasets:
-                ancGroup.addDataset('PITCH')
-                ancGroup.datasets['PITCH'] = robotGroup.getDataset('PITCH')
-                ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
-            if 'ROLL' in robotGroup.datasets:
-                ancGroup.addDataset('ROLL')
-                ancGroup.datasets['ROLL'] = robotGroup.getDataset('ROLL')
-                ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
-            if 'TILT' in robotGroup.datasets:
-                ancGroup.addDataset('TILT')
-                ancGroup.datasets['TILT'] = robotGroup.getDataset('TILT')
-                ancGroup.datasets['TILT'].changeColName('SAS','TILT')
-
-            # Finished with SunTracker/pySAS group. Delete
-            for gp in node.groups:
-                if gp.id == robotGroup.id:
-                    node.removeGroup(gp)
-
-        # ancGroup.datasets['SZA'].changeColName('NONE','SZA') # In case SZA was ancillary
-        if 'SZA'in ancGroup.datasets:
-            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-        if 'SOLAR_AZ'in ancGroup.datasets:
-            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
-        if 'REL_AZ'in ancGroup.datasets:
-            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
-        if 'HUMIDITY' in ancGroup.datasets:
-            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
-        if 'CLOUD' in ancGroup.datasets:
-            ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
-        if 'PITCH' in ancGroup.datasets:
-            ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
-        if 'ROLL' in ancGroup.datasets:
-            ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
-        if 'STATION' in ancGroup.datasets:
-            ancGroup.datasets['STATION'].changeColName('NONE','STATION')
-        if 'WAVE_HT' in ancGroup.datasets:
-            ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
-        if 'SALINITY'in ancGroup.datasets:
-            ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
-        if 'WINDSPEED'in ancGroup.datasets:
-            ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
-        if 'SST'in ancGroup.datasets:
-            ancGroup.datasets['SST'].changeColName('NONE','SST')
-
-        if pyrGroup is not None:
-            #PYROMETER
-            ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")
-            ancGroup.datasets['SST_IR'].datasetToColumns()
-            ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
-
-            # Finished with PYROMETER group. Delete
-            for gp in node.groups:
-                if gp.id == pyrGroup.id:
-                    node.removeGroup(gp)
+        #     # Finished with PYROMETER group. Delete
+        #     for gp in node.groups:
+        #         if gp.id == pyrGroup.id:
+        #             node.removeGroup(gp)
 
         enableMetQualityCheck = ConfigFile.settings["bL1bqcEnableQualityFlags"]
         if enableMetQualityCheck:
@@ -809,7 +747,6 @@ class ProcessL1bqc:
                 # print (grp.id, ds)
                 grp.datasets[ds].datasetToColumns()
 
-        # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node):
             return None
 
