@@ -337,7 +337,7 @@ class ProcessL1b:
             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
                 filing.read_char(f, gp)
         # Polar correction to be developed and added to FRM branch.
-        
+
         # read class based non-linearity for use on wavelengths below approx 450 nm
         for f in glob.glob(os.path.join(classbased_dir, r'*class_LIN_*')):
             filing.read_char(f, gp)
@@ -544,6 +544,34 @@ class ProcessL1b:
             ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
 
             ancGroup.datasets[ds].columnsToDataset()
+
+        # Fix column names
+        if 'SPEED_F_W' in ancGroup.datasets:
+            ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
+        if 'SZA'in ancGroup.datasets:
+            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+        if 'SOLAR_AZ'in ancGroup.datasets:
+            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+        if 'REL_AZ'in ancGroup.datasets:
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+        if 'HUMIDITY' in ancGroup.datasets:
+            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
+        if 'CLOUD' in ancGroup.datasets:
+            ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
+        if 'PITCH' in ancGroup.datasets:
+            ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
+        if 'ROLL' in ancGroup.datasets:
+            ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
+        if 'STATION' in ancGroup.datasets:
+            ancGroup.datasets['STATION'].changeColName('NONE','STATION')
+        if 'WAVE_HT' in ancGroup.datasets:
+            ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
+        if 'SALINITY'in ancGroup.datasets:
+            ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
+        if 'WINDSPEED'in ancGroup.datasets:
+            ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
+        if 'SST'in ancGroup.datasets:
+            ancGroup.datasets['SST'].changeColName('NONE','SST')
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):

@@ -46,9 +46,9 @@ class ProcessL1b_FRMCal:
             # keys as before
             keys = {
                         'anc' : 'ANCILLARY_METADATA',
-                        'rel' : 'NONE',
-                        'sza' : 'NONE',
-                        'saa' : 'NONE',
+                        'rel' : 'REL_AZ',
+                        'sza' : 'SZA',
+                        'saa' : 'SOLAR_AZ',
                         'irad' : f'{sensortype}'
             }
 
