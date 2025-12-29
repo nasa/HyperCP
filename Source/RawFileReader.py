@@ -1,5 +1,6 @@
 """Read raw Sea-Bird file"""
 import sys
+from datetime import datetime
 
 import Source.utils.loggingHCP as logging
 
@@ -88,9 +89,7 @@ class RawFileReader:
                         hdr = f.read(RawFileReader.SATHDR_READ)
                         (k,v) = RawFileReader.readSATHDR(hdr)
                         root.attributes[k] = v
-                        # BUG: Some are not getting TIME-STAMP from SATHDR
                         print(f"{k}: {v}")
-
                         break
                     else:
                         num = 0
@@ -132,4 +131,16 @@ class RawFileReader:
                                 break
                         if num > 0:
                             break
-                        
+
+        # Recover TIME-STAMP if not in SATHDR
+        dt0 = None
+        for v in contextMap.values():
+            try:
+                dt = datetime.strptime(f"{v.datasets['DATETAG'].columns['NONE'][0]}"
+                                       f"{v.datasets['TIMETAG2'].columns['NONE'][0]}000",
+                                       '%Y%j%H%M%S%f')
+                dt0 = dt if dt0 is None else min(dt0, dt)
+            except (KeyError, IndexError, ValueError):
+                continue
+        if dt0 is not None:
+            root.attributes['TIME-STAMP'] = dt0.strftime('%a %b %d %H:%M:%S %Y')
