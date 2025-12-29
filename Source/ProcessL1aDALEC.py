@@ -51,6 +51,9 @@ class ProcessL1aDALEC:
         data2=data1[mask]
         mask=data2['RelAz'].notna()
         data_good=data2[mask]
+        if data_good.size==0:
+            logging.writeLogFileAndPrint("ProcessL1a.processL1a: No valid data")
+            return None
 
         mask = data_good['ChannelType'].isin(['Ed'])
         data_ch.append(data_good[mask])
@@ -129,7 +132,8 @@ class ProcessL1aDALEC:
         gp.addDataset("VOLTAGE")
         gp.datasets["VOLTAGE"].data = np.array(data_good['Voltage'].tolist(), dtype=[('NONE', '<f8')])
         gp.addDataset("POINTING")
-        gp.datasets["POINTING"].data = np.array(data_good['SatelliteCompassHeading'].tolist(), dtype=[('ROTATOR', '<f8')])
+        # gp.datasets["POINTING"].data = np.array(data_good['SatelliteCompassHeading'].tolist(), dtype=[('ROTATOR', '<f8')])
+        gp.datasets["POINTING"].data = np.array(data_good['GearPos'].tolist(), dtype=[('ROTATOR', '<f8')])
         gp.addDataset("PITCH")
         gp.datasets["PITCH"].data = np.array(data_good['Pitch'].tolist(), dtype=[('SAS', '<f8')])
         gp.addDataset("ROLL")
