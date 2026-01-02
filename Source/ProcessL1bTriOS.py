@@ -340,10 +340,13 @@ class ProcessL1bTriOS:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = dating.rootAddDateTime(node)
 
+        #
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             logging.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
+        #
+        #
 
         # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
         ancGroup = node.getGroup("ANCILLARY_METADATA")

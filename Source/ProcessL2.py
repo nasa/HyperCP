@@ -1423,8 +1423,14 @@ class ProcessL2:
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                 for k, v in slice_mean.items():
-                    x_slice[k.lower() + 'Unc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in
-                                                  zip(x_slice[k.lower() + 'Unc'].items(), v.values())}
+                    x_slice[k.lower() + 'Unc'] = {
+                        u[0]: [u[1][0] * np.abs(s[0])] for u, s in
+                        zip(x_slice[k.lower() + 'Unc'].items(), v.values())
+                    }
+                    x_breakdown_unc[k.upper()] = {
+                        u[0]: u[1] * np.abs(s[0]) for s, u in 
+                        zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
+                    }
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
@@ -1548,8 +1554,11 @@ class ProcessL2:
 
             # Model limitations: AOD 0 - 0.5, Solar zenith 0-60 deg, Wavelength 350-1000 nm, SVA 30 or 40 degrees.
 
-            # reduced number of draws because of how computationally intensive the Zhang method is
-            rho_uncertainty_obj = Propagate(M=10, cores=1)
+            if ConfigFile.settings["bL2RhoUnc10"] == 0:
+                # reduced number of draws because of how computationally intensive the Zhang method is
+                rho_uncertainty_obj = Propagate(M=10, cores=1)
+            else:
+                rho_uncertainty_obj = None
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
@@ -1573,8 +1582,11 @@ class ProcessL2:
                                                          anc_slice['REL_AZ'],
                                                          SVA, wavelengths, rho_uncertainty_obj)
         elif method == "mobley_rho":
-            # Full Mobley 1999 model from LUT
-            rho_uncertainty_obj = Propagate(M=100, cores=1)  # Standard number of draws for reasonable uncertainty estimates
+            if ConfigFile.settings["bL2RhoUnc10"] == 0:
+                # Full Mobley 1999 model from LUT
+                rho_uncertainty_obj = Propagate(M=100, cores=1)  # Standard number of draws for reasonable uncertainty estimates
+            else:
+                rho_uncertainty_obj = None
             if 'AOD' in anc_slice:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(anc_slice['WINDSPEED'], anc_slice['SZA'],
                                                            anc_slice['REL_AZ'],

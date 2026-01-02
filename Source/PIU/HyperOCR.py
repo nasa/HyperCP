@@ -3,6 +3,7 @@
 from copy import deepcopy
 import calendar
 from inspect import currentframe, getframeinfo
+import warnings
 
 # typing
 from typing import Union, Any, Optional
@@ -30,7 +31,7 @@ class HyperOCR(BaseInstrument):
 
     def __init__(self):
         super().__init__()
-        self.name = "HyperOCR"
+        self.name = "HyperOCR"        
 
     def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
         """

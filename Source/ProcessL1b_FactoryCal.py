@@ -129,32 +129,6 @@ class ProcessL1b_FactoryCal:
                 num *= (ds.data[k][x] - float(a))
             ds.data[k][x] = num
 
-    # @staticmethod
-    # def processDDMM(ds, cd):
-    #     ''' Process DDMM - not implemented '''
-    #     return
-    #     #s = "{:.2f}".format(x)
-    #     #x = s[:1] + " " + s[1:3] + "\' " + s[3:5] + "\""
-
-    # @staticmethod
-    # def processHHMMSS(ds, cd):
-    #     ''' Process HHMMSS - not implemented '''
-    #     return
-    #     #s = "{:.2f}".format(x)
-    #     #x = s[:2] + ":" + s[2:4] + ":" + s[4:6] + "." + s[6:8]
-
-    # @staticmethod
-    # def processDDMMYY(ds, cd):
-    #     ''' Process DDMMYY - not implemented '''
-    #     return
-    #     #s = str(x)
-    #     #x = s[:2] + "/" + s[2:4] + "/" + s[4:]
-
-    # @staticmethod
-    # def processTIME2(ds, cd):
-    #     ''' Process TIME2 - not implemented '''
-    #     return
-    #     #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
 
     # Used to calibrate raw data (from L1a to L1b)
     @staticmethod

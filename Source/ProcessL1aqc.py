@@ -326,7 +326,7 @@ class ProcessL1aqc:
 
         #   Certain ancillary datasets do not get used in PL1aqc other than to be folded into the new HDF. These include:
         #       shipAzimuth,station,salt,sst,wind,aod,airTemp,cloud,wave, and speed_f_w
-        passThruData = ['HEADING','STATION','SALINITY','SST','WINDSPEED','AOD','AIRTEMP','CLOUD','WAVE_HT','SPEED_F_W']
+        passThruData = ['HEADING','STATION','SALINITY','SST','WINDSPEED','AOD','AIRTEMP','CLOUD','WAVE_HT','SPEED_F_W','TILT']
         pitch, roll = None,None
         if ancillaryData is not None:
             # Reinitialize with new, smaller ancillary dataset trimmed to match sensor data
@@ -538,39 +538,46 @@ class ProcessL1aqc:
             logging.writeLogFileAndPrint("Filtering file for high pitch and roll or pre/post-tilt")
 
             # Preferentially read PITCH and ROLL from SunTracker/pySAS THS sensor...
-            pitch, roll = None, None
+            pitch, roll, tilt = None, None, None
             tilt_pre, tilt_post = None, None
+            tiltGroup, tiltDS = None, None
             for gp in node.groups:
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
                 if gp.id.startswith("SunTracker"):
                     if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
+                        tiltGroup = node.getGroup(gp.id)
                         timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["SAS"]
                         roll = gp.getDataset("ROLL").data["SAS"]
                         break
                     elif "TILT" in gp.datasets: # this condition finds So-Rad tilt
+                        # if tilt already in tiltGroup, no need to add it
                         timeStamp = gp.getDataset("DATETIME").data
                         tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
-                        roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
-                        pitch = tilt
+                        # roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
+                        # pitch = tilt
                         break
                 # For SATTHS without SunTracker (i.e. with pySAS)
                 if gp.id.startswith('SATTHS') and "PITCH" in gp.datasets and "ROLL" in gp.datasets:
-                        timeStamp = gp.getDataset("DATETIME").data
-                        pitch = gp.getDataset("PITCH").data["NONE"]
-                        roll = gp.getDataset("ROLL").data["NONE"]
-                        break
+                    tiltGroup = node.getGroup(gp.id)
+                    timeStamp = gp.getDataset("DATETIME").data
+                    pitch = gp.getDataset("PITCH").data["NONE"]
+                    roll = gp.getDataset("ROLL").data["NONE"]
+                    break
                 if (ConfigFile.settings["SensorType"].lower() == "trios es only" and
-                        gp.id.startswith('ES') and "TILT_PRE" in gp.datasets and "TILT_POST" in gp.datasets):
+                        gp.id.startswith('ES') and "TILT_PRE" in gp.datasets and "TILT_POST" in gp.datasets):                    
                     # TriOS RAMSES G2 have an integrated tilt sensor and
                     # each frame has tilt pre- and post-radiometric measurement
+                    tiltGroup = node.getGroup(gp.id)
                     timeStamp = gp.getDataset("DATETIME").data
                     tilt_pre = gp.getDataset("TILT_PRE").data["NONE"]
                     tilt_post = gp.getDataset("TILT_POST").data["NONE"]
 
             # ...and failing that, try to pull from ancillary data
-            if (pitch is None or roll is None) and (tilt_pre is None or tilt_post is None):
+            if (pitch is None or roll is None) and (tilt_pre is None or tilt_post is None) and (tilt is None):
                 if "PITCH" in ancData.columns:
+                    tiltGroup = None
+                    tiltDS = ancData
                     logging.writeLogFileAndPrint("Pitch data from ancillary file used.")
                     pitch = ancData.columns["PITCH"][0]
                     if "ROLL" in ancData.columns:
@@ -578,6 +585,7 @@ class ProcessL1aqc:
                         roll = ancData.columns["ROLL"][0]
                     timeStamp = ancData.columns["DATETIME"][0]
                 else:
+                    tiltGroup = None
                     msg = "Pitch and roll data not found for tilt sensor or in Ancillary Data.\n"
                     msg = msg + " Try adding to Ancillary Data or turning off tilt filter. Aborting."
                     logging.writeLogFileAndPrint(msg)
@@ -585,13 +593,15 @@ class ProcessL1aqc:
 
             tiltMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"]) # Same as PitchRollRoll...
 
+            # Regardless of source of pitch/roll...
             if pitch is not None and roll is not None:
                 i = 0
                 start = -1
                 stop, startstop = None, None
+                tilt = roll.copy() # initialize only
                 for index, pitchi in enumerate(pitch):
-                    tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
-                    if tilt > tiltMax:
+                    tilt[index] = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
+                    if tilt[index] > tiltMax:
                         i += 1
                         if start == -1:
                             # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
@@ -604,24 +614,53 @@ class ProcessL1aqc:
                             logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
                             badTimes.append(startstop)
                             start = -1
-
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
                     badTimes.append(startstop)
                     logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
-
                 logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
-
                 if start==0 and stop==index: # All records are bad
                     return None
+                
+                # Always restore tilt to the group (or ancData) that tilt/pitch/roll came from
+                if tiltGroup is not None:
+                    tiltGroup.addDataset('TILT').data = np.array(tilt, dtype=[('NONE', '<f8')])
+                else:
+                    tiltDS.columns['TILT'] = [tilt]
+                    tiltDS.columnsToDataset()
+
+            elif tilt is not None:
+                for index, tilti in enumerate(tilt):
+                    if tilti > tiltMax:
+                        i += 1
+                        if start == -1:
+                            start = index
+                        stop = index
+                    else:
+                        if start != -1:
+                            startstop = [timeStamp[start],timeStamp[stop]]
+                            logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                            badTimes.append(startstop)
+                            start = -1
+                if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                    startstop = [timeStamp[start],timeStamp[stop]]
+                    badTimes.append(startstop)
+                    logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
+                logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
+                if start==0 and stop==index: # All records are bad
+                    return None
+
             elif tilt_pre is not None and tilt_post is not None:
                 bad_counter = 0
-                for t, pre, post in zip(timeStamp, tilt_pre, tilt_post):
+                tilt = tilt_pre.copy() # initialize
+                for index, (t, pre, post) in enumerate(zip(timeStamp, tilt_pre, tilt_post)):
+                    tilt[index] = max(pre,post)
                     if abs(pre) > tiltMax or abs(post) > tiltMax:
                         startstop = [t, t]  # use edge case of ProcessL1aqc.filterData to remove this record
                         badTimes.append(startstop)
                         bad_counter += 1
                 logging.writeLogFileAndPrint(f'Percentage of data out of pre/post-tilt bounds: {round(100 * bad_counter / len(timeStamp))} %')
+                tiltGroup.addDataset('TILT').data = np.array(tilt, dtype=[('NONE', '<f8')])
             else:
                 raise AssertionError('Neither pitch and roll or tilt_pre and tilt_post found.')
 

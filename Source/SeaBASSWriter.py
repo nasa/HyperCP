@@ -281,6 +281,8 @@ class SeaBASSWriter:
         # radianceGroup = root.getGroup("RADIANCE")
         reflectanceGroup = root.getGroup("REFLECTANCE")
 
+        rrsData, nLwData = None, None
+
         if reflectanceGroup:
             rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
             rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_unc")
@@ -604,9 +606,6 @@ class SeaBASSWriter:
             # formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
 
         # # Write SeaBASS files
-        # Need to update headerBlock for BRDF
-        # headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
-        SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
         if reflectanceGroup:
             BRDF_correction = SeaBASSHeader.settings['BRDF_correction']
             headerBlock['BRDF_correction'] = 'noBRDF'
@@ -631,5 +630,7 @@ class SeaBASSWriter:
 
             # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
             # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
+        del headerBlock['BRDF_correction']
+        SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
 
         return headerBlock['data_file_name']

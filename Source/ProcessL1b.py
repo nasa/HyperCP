@@ -228,10 +228,10 @@ class ProcessL1b:
                         chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
                         filing.read_char(chosen_file, gp)
-                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
-                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
-                        else:
-                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        # if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                        #     root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                        # else:
+                        #     root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
 
                 elif calCharType == 'RADCAL':
                     # RADCAL files to be ingested depend on the multical options
@@ -268,10 +268,17 @@ class ProcessL1b:
                     elif ConfigFile.settings["MultiCal"] == 2: # Choose-cal
 
                         # Read specific chosen cal into gp
-                        chooseCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("chooseCal_%s" % sensorType))
+                        chooseCal = os.path.join(CODE_HOME,fidRadPath,
+                                                 ConfigFile.settings.get(f'chooseCal_{sensorType}'))
                         if chooseCal is None:
                             raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(chooseCal, gp)
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] =\
+                                  os.path.basename(chooseCal).split('_')[-1].split('.')[0]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = \
+                                os.path.basename(chooseCal).split('_')[-1].split('.')[0]
 
         return root
 
@@ -330,7 +337,7 @@ class ProcessL1b:
             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
                 filing.read_char(f, gp)
         # Polar correction to be developed and added to FRM branch.
-        
+
         # read class based non-linearity for use on wavelengths below approx 450 nm
         for f in glob.glob(os.path.join(classbased_dir, r'*class_LIN_*')):
             filing.read_char(f, gp)
@@ -537,6 +544,34 @@ class ProcessL1b:
             ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
 
             ancGroup.datasets[ds].columnsToDataset()
+
+        # Fix column names
+        if 'SPEED_F_W' in ancGroup.datasets:
+            ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
+        if 'SZA'in ancGroup.datasets:
+            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+        if 'SOLAR_AZ'in ancGroup.datasets:
+            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+        if 'REL_AZ'in ancGroup.datasets:
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+        if 'HUMIDITY' in ancGroup.datasets:
+            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
+        if 'CLOUD' in ancGroup.datasets:
+            ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
+        if 'PITCH' in ancGroup.datasets:
+            ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
+        if 'ROLL' in ancGroup.datasets:
+            ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
+        if 'STATION' in ancGroup.datasets:
+            ancGroup.datasets['STATION'].changeColName('NONE','STATION')
+        if 'WAVE_HT' in ancGroup.datasets:
+            ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
+        if 'SALINITY'in ancGroup.datasets:
+            ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
+        if 'WINDSPEED'in ancGroup.datasets:
+            ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
+        if 'SST'in ancGroup.datasets:
+            ancGroup.datasets['SST'].changeColName('NONE','SST')
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):

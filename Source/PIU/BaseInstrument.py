@@ -47,9 +47,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             BaseInstrument.sensors = ['ES']
         # use this to switch the straylight correction method -> FOR UNCERTAINTY PROPAGATION ONLY <- between SLAPER and
         # ZONG. Not added to config file settings because this isn't intended for the end user.
-        self.sl_method: str = 'ZONG'
-        warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
-
+        self.sl_method: str = 'ZONG'        
+        warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite.",category=UserWarning)
     ## Regime Agnostic Methods ##
 
     @abstractmethod
@@ -163,14 +162,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es_unc, li_unc, lt_unc = UNC_obj_CB.propagate_Instrument_Uncertainty(means, uncertainties)
 
         # NOTE: Debugging check
-        is_negative = np.any([ x < 0 for x in means])
-        if is_negative:
-            print('WARNING: Negative uncertainty potential')
+        # is_negative = np.any([ x < 0 for x in means])
+        # if is_negative:
+        #     print('WARNING: Negative uncertainty potential')
         is_negative = np.any([ x < 0 for x in uncertainties])
         if is_negative:
-            print('WARNING: Negative uncertainty potential')
+            print('WARNING: Potential negative input uncertainties encountered.')
         if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
-            print('WARNING: Negative uncertainty potential')
+            print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
         es, li, lt = UNC_obj_CB.instruments(*means)
 
@@ -181,19 +180,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
 
-        BD_UNCS['ES'][k] = {k: es*BD_UNCS['ES'][k] for k in BD_UNCS['ES']}  # convert all to relative units
-        BD_UNCS['LI'][k] = {k: li*BD_UNCS['LI'][k] for k in BD_UNCS['LI']}
-        BD_UNCS['LT'][k] = {k: lt*BD_UNCS['LT'][k] for k in BD_UNCS['LT']}
 
-        # then add perturbation (already relative)
-        BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
-        BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
-        BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
-
-        # check if negative signal for any pixels
-        is_negative = np.any([ x < 0 for x in means])
-        if is_negative:
-            print('WARNING: Negative uncertainty potential')
+        # # check if negative signal for any pixels
+        # is_negative = np.any([ x < 0 for x in means])
+        # if is_negative:
+        #     print('WARNING: Negative uncertainty potential')
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -203,6 +194,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ES_unc = es_unc / np.abs(es)
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
+
+            BD_UNCS['ES'] = {k: BD_UNCS['ES'][k] / np.abs(es) for k in BD_UNCS['ES']}  # convert all to relative units
+            BD_UNCS['LI'] = {k: BD_UNCS['LI'][k] / np.abs(li) for k in BD_UNCS['LI']}
+            BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
+
+            # then add perturbation (already relative)
+            BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
+            BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
+            BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),

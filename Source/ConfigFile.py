@@ -126,7 +126,7 @@ class ConfigFile:
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
         ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
         ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016, max for Z17
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
         ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
@@ -150,6 +150,8 @@ class ConfigFile:
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
+
+        ConfigFile.settings["bL2RhoUnc10"] = 0 # GZ recommends using flat 10% uncertainty for rho...
 
         ConfigFile.settings["bL2PerformNIRCorrection"] = 1
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0 # Mobley 1999 adapted to minimum 700-800, not 750 nm
