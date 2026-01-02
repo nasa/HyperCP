@@ -77,7 +77,7 @@ class plottingToolsFRM:
                 if 'BRDF' in UNC:
                     self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
 
-            self.plot(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
             
             self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
         
