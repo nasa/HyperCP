@@ -103,7 +103,7 @@ class plottingToolsFRM:
             else:  # if we have a signal to put uncs in relative units
                 y_mean = rel_to  # otherwise we just use rel_to directly
 
-            u_rel = (y/y_mean)*100  # calculate relative uncertainty
+            u_rel = self.getpct(y, y_mean)  # calculate relative uncertainty
             plt.plot(x, u_rel, label=f"{name}")
             plt.ylabel("relative uncertainty (%)")  # unit is always % if relative uncertainties used
             if ylim is None:

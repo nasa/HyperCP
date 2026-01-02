@@ -316,7 +316,7 @@ class plottingToolsCB:
                 y_mean / cal
             )  # multiply uncertainties by cal to convert into irradiance/radiance
 
-        u_rel = (y / np.abs(y_mean)) * 100
+        u_rel = self.getpct(y, y_mean)
         try:
             plt.figure(f"{s}_{self.station}")
         except AttributeError:
