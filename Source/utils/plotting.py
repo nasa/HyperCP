@@ -646,11 +646,9 @@ def plotUncertainties(root, filename):
             times = cols.pop("Timetag2")  # convert from timetag to time
             for date, tt2 in zip(dates, times):
                 casts.append(
-                    dt.strftime(
-                        timeTag2ToDateTime(dateTagToDateTime(date), tt2),
-                        "%Y%m%dT%H%M%S",
-                    )
+                    timeTag2ToDateTime(dateTagToDateTime(date), tt2)
                 )
+                
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
