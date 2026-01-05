@@ -546,6 +546,8 @@ class ProcessL1b:
             ancGroup.datasets[ds].columnsToDataset()
 
         # Fix column names
+        ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
+        ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
         if 'SPEED_F_W' in ancGroup.datasets:
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
         if 'SZA'in ancGroup.datasets:
@@ -562,6 +564,8 @@ class ProcessL1b:
             ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
         if 'ROLL' in ancGroup.datasets:
             ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
+        if 'TILT' in ancGroup.datasets:
+            ancGroup.datasets['TILT'].changeColName('NONE','TILT')
         if 'STATION' in ancGroup.datasets:
             ancGroup.datasets['STATION'].changeColName('NONE','STATION')
         if 'WAVE_HT' in ancGroup.datasets:

@@ -293,61 +293,6 @@ class ProcessL1bqc:
             if gp.id.startswith("SIXS"):
                 sixSGroup = gp
 
-        # # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
-        # #
-        # # GPS Group
-        # # These have TT2/Datetag incorporated in arrays
-        # # Change their column names from NONE to something appropriate to be consistent in
-        # # ancillary group going forward.
-        # # Replace metadata lat/long with GPS lat/long, in case the former is from the ancillary file
-        # ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
-        # ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
-        # ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
-        # ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
-
-        # # Take Course (presumably COG) and SOG preferentially from GPS
-        # if 'COURSE' in gpsGroup.datasets:
-        #     # These have TT2/Datetag incorporated in arrays
-        #     ancGroup.addDataset('COURSE')
-        #     ancGroup.datasets['COURSE'] = gpsGroup.getDataset('COURSE')
-        #     ancGroup.datasets['COURSE'].changeColName('TRUE','COURSE')
-        # if 'SOG' in gpsGroup.datasets:
-        #     ancGroup.addDataset('SOG')
-        #     ancGroup.datasets['SOG'] = gpsGroup.getDataset('SOG')
-        #     ancGroup.datasets['SOG'].changeColName('NONE','SOG')
-
-        # # Finished with GPS group. Delete
-        # for gp in node.groups:
-        #     if gp.id == gpsGroup.id:
-        #         node.removeGroup(gp)
-
-        # if 'SPEED_F_W' in ancGroup.datasets:
-        #     ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
-        # if 'SZA'in ancGroup.datasets:
-        #     ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-        # if 'SOLAR_AZ'in ancGroup.datasets:
-        #     ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
-        # if 'REL_AZ'in ancGroup.datasets:
-        #     ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
-        # if 'HUMIDITY' in ancGroup.datasets:
-        #     ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
-        # if 'CLOUD' in ancGroup.datasets:
-        #     ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
-        # if 'PITCH' in ancGroup.datasets:
-        #     ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
-        # if 'ROLL' in ancGroup.datasets:
-        #     ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
-        # if 'STATION' in ancGroup.datasets:
-        #     ancGroup.datasets['STATION'].changeColName('NONE','STATION')
-        # if 'WAVE_HT' in ancGroup.datasets:
-        #     ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
-        # if 'SALINITY'in ancGroup.datasets:
-        #     ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
-        # if 'WINDSPEED'in ancGroup.datasets:
-        #     ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
-        # if 'SST'in ancGroup.datasets:
-        #     ancGroup.datasets['SST'].changeColName('NONE','SST')
-
         # if pyrGroup is not None:
         #     #PYROMETER
         #     ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")

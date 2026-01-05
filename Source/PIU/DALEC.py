@@ -1,9 +1,15 @@
+
+from collections import OrderedDict
+from typing import Union
+
 # Maths
 import numpy as np
 
 # Packages
 import warnings
 from copy import deepcopy
+
+from Source.HDFGroup import HDFGroup
 
 # PIU
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -18,72 +24,68 @@ class Dalec(BaseInstrument):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
 
-    def lightDarkStats(self, grp, slice, sensortype):
+    # def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
+    def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
+        ''' Unsliced L1AQC grp is no longer needed here '''
         # Dalec
-        lightSlice = deepcopy(slice)  # copy to prevent changing of Raw data
+        lightData = XSlice['LIGHT']  # lightGrp.getDataset(sensortype)
+        darkData = XSlice['DARK'][sensortype]
 
-        lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
-        darkData = lightSlice['dc']
-        if  grp is None:
-            writeLogFileAndPrint(f'No radiometry found for {sensortype}')
-            return False
-
-        # Correct light data by subtracting interpolated dark data from light data
-        std_Light = []
-        std_Dark = []
-        ave_Light = []
-        ave_Dark = []
-        stdevSignal = {}
+         # store results locally for speed
+        std_light=[]
+        std_dark=[]
+        ave_light=[]
+        ave_dark = []
+        env_pert = []
+        std_signal = []
+        signal_noise = {}
 
         # number of replicates for light and dark readings
         N = np.asarray(list(lightData.values())).shape[1]
-
-        if N > 25:  # normal case
-            std_Dark0=np.std(darkData[sensortype])/np.sqrt(N)
-        elif N > 3:
-            std_Dark0=np.sqrt(((N-1)/(N-3))*(np.std(darkData[sensortype]) / np.sqrt(N))**2)
-
-        ave_Dark0=np.average(darkData[sensortype])
-        #print("std_Dark0")
-        #print(std_Dark0)
+        Nd = np.asarray(darkData).shape[0]
         for i, k in enumerate(lightData.keys()):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
             if N > 25:  # normal case
-                std_Light.append(np.std(lightData[k])/np.sqrt(N))
-                std_Dark.append(std_Dark0)  # sigma here is essentially sigma**2 so N must sqrt
+                std_light.append(np.std(lightData[k])/np.sqrt(N))
+                std_dark.append(np.std(darkData)/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
             elif N > 3:  # few scans, use different statistics
-                std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
-                std_Dark.append(std_Dark0)
+                std_light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
+                std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData) / np.sqrt(Nd))**2))
             else:
                 writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
-            ave_Light.append(np.average(lightData[k]))
-            ave_Dark.append(ave_Dark0)
+            ave_light.append(np.average(lightData[k]))
+            ave_dark.append(np.average(darkData))
+            env_pert.append(np.abs(np.std(lightData[k])/np.average(lightData[k])))
 
             for x in range(N):
-                lightData[k][x] -= darkData[sensortype][x]
+                try:
+                    lightData[k][x] -= darkData[x]
+                except IndexError as err:
+                    writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
+                    return False
 
-            signalAve = np.average(lightData[k])
+            signalAve = np.average(lightData[k])  # at this point in the code lightdata is light-dark see line 95
 
-            # Normalised signal standard deviation =
             if signalAve:
-                stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
+                signal_noise[wvl] = pow((pow(std_light[i], 2) + pow(std_dark[i], 2))/pow(signalAve, 2), 0.5)
+                # this should be divided by
             else:
-                stdevSignal[wvl] = 0.0
+                signal_noise[wvl] = 0.0
 
-        #print("std_Light/Dark")
-        #print(std_Light)
-        #print(stdevSignal)
+            std_signal.append(np.std(lightData[k])/signalAve)  # as % of Dark corrected signal
+
         return dict(
-            ave_Light=np.array(ave_Light),
-            ave_Dark=np.array(ave_Dark),
-            std_Light=np.array(std_Light),
-            std_Dark=np.array(std_Dark),
-            std_Signal=stdevSignal,
-            )
+            ave_Light=np.array(ave_light),
+            ave_Dark=np.array(ave_dark),
+            std_Light=np.array(std_light),
+            std_Dark=np.array(std_dark),
+            Signal_std=np.array(std_signal),
+            Signal_noise=signal_noise,
+            )  # output as dictionary for use in ProcessL2/PIU
 
     def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
