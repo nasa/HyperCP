@@ -142,11 +142,15 @@ class ProcessL2BRDF():
                                 else:
                                     Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
                         
-                        if 'unc' in ds and 'HYPER' in ds:
-                            bd_grp = root.getGroup("BREAKDOWN")
-                            bd_ds = bd_grp.addDataset(f"{ds.replace('_unc', '')}_BRDF")
-                            bd_ds.columns = Rrs_BRDF
-                            bd_grp.attributes['BRDF_method'] = BRDF_option
+                        if 'unc' in ds and 'HYPER' in ds:                            
+                            try:
+                                bd_grp = root.getGroup("BREAKDOWN")
+                                bd_grp.attributes['BRDF_method'] = BRDF_option
+                                bd_ds = bd_grp.addDataset(f"{ds.replace('_unc', '')}_BRDF")
+                                bd_ds.columns = Rrs_BRDF
+                            except AttributeError:  # faster to ask forgiveness than permission
+                                print("BREAKDOWN group not found")
+
                         else:
                             Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
                             Rrs_BRDF_ds.columns = Rrs_BRDF
@@ -167,9 +171,12 @@ class ProcessL2BRDF():
     
                         # Store BRDF corrected nLw
                         if 'unc' in ds and 'HYPER' in ds:
-                            bd_grp = root.getGroup("BREAKDOWN")
-                            bd_ds = bd_grp.addDataset(f"{ds.replace('Rrs','nLw').replace('_unc', '')}_BRDF")
-                            bd_ds.columns = nLw_BRDF
+                            try:
+                                bd_grp = root.getGroup("BREAKDOWN")
+                                bd_ds = bd_grp.addDataset(f"{ds.replace('Rrs','nLw').replace('_unc', '')}_BRDF")
+                                bd_ds.columns = nLw_BRDF
+                            except AttributeError:
+                                pass            
                         else:
                             nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
                             nLw_BRDF_ds.columns = nLw_BRDF
