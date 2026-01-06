@@ -49,6 +49,7 @@ class TriOS(BaseInstrument):
             DarkPixelStart,
             DarkPixelStop,
         ) = TriOSUtils.readParams(grp, XSlice, sensortype)
+        # raw_data is sreturned from XSlice, not entire L1AQC
 
         del grp, XSlice  # delete unused data to save memory
 
@@ -327,10 +328,10 @@ class TriOSUtils:
         pass
 
     @staticmethod
-    def readParams(grp, data, s):
+    def readParams(grp, xSliceData, s):
         raw_cal = grp.getDataset(f"CAL_{s}").data
         raw_back = np.asarray(grp.getDataset(f"BACK_{s}").data.tolist())
-        raw_data = np.asarray(list(data['data'].values())).transpose()  # data is transpose of old version
+        raw_data = np.asarray(list(xSliceData['data'].values())).transpose()  # data is transpose of old version
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(s).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())

@@ -69,21 +69,30 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             from Source.PIU.utils import utils
 
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
-                    utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
-                    args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]  
+                utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
+                args = [copy.deepcopy(rawData[s_type]),
+                        copy.deepcopy(rawSlice[s_type]),
+                        s_type]
                     # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
             elif i_type.lower() == "dalec":
-                    # NOTE: Needs updating
-                    utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
-                    args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]    
+                # NOTE: Under development
+                # The light and dark data for DALEC are both available in the L1AQC group, but that is the entire L1AQC file, not the slice...
+                utils.apply_NaN_Mask(rawSlice[s_type]['light'])  # apply Nan mask
+                utils.apply_NaN_Mask(rawSlice[s_type]['dark'])  # apply Nan mask
+                # args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]
+                args = [
+                    {'L1AQC': copy.deepcopy(rawData[s_type].datasets[s_type]), 'DARK': copy.deepcopy(rawData[s_type].datasets['DARK_CNT'])},
+                    {'LIGHT': copy.deepcopy(rawSlice[s_type]['light']), 'DARK': copy.deepcopy(rawSlice[s_type]['dark'])},
+                    s_type
+                ]
             elif i_type.lower() == "seabird":
-                    utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
-                    utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
-                    args =[
-                        {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
-                        {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
-                        s_type
-                        ]
+                utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
+                utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
+                args =[
+                    {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
+                    {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
+                    s_type
+                    ]
             else:
                 writeLogFileAndPrint("WARNING sensor not recognised")
             try:
@@ -126,8 +135,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             UNC_obj_CB = Propagate(M=100, cores=0)
             PDS = pds(node, uncGrp)
         except NotImplementedError:
-             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
-             return False, None
+            print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
+            return False, None
 
         ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal']) 
@@ -251,11 +260,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             mDraws = 100
             UNC_obj_CB = Propagate(M=mDraws, cores=0)
         except NotImplementedError:
-             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
-             return False
+            print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
+            return False
 
         waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
-        radcalwvls = list(xSlice['esSTD_RAW'].keys())  
+        radcalwvls = list(xSlice['esSTD_RAW'].keys())
         # stdevs taken at instrument wavebands (not common wavebands) so we can use them to get the radcal keys
 
         if rhoScalar is not None:  # make rho a constant array if scalar

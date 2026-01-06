@@ -1178,12 +1178,18 @@ class ProcessL2:
         # TODO Check why SIXS code used to be here but data manipulation is not used later on, hence dropped
 
         # %% Get active raw groups (based on data available in groups, required to get std)
+        # "raw" here refers to full L1AQC dataset
         map_raw_groups = {'ES': esRawGroup, 'LI': liRawGroup, 'LT': ltRawGroup}
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             raw_groups = {k: {t: map_raw_groups[k][t] for t in ['LIGHT', 'DARK']} for k in groups}
             raw_slices = {k: {t: {'datetime': grp[t].datasets['DATETIME'].data[start:end],
                                   'data': ProcessL2.columnToSlice(grp[t].datasets[k].columns, start, end)}
                               for t in ['LIGHT', 'DARK']} for k, grp in raw_groups.items()}
+        elif ConfigFile.settings['SensorType'].lower() == "dalec":
+            raw_groups = {k: map_raw_groups[k] for k in groups}
+            raw_slices = {k: {'light': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end),
+                              'dark': ProcessL2.columnToSlice(grp.datasets['DARK_CNT'].columns, start, end)}
+                            for k, grp in raw_groups.items()}
         else:
             raw_groups = {k: map_raw_groups[k] for k in groups}
             raw_slices = {k: {'data': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end)}
@@ -1223,20 +1229,20 @@ class ProcessL2:
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
-        if ConfigFile.settings["SensorType"].lower() != "dalec":
-            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
-        else:
-            # NOTE: Temporary placeholder for DALEC stats.
-            stats1,stats = {},{}
-            for group in raw_groups:
-                bandN = len(raw_groups[group].datasets[group].columns)
-                reject = ['Datetime','Datetag','Timetag2']
-                bands = [key for key in groups[group].datasets[group].columns if key not in reject]
-                for dataset in ['ave_Light','ave_Dark','std_Light','std_Dark','std_Signal','perturbations']:
-                    stats1[dataset] = np.ones(bandN)*np.nan
-                for dataset in ['std_Signal_Interpolated']:
-                    stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
-                stats[group] = stats1
+        # if ConfigFile.settings["SensorType"].lower() != "dalec":
+        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        # else:
+        #     # NOTE: Temporary placeholder for DALEC stats.
+        #     stats1,stats = {},{}
+        #     for group in raw_groups:
+        #         bandN = len(raw_groups[group].datasets[group].columns)
+        #         reject = ['Datetime','Datetag','Timetag2']
+        #         bands = [key for key in groups[group].datasets[group].columns if key not in reject]
+        #         for dataset in ['ave_Light','ave_Dark','std_Light','std_Dark','Signal_std','perturbations']:
+        #             stats1[dataset] = np.ones(bandN)*np.nan
+        #         for dataset in ['Signal_std_Interpolated']:
+        #             stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
+        #         stats[group] = stats1
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
@@ -1310,7 +1316,7 @@ class ProcessL2:
             if nSpecEnd > 1:
                 lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
                 index = np.argsort(lt780)
-                y = index[:nSpecEnd]                
+                y = index[:nSpecEnd]
                 logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
             else:
                 logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
@@ -1414,7 +1420,6 @@ class ProcessL2:
                 },  # this is relative and not in DN
             **{k.lower() + 'Remaining': v for k, v in slice_remaining.items()},
         }
-        
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
