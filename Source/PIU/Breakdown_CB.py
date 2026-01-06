@@ -488,7 +488,7 @@ class PlotMaths:
             except ValueError as err:
                 from Source.utils.loggingHCP import writeLogFileAndPrint
 
-                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[i]}: {err}")
+                writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[indx]}: {err}")
                 UNCS["Rrs"][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(
                     rrs_vals, uRrs, corr_between=False
                 )

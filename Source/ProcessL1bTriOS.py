@@ -94,7 +94,8 @@ class ProcessL1bTriOS:
         back_mesure = np.zeros((nmes, nband))
 
         ancGroup = node.getGroup('ANCILLARY_METADATA')
-        sza = ancGroup.datasets['SZA'].columns['NONE']
+        sza = ancGroup.datasets['SZA'].columns['SZA']
+
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
