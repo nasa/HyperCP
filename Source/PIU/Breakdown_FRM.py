@@ -1,6 +1,6 @@
 ''' Generate and plot spectral and pie breakdowns for sensor-based FRM uncertainties'''
 from os import path, makedirs, umask
-from typing import Optional, Union
+from typing import Optional, Union, Any
 import math
 
 import numpy as np
@@ -27,64 +27,77 @@ class plottingToolsFRM:
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
     def plotL1B(self, wvls, BD_UNCS, signal):
+        from itertools import cycle
+
         for s_type in ['ES', 'LI', 'LT']:
+            palette = plt.cm.tab20(np.linspace(0, 1, 20))
+            color_cycle = cycle(palette)
+
             ## DO PLOTS ##
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type], colour=next(color_cycle))
 
             # post normalisation
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type], colour=next(color_cycle))
 
             # plot contributions that vary between sensors
             if s_type.upper() == 'ES':
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type])
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type])
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type], colour=next(color_cycle))
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type], colour=next(color_cycle))
             else:
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type])
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type], colour=next(color_cycle))
 
             self.save_figure(s_type)  # save the figure once all of the contributions have been added to the plot (will close the figure)
 
-            self.plot_pie_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
+            self.plot_bar_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
 
     def plotL2(self, waveSubset, BD_UNCS, signal):
+        from itertools import cycle
         ylim = [0, 5]
+
         for meas in ['nLw', 'Rrs']:
             UNC = BD_UNCS[meas]
 
+            palette = plt.cm.tab20(np.linspace(0, 1, 20))
+            color_cycle = cycle(palette)
+
             ## DO PLOTS ##
             wvls = np.array(waveSubset)
-            self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
 
             # post normalisation
-            self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim)
-            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
 
             # plot contributions that vary between sensors
             if meas.upper() != 'LW':
-                self.plot_spectral_FRM(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim)
-                self.plot_spectral_FRM(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim)
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
                 if meas.upper() == 'NLW':
-                    self.plot_spectral_FRM(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim)
+                    self.plot_spectral_FRM(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
                 if 'BRDF' in UNC:
-                    self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim)
+                    self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
 
-            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim)
+            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
             
             self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
         
             self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
 
 
-    def plot_spectral_FRM(self, s, x: np.array, y: np.array, name: str, rel_to: Optional[np.array]=None, unit: Optional[str]="", ylim: Optional[list]=None) -> None:
+    def plot_spectral_FRM(
+            self, s, x: np.array, y: np.array, name: str, colour: Any,
+            rel_to: Optional[np.array]=None, unit: Optional[str]="", 
+            ylim: Optional[list]=None) -> None:  # TODO: change docs to show tableau colours or str as input
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)
 
@@ -104,14 +117,14 @@ class plottingToolsFRM:
                 y_mean = rel_to  # otherwise we just use rel_to directly
 
             u_rel = self.getpct(y, y_mean)  # calculate relative uncertainty
-            plt.plot(x, u_rel, label=f"{name}")
+            plt.plot(x, u_rel, label=f"{name}", color=colour)
             plt.ylabel("relative uncertainty (%)")  # unit is always % if relative uncertainties used
             if ylim is None:
                 plt.ylim(0,5)  # if not ylim then default to 5% max (if relative)
             else:
                 plt.ylim(*ylim)
         else:
-            plt.plot(x, y, label=f"{name}")
+            plt.plot(x, y, label=f"{name}", color=colour)
             plt.ylabel(f"uncertainty ({unit})")
 
         plt.title(f"FRM Breakdown: {s}, Solar Zenith: {round(self.sza, 2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
@@ -119,7 +132,7 @@ class plottingToolsFRM:
 
         plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
 
-    def plot_pie_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str: np.array], signal: np.array, level: str='L1B') -> None:
+    def plot_bar_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str: np.array], signal: np.array, level: str='L1B') -> None:
         """
         plots a pie chart for the sensor-specific regime
 
@@ -212,9 +225,44 @@ class plottingToolsFRM:
             #         ha = "right"
 
             #     plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
+            labels_list = labels[s]
+            colors = [LABEL_COLORS[lab] for lab in labels_list]
 
-            plt.tight_layout()  # for improved clarity and less overlapping of labels
-            fp = path.join(self.plot_folder, f"{s}_pie_chart_SB_{self.station}_{wvl_at_indx}.png")
+            # Safety: handle empty or all-zero data
+            if not vals or sum(vals) == 0:
+                ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
+                plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
+                plt.axis('off')
+                plt.tight_layout()
+                return
+
+            # Combined uncertainty
+            combined = (sum(v**2 for v in vals)) ** 0.5
+
+            # --- Sort by value descending for readability ---       
+            sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
+            vals_sorted, labels_sorted = zip(*sorted_data)
+            colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
+
+            # --- Plot horizontal bars ---
+            ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
+
+            # --- Add percentage labels to the right of each bar ---
+            total = sum(vals_sorted)
+            x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
+            for i, v in enumerate(vals_sorted):
+                pct = (v / total) * 100
+                ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+
+            # --- Styling ---
+            ax.invert_yaxis()  # largest at top
+            ax.set_xlabel("Uncertainty Contribution")
+            ax.set_ylabel("Contributors")
+            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+
+            plt.tight_layout()
+            # fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
+            fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 
             # plt.close(fig)
 
