@@ -91,7 +91,8 @@ class plottingToolsFRM:
             
             self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
         
-            self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
+            # self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
+            self.plot_bar_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
 
 
     def plot_spectral_FRM(
