@@ -425,9 +425,11 @@ class Propagate:
                     ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos):
         """ Instrument specific uncertainties measurement function """
 
-        return np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos), \
-               np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol), \
-               np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
+        return (
+            np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos), 
+            np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol),
+            np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
+        )
 
     @staticmethod
     def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:

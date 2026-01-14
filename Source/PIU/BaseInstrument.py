@@ -138,6 +138,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
             return False, None
 
+        es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
         ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal']) 
 
@@ -155,9 +156,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'] if 'LI' in stats else zeroes, stats['LI']['std_Dark'] if 'LI' in stats else zeroes,
                          stats['LT']['std_Light'] if 'LT' in stats else zeroes, stats['LT']['std_Dark'] if 'LT' in stats else zeroes,
-                         PDS.uncs['ES']['cal'] * PDS.coeff['ES']['cal'] / 200,
-                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200 if 'LI' in PDS.uncs else zeroes,
-                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200 if 'LT' in PDS.uncs else zeroes,
+                         (PDS.uncs['ES']['cal'] / 200 * PDS.coeff['ES']['cal']),
+                         (PDS.uncs['LI']['cal'] / 200 * PDS.coeff['LI']['cal']) if 'LI' in PDS.uncs else zeroes,
+                         (PDS.uncs['LT']['cal'] / 200 * PDS.coeff['LT']['cal']) if 'LT' in PDS.uncs else zeroes,
                          PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else zeroes,
                          PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['nlin'] if 'LT' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
@@ -180,7 +181,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
             print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
-        # es, li, lt = UNC_obj_CB.instruments(*means)
+        es_test, li_test, lt_test = UNC_obj_CB.instruments(*means)
 
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
