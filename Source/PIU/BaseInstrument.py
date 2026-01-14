@@ -117,7 +117,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
+    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array], es, li, lt) -> Union[dict[str, dict], bool]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -180,7 +180,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
             print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
-        es, li, lt = UNC_obj_CB.instruments(*means)
+        # es, li, lt = UNC_obj_CB.instruments(*means)
 
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"

@@ -1423,7 +1423,7 @@ class ProcessL2:
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
-            l1b_unc, x_breakdown_unc = sensor.ClassBased(node, uncGroup, stats)
+            l1b_unc, x_breakdown_unc = sensor.ClassBased(node, uncGroup, stats, x_slice['es'], x_slice['li'], x_slice['lt'])
             if l1b_unc:
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
