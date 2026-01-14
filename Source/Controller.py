@@ -139,7 +139,7 @@ class Controller:
                 pdf.print_chapter('L2', 'Process L1BQC to L2', inLog, inPlotPath, fileName, root)
 
         try:
-            pdf.output(outPDF, 'F')
+            pdf.output(name=outPDF, dest='F')
         except Exception:
             msg = '**********************Unable to write the PDF file. It may be open in another program.**********************'
             logging.errorWindow("File Error", msg)
