@@ -227,8 +227,6 @@ class plottingToolsCB:
                     plt.tight_layout()
                     return
 
-                # Combined uncertainty
-                combined = (sum(v**2 for v in vals)) ** 0.5
 
                 # --- Sort by value descending for readability ---       
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
@@ -239,10 +237,13 @@ class plottingToolsCB:
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
                 # --- Add percentage labels to the right of each bar ---
-                total = sum(vals_sorted)
+                
+                # Combined uncertainty
+                combined = (sum(v**2 for v in vals)) ** 0.5
+                
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
-                    pct = (v / total) * 100
+                    pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
 
                 # --- Styling ---

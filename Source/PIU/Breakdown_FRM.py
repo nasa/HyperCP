@@ -248,10 +248,9 @@ class plottingToolsFRM:
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
             # --- Add percentage labels to the right of each bar ---
-            total = sum(vals_sorted)
             x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
             for i, v in enumerate(vals_sorted):
-                pct = (v / total) * 100
+                pct = (v / combined) * 100
                 ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
 
             # --- Styling ---
