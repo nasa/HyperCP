@@ -117,7 +117,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array], es, li, lt) -> Union[dict[str, dict], bool]:
+    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -132,15 +132,29 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
-            UNC_obj_CB = Propagate(M=100, cores=0)
+            mDraws = 100
+            UNC_obj_CB = Propagate(M=mDraws, cores=0)
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
             return False, None
 
-        es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
-        ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
-        zeroes = np.zeros_like(PDS.uncs['ES']['cal']) 
+        # es_wvl, li_wvl, lt_wvl = [np.array(list(S.keys()), dtype=float).flatten() for S in [es, li, lt]]
+        # es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
+        
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es, label='HCP es')
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es_test, label='MF es')
+        # plt.savefig("debug_es.png")
+        # plt.show()
+
+        ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
+        zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
+
+        # put cal_int and int_time into propagate object to save having to pass arguments through punpy
+        UNC_obj_CB.cal_int  = {sensor: PDS.coeff[sensor]['cal_int'] for sensor in stats.keys()}
+        UNC_obj_CB.int_time = {sensor: PDS.coeff[sensor]['int_time'] for sensor in stats.keys()}
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                  stats['LI']['ave_Light'] if 'LI' in stats else ones, stats['LI']['ave_Dark'] if 'LI' in stats else ones,
@@ -150,8 +164,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ones, ones, ones,
                  ones, ones, ones,
                  ones, ones, ones,
-                 ones, ones, ones
-                 ]
+                 ones, ones, ones,
+        ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'] if 'LI' in stats else zeroes, stats['LI']['std_Dark'] if 'LI' in stats else zeroes,
@@ -165,8 +179,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                          np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos'])
-                         ]
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos']),
+        ]
 
         # generate uncertainties using Monte Carlo Propagation object
         es_unc, li_unc, lt_unc = UNC_obj_CB.propagate_Instrument_Uncertainty(means, uncertainties)
@@ -181,7 +195,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
             print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
-        es_test, li_test, lt_test = UNC_obj_CB.instruments(*means)
+        es, li, lt = UNC_obj_CB.instruments(*means)
 
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
@@ -189,7 +203,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
-
 
         # # check if negative signal for any pixels
         # is_negative = np.any([ x < 0 for x in means])
@@ -205,14 +218,47 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
 
+            quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
+            quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
+            quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
+
+            pct_diff_es = ((quad_es - es_unc)/es)*100
+            pct_diff_li = ((quad_li - li_unc)/li)*100
+            pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
+
+            # then add perturbation (already relative)
+            pert_uncs = np.zeros_like(np.asarray(uncertainties))
+            pert_uncs[0:6] = [
+                np.abs(stats['ES']["Signal_std"]) * es, 
+                zeroes, 
+                np.abs(stats['LI']["Signal_std"]) * li if 'LI' in PDS.uncs else zeroes, 
+                zeroes, 
+                np.abs(stats['LT']["Signal_std"]) * lt if 'LT' in PDS.uncs else zeroes, 
+                zeroes
+            ]
+
+            (
+                BD_UNCS['ES']['pert'],
+                BD_UNCS['LI']['pert'],
+                BD_UNCS['LT']['pert'],
+            ) = UNC_obj_CB.propagate_Instrument_Uncertainty(means, pert_uncs)
+
+
+            # from Source.PIU.Breakdown_CB import plottingToolsCB
+            # pt = plottingToolsCB(40, "test")
+            # pt.plot_CB_spectral(
+            #     BD_UNCS, 
+            #     BD_VALS, 
+            #     np.array(
+            #         uncGrp.getDataset(rad_cal_str).columns[cal_col_str], 
+            #         dtype=float
+            #     )[PDS.ind_rad_wvl['ES']],
+            #     level="test_L1B",
+            # )
+
             BD_UNCS['ES'] = {k: BD_UNCS['ES'][k] / np.abs(es) for k in BD_UNCS['ES']}  # convert all to relative units
             BD_UNCS['LI'] = {k: BD_UNCS['LI'][k] / np.abs(li) for k in BD_UNCS['LI']}
             BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
-
-            # then add perturbation (already relative)
-            BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
-            BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
-            BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),

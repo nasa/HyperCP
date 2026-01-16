@@ -107,6 +107,9 @@ class Propagate:
     def __init__(self, M: int = 100, cores: int = 1):
         self._platform: str = ''  # internally used variable to store platform string to use in L2 conv products
         self._wavebands: np.array = None  # stores wavebands for convolution
+        self.cal_int: dict  = None
+        self.int_time: dict = None
+        
         if isinstance(cores, int):
             self.MCP = punpy.MCPropagation(M, parallel_cores=cores)
         else:
@@ -131,7 +134,7 @@ class Propagate:
         """
 
         corr_list = ['rand', 'rand', 'rand', 'rand', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
-                     'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
+                     'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',]
         if corr_between:
             corr_between = self.corr_matrix_Default_Instruments
         else:
@@ -420,15 +423,19 @@ class Propagate:
         return zhang
 
     # Measurement Functions
-    @staticmethod
-    def instruments(ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK, ESCal, LICal, LTCal, ESStab, LIStab, LTStab,
-                    ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos):
+    def instruments(self, ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK, ESCal, LICal, LTCal, ESStab, LIStab, LTStab,
+                    ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos, 
+        ) -> tuple[np.array]:
         """ Instrument specific uncertainties measurement function """
+        esSignal = np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos)
+        liSignal = np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol)
+        ltSignal = np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
+        # add integration time adjustment to measurement function
 
         return (
-            np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos), 
-            np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol),
-            np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
+            esSignal * (self.cal_int["ES"]/self.int_time["ES"]), 
+            liSignal * (self.cal_int["LI"]/self.int_time["LI"]),
+            ltSignal * (self.cal_int["LT"]/self.int_time["LT"])
         )
 
     @staticmethod

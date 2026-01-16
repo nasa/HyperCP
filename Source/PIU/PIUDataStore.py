@@ -3,12 +3,15 @@ from typing import Optional, Union
 from collections import OrderedDict
 
 # math
+import os.path
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 
 # Source
+from Source import PATH_TO_CONFIG
 from Source.ConfigFile import ConfigFile
+from Source.CalibrationFileReader import CalibrationFileReader
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.HDFDataset import HDFDataset
@@ -24,7 +27,7 @@ class PIUDataStore:
     """contains class to read and store input uncertainties for PIU"""
     sensors: list = ['ES', 'LI', 'LT']
 
-    def __init__(self, root: HDFRoot, input: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
+    def __init__(self, root: HDFRoot, inpt: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
         """ class which contains methods that provide digestable uncertainties to classes in PIU 
             converts datafile inputs into a dictionary of coefficients and uncertainties for all regimes
         """
@@ -57,20 +60,41 @@ class PIUDataStore:
             self.cast = None
 
         if not create_empty:  # do not read uncs and coeffs if we are creating an empty PDS
-            instrument = ConfigFile.settings['SensorType'].lower()  # get instrument type
             if self.cal_level == 3:
-                [self.readCalFRM(root, input, raw_grps, raw_slices, sensor) for sensor in self.sensors]
+                [self.readCalFRM(root, inpt, raw_grps, raw_slices, sensor) for sensor in self.sensors]
             else:
+                self.get_inttime(root)
                 if self.cal_level == 2:
-                    [self.readCalClassBased(input, sensor, instrument) for sensor in self.sensors]
-                elif instrument == 'seabird':
-                    [self.readCalFactory(root, input, sensor) for sensor in self.sensors]
+                    [self.readCalClassBased(inpt, sensor) for sensor in self.sensors]
+                elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
                 
                 # finally
-                [self.read_uncertainties(root, input, sensor) for sensor in self.sensors]
+                [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
+    
+    def get_inttime(self, root: HDFRoot):
+        for s in ["ES", "LI", "LT"]:
+            if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
+                gp = root.getGroup(f"{s}_L1AQC")
+            else:
+                gp = root.getGroup(f"{s}_LIGHT_L1AQC")
+            
+            calPath = os.path.join(
+                PATH_TO_CONFIG,
+                f"{os.path.splitext(ConfigFile.filename)[0]}_Calibration"
+            )
+
+            cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
+            int_time = np.array(
+                [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
+            )
+            int_time = int_time[~np.isnan(int_time)][1:]  # cut all 0s and first pixel
+            
+            self.coeff[s]['cal_int']  = int(np.mean(int_time) * 1000)  # convert to int (*1000 for 4sf of information)
+            self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
@@ -282,11 +306,12 @@ class PIUDataStore:
         return radcal_raw
 
     #### Class-Based ####
-    def readCalClassBased(self, inpt: HDFGroup, s: str, i_type: str) -> None:
+    def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
         ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
         
-        corr_factor = 10 if i_type in ["sorad", "trios", "trios es only"] else 1 # Convert TriOS mW/m2/nm to uW/cm^2/nm
+        corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
+
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
         self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
