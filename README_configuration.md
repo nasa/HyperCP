@@ -491,7 +491,7 @@ $$
 so absolute uncertainty in $R_{rs}$ is calculated as:
 
 $$
-u_{c}(R_{rs}) = R_{rs} * \sqrt{(\frac{u_{c}(L_{w})}{L_{w}})^{2} + (\frac{u(E_{s}}{E_{s}})^{2}}.
+u_{c}(R_{rs}) = R_{rs} * \sqrt{(\frac{u_{c}(L_{w})}{L_{w}})^{2} + (\frac{u(E_{s})}{E_{s}})^{2}}.
 $$
 
 (Note that $L_{w}$ and $R_{rs}$ uncertainties are propagated separately to avoid a more complicated formulation
