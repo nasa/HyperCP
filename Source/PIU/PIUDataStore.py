@@ -77,23 +77,25 @@ class PIUDataStore:
     
     def get_inttime(self, root: HDFRoot):
         for s in ["ES", "LI", "LT"]:
-            if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
-                gp = root.getGroup(f"{s}_L1AQC")
-            else:
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
                 gp = root.getGroup(f"{s}_LIGHT_L1AQC")
-            
-            calPath = os.path.join(
-                PATH_TO_CONFIG,
-                f"{os.path.splitext(ConfigFile.filename)[0]}_Calibration"
-            )
 
-            cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
-            int_time = np.array(
-                [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
-            )
-            int_time = int_time[~np.isnan(int_time)][1:]  # cut all 0s and first pixel
+                calPath = os.path.join(
+                    PATH_TO_CONFIG,
+                    f"{os.path.splitext(ConfigFile.filename)[0]}_Calibration"
+                )
+
+                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
+                int_time = np.array(
+                    [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
+                )
+                int_time = int(np.mean(int_time[~np.isnan(int_time)][1:]) * 1000) # convert to int (*1000 for 4sf of information)
+                # cut all 0s and first pixel
+            else:
+                gp = root.getGroup(f"{s}_L1AQC")
+                int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
             
-            self.coeff[s]['cal_int']  = int(np.mean(int_time) * 1000)  # convert to int (*1000 for 4sf of information)
+            self.coeff[s]['cal_int']  = int_time
             self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
 
     #### FRM ####
@@ -345,8 +347,6 @@ class PIUDataStore:
         # TODO need to retrieve indexes: np.ones_like(self.coeff[s_type]['ind_nocal']) *   (Ashley?)
         self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
-        
-        # self.uncs[s]['stab'] = self.extract_unc_from_grp(inpt, f"{s}_STABDATA_CAL", '1')
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
         self.clipSL(s)
 
