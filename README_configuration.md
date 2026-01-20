@@ -16,6 +16,7 @@ The configuration window should look like this:
 ### [Level 1B](#level-1b)
 ### [Level 1BQC](#level-1bqc)
 ### [Level 2](#level-2)
+### [Level 2 Uncertainties](#uncertainties-anchor)
 ### [SeaBASS/OCDB Output](#1-seabassocdb-file-and-header)
 ### [PDF Reports](#2-pdf-reports)
 
@@ -450,7 +451,7 @@ Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is t
 adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
 hybrid model.
 
-
+### <a id="uncertainties-anchor"></a>Uncertainties
 Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$ ) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).
 
 Combined absolute standard uncertainty ( $u_{c}$) in $L_{w}$ ($u_{c}(L_{w})$ ) is estimated from $u(L_{i})$, $u(L_{t})$, and $u(\rho_{sky})$ with the Law of Propagation of Uncertainties (LPU) assuming random, uncorrelated error. LPU defines combined standard uncertainty, $u_{c}$ as:
@@ -487,10 +488,10 @@ $$
 R_{rs} = \frac{L_{w}}{E_{s}},
 $$
 
-so uncertainty in $R_{rs}$ is calculated as:
+so absolute uncertainty in $R_{rs}$ is calculated as:
 
 $$
-u_{c}(R_{rs}) = \sqrt{u_{c}(L_{w})^{2} + u(E_{s})^{2}}.
+u_{c}(R_{rs}) = R_{rs} * \sqrt{(\frac{u_{c}(L_{w})}{L_{w}})^{2} + (\frac{u(E_{s})}{E_{s}})^{2}}.
 $$
 
 (Note that $L_{w}$ and $R_{rs}$ uncertainties are propagated separately to avoid a more complicated formulation

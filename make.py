@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import glob
 import platform
 import subprocess
@@ -14,6 +15,7 @@ if platform.system() not in ['Windows', 'Darwin', 'Linux']:
     raise ValueError(f"Platform {platform.system()} not supported.")
 os_specific_options = []
 add_data_sep = ':'
+path_to_sixs_bin = os.path.join('bin', 'sixs_json')
 if platform.system() == 'Darwin':
     os_specific_options = [
         f'--icon={os.path.relpath(os.path.join("Data", "Img", "logo.icns"), root)}',
@@ -34,6 +36,7 @@ elif platform.system() == 'Windows':
         '--hidden-import=sklearn.metrics._pairwise_distances_reduction._middle_term_computer',
     ]
     add_data_sep = ';'
+    path_to_sixs_bin = os.path.join('Library', 'bin', 'sixs_json.exe')
 
 # Get version number (without importing file)
 version = None
@@ -58,13 +61,18 @@ with open('version.txt', 'w') as f:
     f.write(f"git_hash={__git_hash__}\n")
     f.close()
 
+# Add binary dependencies (e.g. sixs_json)
+linked_binary = [
+    f'--add-binary={os.path.join(sys.prefix, path_to_sixs_bin)}{add_data_sep}{os.path.dirname(path_to_sixs_bin)}',
+]
+
 # Include all Data files (except Zhang table)
 linked_data = [
     f'--add-data={os.path.relpath("version.txt", root)}{add_data_sep}.',
     f'--add-data={os.path.relpath("Config", root)}{add_data_sep}Config',
 ]
 for f in sorted(glob.glob(os.path.join('Data', '*'))):
-    if os.path.isdir(f) and os.path.basename(f) not in ['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2', 'Plots', 'Reports']:
+    if os.path.isdir(f) and os.path.basename(f) not in ['Anc', 'L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2', 'Plots', 'Reports']:
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}{f}')
     elif re.match('^.*\.(txt|csv|sb|nc|hdf)$', os.path.splitext(f)[1]):
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}Data')
@@ -80,6 +88,7 @@ PyInstaller.__main__.run([
     '--console',  # Open Console (hide console with windowed)
     '--noconfirm',
     # '--clean',
+    *linked_binary,
     *linked_data,
     *os_specific_options,
 ])

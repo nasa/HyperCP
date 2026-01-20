@@ -60,6 +60,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
 
+        "Raw" refers to uncalibrated L1AQC data.
+
         :return: dictionary of statistics used later in the processing pipeline. Keys are:
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
         """
@@ -69,6 +71,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             from Source.PIU.utils import utils
 
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
+                # L1AQC unsliced data group is passed and used for calibration data contained therein.
                 utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
                 args = [copy.deepcopy(rawData[s_type]),
                         copy.deepcopy(rawSlice[s_type]),
@@ -76,16 +79,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
             elif i_type.lower() == "dalec":
                 # NOTE: Under development
-                # The light and dark data for DALEC are both available in the L1AQC group, but that is the entire L1AQC file, not the slice...
-                utils.apply_NaN_Mask(rawSlice[s_type]['light'])  # apply Nan mask
-                utils.apply_NaN_Mask(rawSlice[s_type]['dark'])  # apply Nan mask
-                # args = [copy.deepcopy(rawData[s_type]), copy.deepcopy(rawSlice[s_type]), s_type]
+                # L1AQC unsliced data group is passed, but not used.
+                utils.apply_NaN_Mask(rawSlice[s_type]['light'])
+                utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
                 args = [
                     {'L1AQC': copy.deepcopy(rawData[s_type].datasets[s_type]), 'DARK': copy.deepcopy(rawData[s_type].datasets['DARK_CNT'])},
                     {'LIGHT': copy.deepcopy(rawSlice[s_type]['light']), 'DARK': copy.deepcopy(rawSlice[s_type]['dark'])},
                     s_type
                 ]
             elif i_type.lower() == "seabird":
+                # L1AQC unsliced data group is passed, but only used for reference.
                 utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
                 utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
                 args =[
@@ -95,6 +98,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ]
             else:
                 writeLogFileAndPrint("WARNING sensor not recognised")
+                args = None
+
             try:
                 stats[s_type] = self.lightDarkStats(*args)
             except (ValueError, IndexError, KeyError):

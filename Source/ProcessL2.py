@@ -1178,7 +1178,7 @@ class ProcessL2:
         # TODO Check why SIXS code used to be here but data manipulation is not used later on, hence dropped
 
         # %% Get active raw groups (based on data available in groups, required to get std)
-        # "raw" here refers to full L1AQC dataset
+        # NOTE: "raw" here refers to pre-calibration L1AQC datasets
         map_raw_groups = {'ES': esRawGroup, 'LI': liRawGroup, 'LT': ltRawGroup}
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             raw_groups = {k: {t: map_raw_groups[k][t] for t in ['LIGHT', 'DARK']} for k in groups}
