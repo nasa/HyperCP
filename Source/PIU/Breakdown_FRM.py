@@ -249,10 +249,9 @@ class plottingToolsFRM:
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
             # --- Add percentage labels to the right of each bar ---
-            total = sum(vals_sorted)
             x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
             for i, v in enumerate(vals_sorted):
-                pct = (v / total) * 100
+                pct = (v / combined) * 100
                 ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
 
             # --- Styling ---
@@ -262,10 +261,8 @@ class plottingToolsFRM:
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
             plt.tight_layout()
-            # fp = path.join(self.plot_folder, f"{s}_SB_pie_{self.station}_{wvl_at_indx}.png")
             fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 
-            # plt.close(fig)
 
     def get_figure(self, s: str) -> plt.figure:
         """

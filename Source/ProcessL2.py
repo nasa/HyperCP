@@ -1432,10 +1432,15 @@ class ProcessL2:
                         u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
-                    x_breakdown_unc[k.upper()] = {
-                        u[0]: u[1] * np.abs(s[0]) for s, u in 
-                        zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
-                    }
+                    # x_breakdown_unc[k.upper()] = {
+                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in 
+                    #     zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
+                    # }  # TODO figure out why this doesn't work - Ashley
+                
+                x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
+                x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
+                x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
+
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}

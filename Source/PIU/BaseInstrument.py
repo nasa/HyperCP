@@ -137,14 +137,29 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
-            UNC_obj_CB = Propagate(M=100, cores=0)
+            mDraws = 100
+            UNC_obj_CB = Propagate(M=mDraws, cores=0)
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
             return False, None
 
-        ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
-        zeroes = np.zeros_like(PDS.uncs['ES']['cal']) 
+        # es_wvl, li_wvl, lt_wvl = [np.array(list(S.keys()), dtype=float).flatten() for S in [es, li, lt]]
+        # es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
+        
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es, label='HCP es')
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es_test, label='MF es')
+        # plt.savefig("debug_es.png")
+        # plt.show()
+
+        ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
+        zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
+
+        # put cal_int and int_time into propagate object to save having to pass arguments through punpy
+        UNC_obj_CB.cal_int  = {sensor: PDS.coeff[sensor]['cal_int'] for sensor in stats.keys()}
+        UNC_obj_CB.int_time = {sensor: PDS.coeff[sensor]['int_time'] for sensor in stats.keys()}
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                  stats['LI']['ave_Light'] if 'LI' in stats else ones, stats['LI']['ave_Dark'] if 'LI' in stats else ones,
@@ -154,23 +169,23 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ones, ones, ones,
                  ones, ones, ones,
                  ones, ones, ones,
-                 ones, ones, ones
-                 ]
+                 ones, ones, ones,
+        ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'] if 'LI' in stats else zeroes, stats['LI']['std_Dark'] if 'LI' in stats else zeroes,
                          stats['LT']['std_Light'] if 'LT' in stats else zeroes, stats['LT']['std_Dark'] if 'LT' in stats else zeroes,
-                         PDS.uncs['ES']['cal'] * PDS.coeff['ES']['cal'] / 200,
-                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200 if 'LI' in PDS.uncs else zeroes,
-                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200 if 'LT' in PDS.uncs else zeroes,
+                         (PDS.uncs['ES']['cal'] / 200 * PDS.coeff['ES']['cal']),
+                         (PDS.uncs['LI']['cal'] / 200 * PDS.coeff['LI']['cal']) if 'LI' in PDS.uncs else zeroes,
+                         (PDS.uncs['LT']['cal'] / 200 * PDS.coeff['LT']['cal']) if 'LT' in PDS.uncs else zeroes,
                          PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else zeroes,
                          PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else zeroes, PDS.uncs['LT']['nlin'] if 'LT' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
                          np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos'])
-                         ]
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos']),
+        ]
 
         # generate uncertainties using Monte Carlo Propagation object
         es_unc, li_unc, lt_unc = UNC_obj_CB.propagate_Instrument_Uncertainty(means, uncertainties)
@@ -194,7 +209,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
 
-
         # # check if negative signal for any pixels
         # is_negative = np.any([ x < 0 for x in means])
         # if is_negative:
@@ -209,14 +223,34 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
 
+            quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
+            quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
+            quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
+
+            pct_diff_es = ((quad_es - es_unc)/es)*100
+            pct_diff_li = ((quad_li - li_unc)/li)*100
+            pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
+
+            # then propagate perturbation uncertainty
+            pert_uncs = np.zeros_like(np.asarray(uncertainties))
+            pert_uncs[0:6] = [
+                np.abs(stats['ES']["Signal_std"]) * stats['ES']['ave_Light'],
+                zeroes,
+                np.abs(stats['LI']["Signal_std"]) * stats['LI']['ave_Light'] if 'LI' in PDS.uncs else zeroes,
+                zeroes,
+                np.abs(stats['LT']["Signal_std"]) * stats['LT']['ave_Light'] if 'LT' in PDS.uncs else zeroes,
+                zeroes
+            ]
+
+            (
+                BD_UNCS['ES']['pert'],
+                BD_UNCS['LI']['pert'],
+                BD_UNCS['LT']['pert'],
+            ) = UNC_obj_CB.propagate_Instrument_Uncertainty(means, pert_uncs)
+
             BD_UNCS['ES'] = {k: BD_UNCS['ES'][k] / np.abs(es) for k in BD_UNCS['ES']}  # convert all to relative units
             BD_UNCS['LI'] = {k: BD_UNCS['LI'][k] / np.abs(li) for k in BD_UNCS['LI']}
             BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
-
-            # then add perturbation (already relative)
-            BD_UNCS['ES']['pert'] = stats['ES']["Signal_std"]
-            BD_UNCS['LI']['pert'] = stats['LI']["Signal_std"] if 'LI' in PDS.uncs else zeroes
-            BD_UNCS['LT']['pert'] = stats['LT']["Signal_std"] if 'LT' in PDS.uncs else zeroes
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),
@@ -244,6 +278,36 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                                   return_as_dict=True
             )
         out['valid_pixels']=PDS.nan_mask
+
+        # -- interpolate Breakdowns to common wavebands -- 
+        BD_UNCS['ES'] = {
+            k: utils.interp_common_wvls(
+                BD_UNCS['ES'][k], 
+                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                dtype=float)[PDS.ind_rad_wvl['ES']],
+                data_wvl,
+                return_as_dict=False
+            ) for k in BD_UNCS['ES'].keys()
+        }
+        BD_UNCS['LI'] = {
+            k: utils.interp_common_wvls(
+                BD_UNCS['LI'][k], 
+                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                dtype=float)[PDS.ind_rad_wvl['LI']],
+                data_wvl,
+                return_as_dict=False
+            ) for k in BD_UNCS['LI'].keys()
+        }
+        BD_UNCS['LT'] = {
+            k: utils.interp_common_wvls(
+                BD_UNCS['LT'][k], 
+                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+                dtype=float)[PDS.ind_rad_wvl['LT']],
+                data_wvl,
+                return_as_dict=False
+            ) for k in BD_UNCS['LT'].keys()
+        }
+
         return out, BD_UNCS
 
     def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
@@ -367,22 +431,30 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
 
-        # Use Law of propagation of uncertainty to add perturbation uncertainty to Rrs/Lw
-        sample_es_pert = cm.generate_sample(mDraws, es,  np.abs(stats['ES']['Signal_std']*es), "rand")
-        sample_li_pert = cm.generate_sample(mDraws, li,  np.abs(stats['LI']['Signal_std']*li), "rand")
-        sample_lt_pert = cm.generate_sample(mDraws, lt,  np.abs(stats['LT']['Signal_std']*lt), "rand")
-        sample_rho     = cm.generate_sample(mDraws, rho, rhoUNC, "syst")
-        sample_f0      = cm.generate_sample(mDraws, f0,  f0_unc, "syst")
+        # then propagate perturbation uncertainty
+        zeroes = np.zeros_like(ones)
+        pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
+        pert_uncs[0:3] = [
+            np.abs(stats['LT']["Signal_std"]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            zeroes,
+            np.abs(stats['LI']["Signal_std"]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+        ]
 
-        BD_UNCS['Lw']['pert']  = UNC_obj_CB.MCP.process_samples(
-            None, 
-            UNC_obj_CB.MCP.run_samples(UNC_obj_CB.Lw_FRM, [sample_lt_pert, sample_rho, sample_li_pert])
-            )
-        BD_UNCS['Rrs']['pert'] = UNC_obj_CB.MCP.process_samples(
-            None,
-            UNC_obj_CB.MCP.run_samples(UNC_obj_CB.Rrs_FRM, [sample_lt_pert, sample_rho, sample_li_pert, sample_es_pert])
-            )
+        BD_UNCS['Lw']['pert'] = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
+        lw = UNC_obj_CB.Lw(*lw_means)
         
+        pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
+        pert_uncs[0:4] = [
+            np.abs(stats['LT']["Signal_std"]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.zeros_like(ones),
+            np.abs(stats['LI']["Signal_std"]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(stats['ES']["Signal_std"]) * np.abs(es),
+        ]
+
+        BD_UNCS['Rrs']['pert'] = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
+        rrs = UNC_obj_CB.RRS(*rrs_means)
+
+        sample_f0 = cm.generate_sample(mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(mDraws, f0,  None,   None)
         no_unc_rrs = cm.generate_sample(mDraws, BD_VALS['Rrs'], None,   None)
 
