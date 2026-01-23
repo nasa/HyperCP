@@ -387,7 +387,10 @@ class ProcessL1aqc:
                 elif not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc:
                     # Corrected below for +/- solar-sensor orientation
                     for i, sasAz in enumerate(sasAzAnc):
-                        relAzAnc.append(sasAz - sunAzimuthAnc[i])
+                        if not relAzAnc:
+                            relAzAnc = [sasAz - sunAzimuthAnc[i]]
+                        else:
+                            relAzAnc.append(sasAz - sunAzimuthAnc[i])
 
             if "PITCH" in ancData.columns:
                 pitch = ancData.columns["PITCH"][0]

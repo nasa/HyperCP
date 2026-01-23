@@ -80,6 +80,12 @@ class ProcessL1b_Interp:
                 elif gpsGroup.attributes["CalFileName"] == 'GPS_MSDA': # MSDA_XE merged GPS
                     latData = ProcessL1b_Interp.convertDataset(gpsGroup, "LATITUDE", newAncGroup, "LATITUDE")
                     lonData =ProcessL1b_Interp.convertDataset(gpsGroup, "LONGITUDE", newAncGroup, "LONGITUDE")
+
+                elif gpsGroup.attributes["CalFileName"].startswith('GPGGA'): # SolarTracker backup GPS
+                    latData = ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newAncGroup, "LATITUDE")
+                    lonData =ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newAncGroup, "LONGITUDE")
+
+
                 newAncGroup.attributes['GPS_Source'] = gpsGroup.attributes['CalFileName']
         else:
             # TODO: If GPS is part of the SunTracker group, and gpsGroup was not yet established, pull Lat/Lon from Suntracker Group

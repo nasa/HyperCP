@@ -23,8 +23,8 @@ class ProcessL1b_FactoryCal:
             ProcessL1b_FactoryCal.processOPTIC3(ds, cd, immersed, inttime)
         elif cd.fitType == "OPTIC4":
             ProcessL1b_FactoryCal.processOPTIC4(ds, cd, immersed)
-        # elif cd.fitType == "THERM1":
-        #     ProcessL1b_FactoryCal.processTHERM1(ds, cd)
+        elif cd.fitType == "THERM1":
+            ProcessL1b_FactoryCal.processTHERM1(ds, cd)
         elif cd.fitType == "POW10":
             ProcessL1b_FactoryCal.processPOW10(ds, cd, immersed)
         elif cd.fitType == "POLYU":
@@ -93,12 +93,12 @@ class ProcessL1b_FactoryCal:
         for x in range(ds.data.shape[0]):
             ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
 
-    # # Process THERM1 - not implemented
-    # #   This is for optical thermal sensors like pyrometers, I believe.
-    # #   This is not for thermal responsivity of OPTICS3 sensors
-    # @staticmethod
-    # def processTHERM1(ds, cd):
-    #     return
+    # Process THERM1 - not implemented
+    #   THERMAL_RESPONSE dataset of HyperOCR groups is all zeroes,
+    #   so nothing to apply THERM1 coefficients to.
+    @staticmethod
+    def processTHERM1(ds, cd):
+        return
 
     @staticmethod
     def processPOW10(ds, cd, immersed):
