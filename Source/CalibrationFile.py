@@ -76,9 +76,15 @@ class CalibrationFile:
                 self.id += cd.id
 
             # Read in coefficients
-            for i in range(0, cd.calLines):
-                line = f.readline()
-                cd.readCoefficients(line)
+            for i in range(0, cd.calLines):                
+                if cd.dummy == 0:
+                    line = f.readline()
+                    cd.readCoefficients(line)
+                else:
+                    # Buffer empty calibration pixels
+                    # If applied, this should yield all zeros in these bands
+                    cd.coefficients = b"0.0\t0.0\t1.0\t0.512\r\n".split()
+
 
             #cd.printd()
             self.data.append(cd)

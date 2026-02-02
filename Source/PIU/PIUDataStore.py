@@ -48,11 +48,11 @@ class PIUDataStore:
         self.sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2) # take to 2.d.p for outputting
 
         try:
-            ancGroup = root.getGroup("ANCILLARY")
+            # ancGroup = root.getGroup("ANCILLARY")
             self.station = ancGroup.getDataset("STATION").columns["STATION"][0]
         except (AttributeError, KeyError):
             self.station = None
-            
+
         try:
             acqTime = dt.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             self.cast = f"{self.get_regime_Name()}_{acqTime.strftime('%Y%m%d%H%M%S')}"
@@ -323,8 +323,11 @@ class PIUDataStore:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
         ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
         # read cal start and cal stop for shaping stray-light class based uncertainties
-        self.cal_start = int(node.attributes['CAL_START'])
-        self.cal_stop = int(node.attributes['CAL_STOP'])
+        self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
+        self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
+
+        ind_rad_wvl[0:self.cal_start] = False
+        ind_rad_wvl[self.cal_stop+1:] = False
 
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
         self.ind_rad_wvl[s] = ind_rad_wvl
@@ -478,11 +481,11 @@ class PIUDataStore:
 
         if ConfigFile.settings['SensorType'].lower() == "dalec":
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
-        else:    
+        else:
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
         return cal, coef
-    
+
     @staticmethod
     def extract_unc_from_grp(grp: HDFGroup, name: str, col_name: Optional[str] = None) -> Union[np.array, HDFDataset]:
         """

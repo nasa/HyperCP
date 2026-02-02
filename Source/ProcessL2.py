@@ -1921,6 +1921,13 @@ class ProcessL2:
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
+                # Check for dataset attributes
+                if grp.id == 'IRRADIANCE' or grp.id == 'RADIANCE':
+                    for sensorType in ['ES','LI','LT']:
+                        if grp.datasets[ds].id == sensorType:
+                            node.attributes[f'{sensorType}_START_PIXEL'] = grp.datasets[ds].attributes['CAL_START']
+                            node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']
+
             # Carry over L1AQC data for use in uncertainty budgets
             if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
