@@ -38,6 +38,8 @@ class PIUDataStore:
         self.coeff:     dict = {s: {} for s in self.sensors}
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
 
+        # NOTE: These are temporarily stored in root attributes for each instrument.
+        # Used below by readCalFactory for SeaBird
         self.cal_start: int = None
         self.cal_stop:  int = None
 
@@ -347,8 +349,7 @@ class PIUDataStore:
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
-        # TODO need to retrieve indexes: np.ones_like(self.coeff[s_type]['ind_nocal']) *   (Ashley?)
-        self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
+        self.uncs[s]['stab'] = np.ones(len(self.ind_rad_wvl[s]), dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
         self.clipSL(s)
@@ -447,12 +448,16 @@ class PIUDataStore:
         return data
     
     def clipSL(self, s: str) -> None:
-        start = self.cal_start
-        stop = self.cal_stop
-        ind_wvl = self.ind_rad_wvl[s]
+        # start = self.cal_start
+        # stop = self.cal_stop
+        # ind_wvl = self.ind_rad_wvl[s]
+
+        # In case radcal is shorter than straylight uncertainty, clip straylight uncertainty
+        #   presumes
 
         if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
             self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
+            # MAke pixels match first.
         elif (start is not None) and (stop is not None):
             self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
         else:
