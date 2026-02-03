@@ -38,6 +38,8 @@ class PIUDataStore:
         self.coeff:     dict = {s: {} for s in self.sensors}
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
 
+        # NOTE: These are temporarily stored in root attributes for each instrument.
+        # Used below by readCalFactory for SeaBird
         self.cal_start: int = None
         self.cal_stop:  int = None
 
@@ -48,11 +50,11 @@ class PIUDataStore:
         self.sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2) # take to 2.d.p for outputting
 
         try:
-            ancGroup = root.getGroup("ANCILLARY")
+            # ancGroup = root.getGroup("ANCILLARY")
             self.station = ancGroup.getDataset("STATION").columns["STATION"][0]
         except (AttributeError, KeyError):
             self.station = None
-            
+
         try:
             acqTime = dt.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             self.cast = f"{self.get_regime_Name()}_{acqTime.strftime('%Y%m%d%H%M%S')}"
@@ -323,8 +325,11 @@ class PIUDataStore:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
         ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
         # read cal start and cal stop for shaping stray-light class based uncertainties
-        self.cal_start = int(node.attributes['CAL_START'])
-        self.cal_stop = int(node.attributes['CAL_STOP'])
+        self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
+        self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
+
+        ind_rad_wvl[0:self.cal_start] = False
+        ind_rad_wvl[self.cal_stop+1:] = False
 
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
         self.ind_rad_wvl[s] = ind_rad_wvl
@@ -344,11 +349,10 @@ class PIUDataStore:
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
-        # TODO need to retrieve indexes: np.ones_like(self.coeff[s_type]['ind_nocal']) *   (Ashley?)
-        self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
+        self.uncs[s]['stab'] = np.ones(len(self.ind_rad_wvl[s]), dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
-        self.clipSL(s)
+        # self.clipSL(s)
 
         self.uncs[s]['nlin'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_NLDATA_CAL", col_name='1')
         self.uncs[s]['ct'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_TEMPDATA_CAL", col_name=f'{s}_TEMPERATURE_UNCERTAINTIES')
@@ -444,14 +448,20 @@ class PIUDataStore:
         return data
     
     def clipSL(self, s: str) -> None:
-        start = self.cal_start
-        stop = self.cal_stop
+        # start = self.cal_start
+        # stop = self.cal_stop
         ind_wvl = self.ind_rad_wvl[s]
 
-        if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
-            self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
-        elif (start is not None) and (stop is not None):
-            self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
+        # In case radcal is shorter than straylight uncertainty, clip straylight uncertainty
+        #   presumes both start at the first pixel (SeaBird cal files buffer the UV pixels, but not always the NIR).
+
+
+        # if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
+        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
+        # elif (start is not None) and (stop is not None):
+        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
+        if (ind_wvl is not None) and (len(ind_wvl) < len(self.uncs[s]['stray'])):
+            self.uncs[s]['stray'] =  self.uncs[s]['stray'][0:len(ind_wvl)]
         else:
             msg = "cannot mask straylight"
             print(msg)  # to cover for potential coding errors, should not be hit in normal use
@@ -478,11 +488,11 @@ class PIUDataStore:
 
         if ConfigFile.settings['SensorType'].lower() == "dalec":
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
-        else:    
+        else:
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
         return cal, coef
-    
+
     @staticmethod
     def extract_unc_from_grp(grp: HDFGroup, name: str, col_name: Optional[str] = None) -> Union[np.array, HDFDataset]:
         """

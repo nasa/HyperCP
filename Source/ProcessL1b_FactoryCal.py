@@ -79,8 +79,12 @@ class ProcessL1b_FactoryCal:
             #   When applying calibration to the dark current corrected
             #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
             #   presuming light and dark factory cals are equivalent (which they are).
-            ##############################################################
-            ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
+            ##############################################################            
+            if cd.dummy == 0:
+                ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
+            else:
+                # NOTE: Control for buffered, uncalibrated channels
+                ds.data[k][x] = np.nan
 
     @staticmethod
     def processOPTIC4(ds, cd, immersed):
@@ -157,27 +161,36 @@ class ProcessL1b_FactoryCal:
         """
         cal_name_pattern = re.compile("HS.", re.IGNORECASE)  # patter for selecting shutterlight data
         coefs = {}
+        dummy = {}
         indx = {}
+        start = {}
+        stop = {}
         for k, var in calibrationMap.items():
             # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
             if re.search(cal_name_pattern, k) and k.endswith('.cal'):  # any(['HSE' in k, 'HSL' in k]):
             # var.frameType == "shutterlight":  # ideal solution for this section, but frameType not populated in cal data
                 coefs[k] = []
+                dummy[k] = []
                 for d in var.data:
                     if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
                         coefs[k].append(d.fitType)
+                        dummy[k].append(d.dummy)
 
                 indx[k] = []
                 for i, c in enumerate(coefs[k]):
                     if c == 'OPTIC3':
-                        indx[k].append(i)
+                        if dummy[k][i] == 0:
+                            indx[k].append(i)
 
-        # TODO: assess if this is stricly necessary, all indexes the same in examples used for testing
-        start = max(ind[0] for ind in indx.values())  # -1 to cover the first pixel which has no coef but is valid
-        end = min(ind[-1] for ind in indx.values())
-        if start < 0: #  cannot be less than 0
-            start = 0
-        return start, end
+        # NOTE: Made specific to each sensor in calibrationMap
+        for k,ind in indx.items():
+            start[k] = min(ind)
+            stop[k] = max(ind)
+        # start[k] = max(ind[0] for k,ind in indx.items())  # -1 to cover the first pixel which has no coef but is valid
+        # stop[k] = min(ind[-1] for ind in indx.values())
+            if start[k] < 0: #  cannot be less than 0
+                start[k] = 0
+        return start, stop
 
     @staticmethod
     def processL1b_SeaBird(node, calibrationMap):
@@ -192,9 +205,9 @@ class ProcessL1b_FactoryCal:
 
         now = dt.datetime.now()
         # get effective calibration and save to node attributes
-        start, end = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
-        node.attributes['CAL_START'] = str(start)
-        node.attributes['CAL_STOP'] = str(end)
+        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
+        # node.attributes['CAL_START'] = str(start)
+        # node.attributes['CAL_STOP'] = str(end)
         # node.attributes['CAL_LINES'] = lines
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
@@ -214,6 +227,9 @@ class ProcessL1b_FactoryCal:
                         logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
+                        if gp.id in ['ES','LI','LT']:
+                            gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+                            gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
 
                         if esUnits is None:
                             esUnits = cf.getUnits("ES")

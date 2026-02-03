@@ -282,7 +282,6 @@ class ProcessL1bqc:
 
         # gpsGroup = node.getGroup('GPS')
         ancGroup = None
-        pyrGroup = None
         sixSGroup = None
         for gp in node.groups:
             if gp.id.startswith("ANCILLARY"):

@@ -501,8 +501,11 @@ class ProcessL1b_Interp:
 
         # Get wavelength values
         wavelength = []
-        for k in columns:
-            wavelength.append(float(k))
+        for k,v in columns.items():
+            # NOTE: Check for buffered, uncalibrated wavebands
+            all_nan = all(i != i for i in v)
+            if not all_nan:
+                wavelength.append(float(k))
 
         x = np.asarray(wavelength)
 
@@ -519,8 +522,11 @@ class ProcessL1b_Interp:
         for timeIndex in range(len(saveDatetag)):
             values = []
 
-            for k in columns:
-                values.append(columns[k][timeIndex])
+            for k,v in columns.items():
+                # NOTE: Check for buffered, uncalibrated wavebands
+                all_nan = all(i != i for i in v)
+                if not all_nan:
+                    values.append(columns[k][timeIndex])
 
             y = np.asarray(values)
             #new_y = sp.interpolate.interp1d(x, y)(newWavebands)
@@ -609,8 +615,11 @@ class ProcessL1b_Interp:
         columns.pop("Datetime")
         # Get wavelength values
         esWavelength = []
-        for k in columns:
-            esWavelength.append(float(k))
+        for k,v in columns.items():
+            # NOTE: Check for buffered, uncalibrated wavebands
+            all_nan = all(i != i for i in v)
+            if not all_nan:
+                esWavelength.append(float(k))
         # Determine interpolated wavelength values
         esStart = np.ceil(esWavelength[0])
         esEnd = np.floor(esWavelength[len(esWavelength)-1])
@@ -628,8 +637,11 @@ class ProcessL1b_Interp:
             columns.pop("Datetime")
             # Get wavelength values
             liWavelength = []
-            for k in columns:
-                liWavelength.append(float(k))
+            for k,v in columns.items():
+                # NOTE: Check for buffered, uncalibrated wavebands
+                all_nan = all(i != i for i in v)
+                if not all_nan:
+                    liWavelength.append(float(k))
             # Determine interpolated wavelength values
             liStart = np.ceil(liWavelength[0])
             liEnd = np.floor(liWavelength[len(liWavelength)-1])
@@ -643,8 +655,11 @@ class ProcessL1b_Interp:
             columns.pop("Datetime")
             # Get wavelength values
             ltWavelength = []
-            for k in columns:
-                ltWavelength.append(float(k))
+            for k,v in columns.items():
+                # NOTE: Check for buffered, uncalibrated wavebands
+                all_nan = all(i != i for i in v)
+                if not all_nan:
+                    ltWavelength.append(float(k))
 
             # Determine interpolated wavelength values
             ltStart = np.ceil(ltWavelength[0])

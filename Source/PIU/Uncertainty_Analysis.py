@@ -152,7 +152,10 @@ class Propagate:
                                         )
 
         # separate uncertainties and sensor values from their lists - for clarity
-        Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
+        try:
+            Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
+        except:
+            print('hi')
 
         return Es_unc, Li_unc, Lt_unc
 
