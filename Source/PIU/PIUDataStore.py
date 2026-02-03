@@ -352,7 +352,7 @@ class PIUDataStore:
         self.uncs[s]['stab'] = np.ones(len(self.ind_rad_wvl[s]), dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
-        self.clipSL(s)
+        # self.clipSL(s)
 
         self.uncs[s]['nlin'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_NLDATA_CAL", col_name='1')
         self.uncs[s]['ct'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_TEMPDATA_CAL", col_name=f'{s}_TEMPERATURE_UNCERTAINTIES')
@@ -450,16 +450,18 @@ class PIUDataStore:
     def clipSL(self, s: str) -> None:
         # start = self.cal_start
         # stop = self.cal_stop
-        # ind_wvl = self.ind_rad_wvl[s]
+        ind_wvl = self.ind_rad_wvl[s]
 
         # In case radcal is shorter than straylight uncertainty, clip straylight uncertainty
-        #   presumes
+        #   presumes both start at the first pixel (SeaBird cal files buffer the UV pixels, but not always the NIR).
 
-        if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
-            self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
-            # MAke pixels match first.
-        elif (start is not None) and (stop is not None):
-            self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
+
+        # if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
+        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
+        # elif (start is not None) and (stop is not None):
+        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
+        if (ind_wvl is not None) and (len(ind_wvl) < len(self.uncs[s]['stray'])):
+            self.uncs[s]['stray'] =  self.uncs[s]['stray'][0:len(ind_wvl)]
         else:
             msg = "cannot mask straylight"
             print(msg)  # to cover for potential coding errors, should not be hit in normal use

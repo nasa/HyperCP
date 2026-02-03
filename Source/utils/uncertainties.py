@@ -107,7 +107,8 @@ class unc_management:
 
             for dtype in [
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
-                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
+                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90",
+                "_STRAYDATA_CAL"
                 ]:
                 try:
                     ds = grp.getDataset(f"{sensor}{dtype}")
