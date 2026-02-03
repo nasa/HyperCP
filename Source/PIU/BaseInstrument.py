@@ -1,6 +1,6 @@
 # linting
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Tuple
 import warnings
 
 # maths
@@ -122,7 +122,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
+    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array], xslice) -> Union[dict[str, dict], Tuple[bool, None]]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -142,17 +142,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
-            return False, None
+            return (False, None)
 
-        # es_wvl, li_wvl, lt_wvl = [np.array(list(S.keys()), dtype=float).flatten() for S in [es, li, lt]]
-        # es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
+        es_wvl, li_wvl, lt_wvl = [np.array(list(xslice[S].keys()), dtype=float).flatten() for S in ["es", "li", "lt"]]
+        es_slc, li_slc, lt_slc = [np.array(list(xslice[S].values()), dtype=float).flatten() for S in ["es", "li", "lt"]]
         
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.plot(list(stats['ES']['std_Signal'].keys()), es, label='HCP es')
-        # plt.plot(list(stats['ES']['std_Signal'].keys()), es_test, label='MF es')
-        # plt.savefig("debug_es.png")
-        # plt.show()
+        
 
         ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
@@ -201,6 +196,53 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
         es, li, lt = UNC_obj_CB.instruments(*means)
+
+        es_diff = (es_slc - es)
+        li_diff = (li_slc - li)
+        lt_diff = (lt_slc - lt)
+
+        msk_es = np.where(es != 0)
+        msk_li = np.where(li != 0)
+        msk_lt = np.where(lt != 0)
+
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.plot(es_wvl[msk_es], es_slc[msk_es], label='HCP es')
+        plt.plot(np.array(list(stats['ES']['Signal_noise'].keys()), dtype=float)[msk_es], es[msk_es], label='MF es')
+        
+        plt.legend()
+        plt.grid()
+        plt.savefig("debug_es.png")
+        # plt.show()
+
+        plt.figure()
+        plt.plot(li_wvl[msk_li], li_slc[msk_li], label='HCP li')
+        plt.plot(np.array(list(stats['LI']['Signal_noise'].keys()), dtype=float)[msk_li], li[msk_li], label='MF li')
+        
+        plt.legend()
+        plt.grid()
+        plt.savefig("debug_li.png")
+        # plt.show()
+
+        plt.figure()
+        plt.plot(lt_wvl[msk_lt], lt_slc[msk_lt], label='HCP lt')
+        plt.plot(np.array(list(stats['LT']['Signal_noise'].keys()), dtype=float)[msk_lt], lt[msk_lt], label='MF lt')
+
+        plt.legend()
+        plt.grid()
+        plt.savefig("debug_lt.png")
+        # plt.show()
+
+        plt.figure()
+        plt.plot(es_wvl, es_diff, label="es difference irr units")
+        plt.plot(li_wvl, li_diff, label="li difference rad units")
+        plt.plot(lt_wvl, lt_diff, label="lt difference rad units")
+
+        plt.legend()
+        plt.grid()
+        plt.savefig("diff_all.png")
+        # plt.show()
 
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
@@ -253,8 +295,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
-        data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),
-                              dtype=float)
+        data_wvl = np.asarray(
+            list(stats['ES']['Signal_std_Interpolated'].keys()),
+            dtype=float
+        )
         out = dict(
             esUnc=utils.interp_common_wvls(ES_unc,
                                            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
