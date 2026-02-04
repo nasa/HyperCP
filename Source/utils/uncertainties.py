@@ -1,4 +1,5 @@
 import re
+from typing import OrderedDict
 import numpy as np
 import pandas as pd
 
@@ -107,8 +108,7 @@ class unc_management:
 
             for dtype in [
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
-                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90",
-                "_STRAYDATA_CAL"
+                "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90", "_STRAYDATA_CAL",
                 ]:
                 try:
                     ds = grp.getDataset(f"{sensor}{dtype}")
@@ -117,12 +117,16 @@ class unc_management:
                     pass
                 else:  # if we find a dataset with the given name then interpolate class based uncertainties
                     if 'TEMPDATA' in dtype:
-                        unc_management.interp_radcal(ds, x_new, '1', 2)
+                        unc_management.interp_radcal(ds, x_new, '1', 2)                       
                     else:
                         unc_management.interp_2_col(ds, x_new)
                     ds.columnsToDataset()
 
         return True
+    
+    @staticmethod
+    def slice_sl(ds, new_index):
+        pass
 
     @staticmethod
     def interpUncertainties_Class(node: HDFRoot):

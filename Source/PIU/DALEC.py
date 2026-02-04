@@ -25,7 +25,7 @@ class Dalec(BaseInstrument):
         self.instrument = "Dalec"
 
     # def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
-    def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
+    def lightDarkStats(self, grp: dict[str, HDFGroup], XSlice: dict[str, OrderedDict], sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
         ''' Unsliced L1AQC grp is no longer needed here '''
         # Dalec
         lightData = XSlice['LIGHT']  # lightGrp.getDataset(sensortype)

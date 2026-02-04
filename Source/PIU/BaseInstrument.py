@@ -52,10 +52,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     ## Regime Agnostic Methods ##
 
     @abstractmethod
-    def lightDarkStats(self, grp: Union[HDFGroup, dict[str: HDFGroup]], XSlice: dict, sensortype: str) -> dict[str: np.array]:
+    def lightDarkStats(self, grp: Union[HDFGroup, dict[str, HDFGroup]], XSlice: dict, sensortype: str) -> dict[str, np.array]:
         pass
 
-    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array) -> dict[str: np.array]:
+    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array) -> dict[str, np.array]:
         """
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
@@ -122,7 +122,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array], xslice) -> Union[dict[str, dict], Tuple[bool, None]]:
+    def ClassBased(self,
+                   node: HDFRoot, 
+                   uncGrp: HDFGroup, 
+                   stats: dict[str, np.array], 
+                   xslice: dict[str, dict[str, np.array]],
+                   ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -147,8 +152,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es_wvl, li_wvl, lt_wvl = [np.array(list(xslice[S].keys()), dtype=float).flatten() for S in ["es", "li", "lt"]]
         es_slc, li_slc, lt_slc = [np.array(list(xslice[S].values()), dtype=float).flatten() for S in ["es", "li", "lt"]]
         
-        
-
         ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
 
@@ -178,8 +181,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
                          np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos']),
+                         np.array(PDS.uncs['ES']['ct']), 
+                         np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, 
+                         np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, 
+                         np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, 
+                         np.array( PDS.uncs['ES']['cos']),
         ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -352,9 +359,21 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ) for k in BD_UNCS['LT'].keys()
         }
 
-        return out, BD_UNCS
+        return (out, BD_UNCS)
 
-    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, 
+                     node: HDFRoot, 
+                     uncGrp: HDFGroup, 
+                     PDS: pds, 
+                     stats: dict[str, Union[np.array, dict]], 
+                     rhoScalar: Union[float, np.array], 
+                     rhoVec: np.array,
+                     rhoDelta: np.array, 
+                     f0: np.array, 
+                     f0_unc: np.array,
+                     waveSubset: np.array, 
+                     xSlice: dict[str, dict[str, np.array]]
+                     ) -> Union[dict[str, bool], bool]:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 

@@ -119,7 +119,7 @@ class PIUDataStore:
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"
         else:
-            writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
+            writeLogFileAndPrint(f"{instrument} not yet implemented")
             raise NotImplementedError
 
         # define input data
@@ -413,7 +413,6 @@ class PIUDataStore:
         res_sixS['diffuse_ratio'] = np.asarray(pd.DataFrame(sixS_gp.getDataset("diffuse_ratio").data))
         node.removeGroup(sixS_gp)
         return res_sixS
-
 
     ## UTILITIES ##
     def get_regime_Name(self):
