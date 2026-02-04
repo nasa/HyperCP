@@ -132,7 +132,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # Disable FRM regimes for DALEC for the moment.
         if ConfigFile.settings['SensorType'].lower() == 'dalec':
             self.ClassCalRadioButton.setDisabled(True)
-            self.FullCalRadioButton.setDisabled(True)
+            self.FullCalRadioButton.setDisabled(False)
 
         # Define which radio button is checked at initialisation
         if ConfigFile.settings["fL1bCal"] == 1:

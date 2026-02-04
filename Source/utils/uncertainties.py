@@ -93,6 +93,7 @@ class unc_management:
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
+            # Wavelengths in the sensor calibration file:
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
             for data_type in ["_RADCAL_UNC"]:
@@ -118,6 +119,11 @@ class unc_management:
                 else:  # if we find a dataset with the given name then interpolate class based uncertainties
                     if 'TEMPDATA' in dtype:
                         unc_management.interp_radcal(ds, x_new, '1', 2)
+                    elif 'STRAYDATA' in dtype:
+                        # unc_management.interp_2_col(ds, x_new)
+                        ds.columns['0'] = ds.columns['0'][0:len(x_new)]
+                        ds.columns['1'] = ds.columns['1'][0:len(x_new)]
+                        
                     else:
                         unc_management.interp_2_col(ds, x_new)
                     ds.columnsToDataset()
