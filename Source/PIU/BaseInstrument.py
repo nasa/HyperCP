@@ -415,7 +415,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ones, ones
                     ]
 
-        # NOTE: PDS elements need to be interpolated to the radcalwvls....
+        # TODO: PDS elements need to be interpolated to the radcalwvls....
+        # Looked at the possibility of doing this within PIUDataStore, but maybe it's best here?
+
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),
