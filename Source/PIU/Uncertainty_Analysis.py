@@ -119,7 +119,7 @@ class Propagate:
     def propagate_Instrument_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals:  list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, 
+        Source.PIU.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, 
                                                                LILIGHT, LIDARK, 
                                                                LTLIGHT, LTDARK,
                                                                ESCal, LICal, LTCal,
@@ -162,7 +162,7 @@ class Propagate:
     def Propagate_Lw_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
+        Source.PIU.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
                                                       c_lt, c_li,
                                                       cstab_lt, cstab_li,
                                                       clin_lt, clin_li,
@@ -190,7 +190,7 @@ class Propagate:
                           platform: str, wavebands: np.array) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
+        Source.PIU.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
                                                       c_lt, c_li,
                                                       cstab_lt, cstab_li,
                                                       clin_lt, clin_li,
@@ -238,7 +238,7 @@ class Propagate:
     def Propagate_RRS_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array], corr_between=True) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
+        Source.PIU.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
                                                        c1, c2, c3,
                                                        clin1, clin2, clin3,
                                                        cstab1, cstab2, cstab3,
@@ -272,7 +272,7 @@ class Propagate:
                                 wavebands: np.array) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
+        Source.PIU.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
                                                        c1, c2, c3,
                                                        clin1, clin2, clin3,
                                                        cstab1, cstab2, cstab3,
@@ -365,7 +365,7 @@ class Propagate:
     def M99_Rho_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.rhoM99()
+        Source.PIU.Uncertainty_Analysis.Propagate.rhoM99()
         - [windSpeedMean, SZAMean, relAzMean]
         :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
 
@@ -382,7 +382,7 @@ class Propagate:
     def Zhang_Rho_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
-        Source.Propagate.Uncertainty_Analysis.zhangWrapper() - [windSpeedMean, AOD, cloud,
+        Source.PIU.Uncertainty_Analysis.zhangWrapper() - [windSpeedMean, AOD, cloud,
                                                                 sza, wTemp, sal,
                                                                 relAz, waveBands]
         :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals

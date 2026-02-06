@@ -404,8 +404,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return_as_dict=False
         )
 
-        # Interp stats to radcalwvls (ES can be masked instead.)
-
         ones = np.ones_like(es)
 
         lw_means = [lt, rho, li,
@@ -417,7 +415,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ones, ones
                     ]
 
-        # PDS elements need to be interpolated to the radcalwvls....
+        # NOTE: PDS elements need to be interpolated to the radcalwvls....
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),

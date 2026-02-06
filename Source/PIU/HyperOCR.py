@@ -220,6 +220,7 @@ class HyperOCR(BaseInstrument):
             BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
+            # NOTE: This is okay as long as it is only for UNC stats and does not change the L2 reflectance product!!
             data = np.mean(DATA['light'], axis=0)
             data[ind_nocal is True] = 0  # 0 out data outside of cal so it doesn't affect statistics
             dark = np.mean(DATA['dark'], axis=0)

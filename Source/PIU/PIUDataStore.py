@@ -119,7 +119,7 @@ class PIUDataStore:
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"
         else:
-            writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
+            writeLogFileAndPrint(f"{instrument} not yet implemented")
             raise NotImplementedError
 
         # define input data
@@ -312,8 +312,7 @@ class PIUDataStore:
     #### Class-Based ####
     def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
-        ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
-        
+        ind_rad_wvl = np.array(radcal.columns['1']) > 0 # where radcal wvls are available
         corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
 
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
@@ -323,7 +322,7 @@ class PIUDataStore:
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
-        ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
+        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0  # all radcal wvls should be available from sirrex
         # read cal start and cal stop for shaping stray-light class based uncertainties
         self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
         self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])

@@ -55,11 +55,11 @@ def deglitchThresholds(band,data,minRad,maxRad,minMaxBand):
         if ConfigFile.settings["bL1aqcThreshold"]:
             # Only run on the pre-selected waveband
             if band == minMaxBand:
-                if minRad or minRad==0: # beware falsy zeros...
+                if minRad==0 or minRad==0: # beware falsy zeros...
                     if dat < minRad:
                         badIndex[-1] = True
 
-                if maxRad or maxRad==0:
+                if maxRad==0 or maxRad==0:
                     if dat > maxRad:
                         badIndex[-1] = True
     return badIndex
