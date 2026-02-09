@@ -1,12 +1,13 @@
-# linting
+'''Base class for instrument uncertainty analysis.'''
 from abc import ABC, abstractmethod
 from typing import Union, Optional, Any, Tuple
 import warnings
+import copy
 
 # maths
 import numpy as np
-import copy
-from datetime import datetime
+
+# from datetime import datetime
 import comet_maths as cm
 
 # Source
@@ -47,7 +48,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             BaseInstrument.sensors = ['ES']
         # use this to switch the straylight correction method -> FOR UNCERTAINTY PROPAGATION ONLY <- between SLAPER and
         # ZONG. Not added to config file settings because this isn't intended for the end user.
-        self.sl_method: str = 'ZONG'        
+        self.sl_method: str = 'ZONG'
         warnings.filterwarnings("ignore", message="One of the correlation matrices is not positive definite.",category=UserWarning)
     ## Regime Agnostic Methods ##
 
@@ -116,7 +117,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 return False
 
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
-        
+
         try:
             for s_type in self.sensors:  # we want the std at common wavebands for outputting in hdf file
                 stats[s_type]['Signal_std_Interpolated'] = utils.interp_common_wvls(
@@ -124,9 +125,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     np.asarray(list(stats[s_type]['Signal_noise'].keys()), dtype=float),  # wavelengths available in Signal noise keys
                     newWaveBands,
                     return_as_dict=True)
-            
+
             return stats
-            
+
         except (IndexError, TypeError) as err:
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
@@ -157,9 +158,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
             return (False, None)
-
-        es_wvl, li_wvl, lt_wvl = [np.array(list(xslice[S].keys()), dtype=float).flatten() for S in ["es", "li", "lt"]]
-        es_slc, li_slc, lt_slc = [np.array(list(xslice[S].values()), dtype=float).flatten() for S in ["es", "li", "lt"]]
         
         ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
@@ -242,13 +240,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
 
-            quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
-            quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
-            quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
+            # quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
+            # quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
+            # quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
 
-            pct_diff_es = ((quad_es - es_unc)/es)*100
-            pct_diff_li = ((quad_li - li_unc)/li)*100
-            pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
+            # pct_diff_es = ((quad_es - es_unc)/es)*100
+            # pct_diff_li = ((quad_li - li_unc)/li)*100
+            # pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
 
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))
@@ -277,7 +275,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             dtype=float
         )
         out = dict(
-            esUnc=utils.interp_common_wvls(ES_unc,
+            esUnc=utils.interp_common_wvls(ES_unc[PDS.ind_rad_wvl['ES']],
                                            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                                        dtype=float)[PDS.ind_rad_wvl['ES']],
                                            data_wvl,
@@ -285,14 +283,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             )
         )
         if 'LI' in stats:
-            out['liUnc']=utils.interp_common_wvls(LI_unc,
+            out['liUnc']=utils.interp_common_wvls(LI_unc[PDS.ind_rad_wvl['LI']],
                                                   np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                                            dtype=float)[PDS.ind_rad_wvl['LI']],
                                                   data_wvl,
                                                   return_as_dict=True
             )
         if 'LT' in stats:
-            out['ltUnc']=utils.interp_common_wvls(LT_unc,
+            out['ltUnc']=utils.interp_common_wvls(LT_unc[PDS.ind_rad_wvl['LT']],
                                                   np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                                            dtype=float)[PDS.ind_rad_wvl['LT']],
                                                   data_wvl,
@@ -300,10 +298,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             )
         out['valid_pixels']=PDS.nan_mask
 
-        # -- interpolate Breakdowns to common wavebands -- 
+        # -- interpolate Breakdowns to common wavebands --
         BD_UNCS['ES'] = {
             k: utils.interp_common_wvls(
-                BD_UNCS['ES'][k], 
+                BD_UNCS['ES'][k][PDS.ind_rad_wvl['ES']], 
                 np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                 dtype=float)[PDS.ind_rad_wvl['ES']],
                 data_wvl,
@@ -312,7 +310,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         }
         BD_UNCS['LI'] = {
             k: utils.interp_common_wvls(
-                BD_UNCS['LI'][k], 
+                BD_UNCS['LI'][k][PDS.ind_rad_wvl['LI']], 
                 np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                 dtype=float)[PDS.ind_rad_wvl['LI']],
                 data_wvl,
@@ -321,7 +319,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         }
         BD_UNCS['LT'] = {
             k: utils.interp_common_wvls(
-                BD_UNCS['LT'][k], 
+                BD_UNCS['LT'][k][PDS.ind_rad_wvl['LT']], 
                 np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                 dtype=float)[PDS.ind_rad_wvl['LT']],
                 data_wvl,
@@ -518,8 +516,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         BD_UNCS['Lw']['pert'] = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
-        lw = UNC_obj_CB.Lw(*lw_means)
-        
+        # lw = UNC_obj_CB.Lw(*lw_means)
+
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
         pert_uncs[0:4] = [
             np.abs(stats['LT']["Signal_std"]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
@@ -529,7 +527,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         BD_UNCS['Rrs']['pert'] = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
-        rrs = UNC_obj_CB.RRS(*rrs_means)
+        # rrs = UNC_obj_CB.RRS(*rrs_means)
 
         sample_f0 = cm.generate_sample(mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(mDraws, f0,  None,   None)
@@ -546,7 +544,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 UNC_obj_CB.MCP.run_samples(UNC_obj_CB.nLw_FRM, [sample_bd_rrs, no_unc_f0])
                 )
         BD_UNCS['nLw']['f0']  = UNC_obj_CB.MCP.process_samples(
-                None, 
+                None,
                 UNC_obj_CB.MCP.run_samples(UNC_obj_CB.nLw_FRM, [no_unc_rrs, sample_f0])
                 )
 
@@ -746,8 +744,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         LPU.reflectance(
             BD_UNCS_common_wb, 
             BD_UNCS, 
-            np.mean(sample_ES, axis=0), 
-            np.mean(sample_LI, axis=0), 
+            np.mean(sample_ES, axis=0),
+            np.mean(sample_LI, axis=0),
             np.mean(sample_LT, axis=0),
             rho
         )
@@ -870,7 +868,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         :param ltSample: Monte Carlo sample (wavelengths x Mdraws) generated for Lt 
         :param rhoSample: Monte Carlo sample (wavelengths x Mdraws) generated for rho
          """
-        
+
         # now requires MCP_obj to be a Propagate object as def_sensor_mfunc is not a static method
         if ConfigFile.settings[self._SATELLITES[sensor_key]['config']]:
             sensor_name = self._SATELLITES[sensor_key]['name']
@@ -935,6 +933,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 sl_corr_unc.append(sl4[i] - sl_corr[i])
 
         sample_sl_syst = cm.generate_sample(mDraws, sl_corr, np.array(sl_corr_unc), "syst")
+        # BUG: linter finds no Slaper_SL_correction member
         sample_sl_rand = MC_prop.run_samples(self.Slaper_SL_correction, [sample_data, sample_mZ, sample_n_iter])
         sample_sl_corr = MC_prop.combine_samples([sample_sl_syst, sample_sl_rand])
 
