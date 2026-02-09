@@ -260,6 +260,13 @@ class plottingToolsFRM:
             ax.set_ylabel("Contributors")
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
+             # --- Add additional x-axis above plot --- #
+            axs2 = ax.twiny()
+            ticks = ax.get_xticks()
+            ticks2 = (ticks * signal[indx]) / combined # convert ticks from relative to signal to relative to combined total uncertainty
+            axs2.set_xticks(ticks2)  # doesn't line up with bars and we need fewer ticks
+            axs2.set_xlabel("Uncertainty Contribution Relative to Combined Total Uncertainty (%)")   
+
             plt.tight_layout()
             fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 

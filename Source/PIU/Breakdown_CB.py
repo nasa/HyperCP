@@ -241,15 +241,24 @@ class plottingToolsCB:
                 combined = (sum(v**2 for v in vals)) ** 0.5
                 
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
+                rel_to_unc = []
                 for i, v in enumerate(vals_sorted):
                     pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
-
+                    rel_to_unc.append(round(pct,1) + 1)
+                
                 # --- Styling ---
                 ax.invert_yaxis()  # largest at top
-                ax.set_xlabel("Uncertainty Contribution")
+                ax.set_xlabel("Uncertainty Contribution Relative to Signal (%)")
                 ax.set_ylabel("Contributors")
-                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+
+                # --- Add additional x-axis above plot --- #
+                axs2 = ax.twiny()
+                ticks = ax.get_xticks()
+                ticks2 = (ticks * BD_VALS[s][indx]) / combined # convert ticks from relative to signal to relative to combined total uncertainty
+                axs2.set_xticks(ticks2)  # doesn't line up with bars and we need fewer ticks
+                axs2.set_xlabel("Uncertainty Contribution Relative to Combined Total Uncertainty (%)")
+                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
                 plt.tight_layout()
                 fp = path.join(
@@ -263,7 +272,7 @@ class plottingToolsCB:
 
     def plot_bar_class_l2(
         self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp
-    ) -> dict[str : np.array]:
+    ) -> dict[str, np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = "Factory"
         else:
@@ -343,6 +352,13 @@ class plottingToolsCB:
                 ax.set_xlabel("Uncertainty Contribution")
                 ax.set_ylabel("Contributors")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+
+                # --- Add additional x-axis above plot --- #
+                axs2 = ax.twiny()
+                ticks = ax.get_xticks()
+                ticks2 = (ticks * BD_VALS[s][indx]) / combined # convert ticks from relative to signal to relative to combined total uncertainty
+                axs2.set_xticks(ticks2)  # doesn't line up with bars and we need fewer ticks
+                axs2.set_xlabel("Uncertainty Contribution Relative to Combined Total Uncertainty (%)")                
 
                 plt.tight_layout()
                 fp = path.join(
