@@ -1229,8 +1229,7 @@ class ProcessL2:
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
-        # if ConfigFile.settings["SensorType"].lower() != "dalec":
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+
         # else:
         #     # NOTE: Temporary placeholder for DALEC stats.
         #     stats1,stats = {},{}
@@ -1243,18 +1242,23 @@ class ProcessL2:
         #         for dataset in ['Signal_std_Interpolated']:
         #             stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
         #         stats[group] = stats1
+
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
                 group.id = f'{key}_L1AQC'
+        
+        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
+        slice_std = {
+            k: {
+                str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()
+            } for k in data_slice.keys()
+        }  # standard deviation is relatvie to signal - i.e. in %
         if not stats:
             logging.writeLogFileAndPrint("statistics not generated")
             return False
-        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
-                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
-
         # %% Convolve to satellite bands
         convolve_to_satellite, satellite_bands = {}, {}
         if ConfigFile.settings['bL2WeightMODISA']:
@@ -1336,13 +1340,20 @@ class ProcessL2:
             grp.datasets['Ensemble_N'].columns['N'].append(nSpecEnd)
             grp.datasets['Ensemble_N'].columnsToDataset()
 
-        # %% Slice averaging
+        # %% Slice averaging and sensor statistics
         slice_mean, slice_median, slice_remaining = {}, {}, {}
         for k, sliceData in data_slice.items():
             has_nan, slice_mean[k], slice_median[k], slice_remaining[k] = ProcessL2.sliceAveHyper(y, sliceData)
             if has_nan:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                 return False
+            
+        if enable_percent_lt:  # if percent_lt then recalculate sensor statistics 
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+            slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
+                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
+        # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
+        # which is inconsistent with other places in the code.
 
         # %% Convolution of slice averages to satellite bands
         satellite_slice_mean, satellite_slice_median, satellite_slice_remaining = {}, {}, {}

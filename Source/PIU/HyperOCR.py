@@ -33,7 +33,7 @@ class HyperOCR(BaseInstrument):
         super().__init__()
         self.name = "HyperOCR"        
 
-    def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
+    def lightDarkStats(self, grp: HDFGroup, XSlice: dict[str, OrderedDict], sensortype: str) -> dict[str, Union[np.array, dict]]:
         """
         Seabird HyperOCR method for retrieving ensemble statistics
 
@@ -43,23 +43,20 @@ class HyperOCR(BaseInstrument):
         The dictionary value should be the associated data for the ensemble
         :param sensortype: name of sensortype, i.e. ES, LI or LT
         """
-        lightGrp = grp['LIGHT']
         lightSlice = deepcopy(XSlice['LIGHT'])
-        darkGrp = grp['DARK']
         darkSlice = deepcopy(XSlice['DARK'])
 
-        if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
-            darkData = darkSlice['data'] 
-        if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
-            lightData = lightSlice['data']
-        
         # check valid data for retireving stats
-        if darkGrp is None or lightGrp is None:
+        if grp.attributes["FrameType"] == "ShutterLight" and grp.getDataset(sensortype) is not None:
+            lightData = lightSlice['data']
+            darkData = darkSlice['data']
+        else:
             msg = f'No radiometry found for {sensortype}'
             print(msg)
             writeLogFileAndPrint(msg)
             return False
-        elif not HyperOCRUtils.check_data(darkData, lightData):
+        
+        if not HyperOCRUtils.check_data(darkData, lightData):
             return False
 
         # store results locally for speed
