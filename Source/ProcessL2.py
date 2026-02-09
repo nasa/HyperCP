@@ -571,9 +571,7 @@ class ProcessL2:
 
                 # Calculate the remote sensing reflectance
                 nLwUNC = {}
-                lwRemainingSD = 0
-                rrsRemainingSD = 0
-                nLwRemainingSD = 0
+                lwRemainingSD,rrsRemainingSD,nLwRemainingSD = None,None,None
 
                 if ZhangRho or threeCRho:
                     # Only populate the valid wavelengths
@@ -1003,14 +1001,15 @@ class ProcessL2:
                 badTimes.append(timeTag)
                 logging.writeLogFileAndPrint(f'Ensemble {indx} of {field} flagged for negative Rrs')
 
-            # Set negatives to 0
-            NIR = [VIS[-1] + 1, max(wavelengths)]
-            UV = [min(wavelengths),VIS[0]-1]
-            for wave in reflColumns:
-                if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
-                            (float(wave) >= NIR[0] and float(wave) <= NIR[1])) and \
-                            reflColumns[wave][indx] < 0:
-                    reflColumns[wave][indx] = 0
+            # NOTE: This was a bad idea. Changed 2/6/26
+            # # Set negatives to 0
+            # NIR = [VIS[-1] + 1, max(wavelengths)]
+            # UV = [min(wavelengths),VIS[0]-1]
+            # for wave in reflColumns:
+            #     if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
+            #                 (float(wave) >= NIR[0] and float(wave) <= NIR[1])) and \
+            #                 reflColumns[wave][indx] < 0:
+            #         reflColumns[wave][indx] = 0
 
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)

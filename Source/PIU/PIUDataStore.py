@@ -69,12 +69,15 @@ class PIUDataStore:
                 if self.cal_level == 2:
                     [self.readCalClassBased(inpt, sensor) for sensor in self.sensors]
                 elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    # TODO: These cal/coefs are not yet cropped to calibrated bands
                     [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
-                    raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
+                    # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
+                    raise NotImplementedError
                 
                 # finally
+                # TODO: These are not yet cropped to calibrated bands
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
     
     def get_inttime(self, root: HDFRoot):
@@ -312,8 +315,7 @@ class PIUDataStore:
     #### Class-Based ####
     def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
-        ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
-        
+        ind_rad_wvl = np.array(radcal.columns['1']) > 0 # where radcal wvls are available
         corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
 
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
@@ -323,15 +325,17 @@ class PIUDataStore:
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
-        ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
-        # read cal start and cal stop for shaping stray-light class based uncertainties
+        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0  # all radcal wvls should be available from sirrex
+        # read cal start and cal stop for cropping to calibrated bands
         self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
         self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
-
         ind_rad_wvl[0:self.cal_start] = False
         ind_rad_wvl[self.cal_stop+1:] = False
 
-        self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
+        # TODO: This would truncate to calibrated bands...
+        # unc_cal, coef_cal = self.extract_factory_cal(node, radcal, s)
+        # self.uncs[s]['cal'], self.coeff[s]['cal'] = unc_cal[ind_rad_wvl],coef_cal[ind_rad_wvl]
+        self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)
         self.ind_rad_wvl[s] = ind_rad_wvl
 
     def read_uncertainties(self, root, inpt: HDFGroup, s: str) -> None:
