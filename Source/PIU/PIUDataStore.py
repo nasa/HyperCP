@@ -323,10 +323,11 @@ class PIUDataStore:
         self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
         self.ind_rad_wvl[s] = ind_rad_wvl
+        self.rad_wvl[s] = radcal.columns['1']
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
-        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0  # all radcal wvls should be available from sirrex
+        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0 
         # read cal start and cal stop for cropping to calibrated bands
         self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
         self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
