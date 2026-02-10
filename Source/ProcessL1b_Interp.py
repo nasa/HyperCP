@@ -218,21 +218,22 @@ class ProcessL1b_Interp:
 
         # latData, lonData need to correspond to interpData.
         # Preferentially from GPS, else from Anc file (above)
-        if not ProcessL1b_Interp.interpTimestamps(latData, interpData, "LATITUDE", fileName):
+        verbose = False
+        if not ProcessL1b_Interp.interpTimestamps(latData, interpData, "LATITUDE", fileName, verbose):
             return None
-        if not ProcessL1b_Interp.interpTimestamps(lonData, interpData, "LONGITUDE", fileName):
+        if not ProcessL1b_Interp.interpTimestamps(lonData, interpData, "LONGITUDE", fileName, verbose):
             return None
         if courseData:
-            if not ProcessL1b_Interp.interpTimestamps(courseData, interpData, "TRUE", fileName):
+            if not ProcessL1b_Interp.interpTimestamps(courseData, interpData, "TRUE", fileName, verbose):
                 return None
         if sogData:
-            if not ProcessL1b_Interp.interpTimestamps(sogData, interpData, "NONE", fileName):
+            if not ProcessL1b_Interp.interpTimestamps(sogData, interpData, "NONE", fileName, verbose):
                 return None
 
         # Required for all sensors except ES Only systems
         if ConfigFile.settings["SensorType"].lower() != "trios es only":
             try:
-                ProcessL1b_Interp.interpTimestamps(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName)
+                ProcessL1b_Interp.interpTimestamps(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName, verbose)
             except KeyError:
                 logging.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
                 return None
@@ -413,11 +414,11 @@ class ProcessL1b_Interp:
         return newSensorData
 
     @staticmethod
-    def interpTimestamps(xData, yData, dataName, fileName, latData=None, lonData=None):
+    def interpTimestamps(xData, yData, dataName, fileName, latData=None, lonData=None, verbose=False):
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
-        logging.writeLogFileAndPrint(f'Interpolate Data {dataName}')
+        logging.writeLogFileAndPrint(f'Interpolate Data {dataName} in time')
 
         # Interpolating to itself
         if xData is yData:
@@ -426,10 +427,11 @@ class ProcessL1b_Interp:
 
         xDatetime = xData.data["Datetime"].tolist()
         yDatetime = yData.data["Datetime"].tolist()
-        print('Interpolating '+str(len(xDatetime))+' timestamps from '+\
-            str(min(xDatetime))+' to '+str(max(xDatetime)))
-        print('           To '+str(len(yDatetime))+' timestamps from '+\
-            str(min(yDatetime))+' to '+str(max(yDatetime)))
+        if verbose:
+            print('Interpolating '+str(len(xDatetime))+' timestamps from '+\
+                str(min(xDatetime))+' to '+str(max(xDatetime)))
+            print('           To '+str(len(yDatetime))+' timestamps from '+\
+                str(min(yDatetime))+' to '+str(max(yDatetime)))
 
         if comparing.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
@@ -592,6 +594,7 @@ class ProcessL1b_Interp:
                     else:
                         newGroup.datasets[ds].datasetToColumns()
 
+        # Calibrated, dark-corrected, raw waveband buffered
         esData = referenceGroup.getDataset("ES")
         if 'LI' in radiance_group_ids:
             liData = sasGroup.getDataset("LI")
@@ -872,11 +875,12 @@ class ProcessL1b_Interp:
             # carried forward. For radiometers, this means that ancillary metadata such as
             # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
             # Required:
-            if not ProcessL1b_Interp.interpTimestamps(esData, interpData, "ES", fileName):
+            verbose = False
+            if not ProcessL1b_Interp.interpTimestamps(esData, interpData, "ES", fileName, verbose):
                 return None
-            if not ProcessL1b_Interp.interpTimestamps(liData, interpData, "LI", fileName):
+            if not ProcessL1b_Interp.interpTimestamps(liData, interpData, "LI", fileName, verbose):
                 return None
-            if not ProcessL1b_Interp.interpTimestamps(ltData, interpData, "LT", fileName):
+            if not ProcessL1b_Interp.interpTimestamps(ltData, interpData, "LT", fileName, verbose):
                 return None
 
         # NOTE: already interpolated in ancGroup
@@ -907,7 +911,7 @@ class ProcessL1b_Interp:
 
         if pyrGroup is not None:
             # Optional:
-            ProcessL1b_Interp.interpTimestamps(pyrData, interpData, "T", fileName)
+            ProcessL1b_Interp.interpTimestamps(pyrData, interpData, "T", fileName, verbose)
 
         # Py6S group interpolation
         if sixS_grp_new is not None:
@@ -915,10 +919,10 @@ class ProcessL1b_Interp:
             direct_ratio = sixS_grp_new.getDataset("direct_ratio")
             diffuse_ratio = sixS_grp_new.getDataset("diffuse_ratio")
             solar_zenith = sixS_grp_new.getDataset("solar_zenith")
-            ProcessL1b_Interp.interpTimestamps(sixS_irradiance, interpData, "sixS_irradiance", fileName)
-            ProcessL1b_Interp.interpTimestamps(direct_ratio, interpData, "direct_ratio", fileName)
-            ProcessL1b_Interp.interpTimestamps(diffuse_ratio, interpData, "diffuse_ratio", fileName)
-            ProcessL1b_Interp.interpTimestamps(solar_zenith, interpData, "solar_zenith", fileName)
+            ProcessL1b_Interp.interpTimestamps(sixS_irradiance, interpData, "sixS_irradiance", fileName, verbose)
+            ProcessL1b_Interp.interpTimestamps(direct_ratio, interpData, "direct_ratio", fileName, verbose)
+            ProcessL1b_Interp.interpTimestamps(diffuse_ratio, interpData, "diffuse_ratio", fileName, verbose)
+            ProcessL1b_Interp.interpTimestamps(solar_zenith, interpData, "solar_zenith", fileName, verbose)
 
         # In case of Es Only sensor keep native resolution
         if ConfigFile.settings['SensorType'].lower() != 'trios es only':

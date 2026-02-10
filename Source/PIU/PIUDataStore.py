@@ -44,6 +44,7 @@ class PIUDataStore:
         self.cal_stop:  int = None
 
         self.ind_rad_wvl: dict = {s: {} for s in self.sensors}
+        self.rad_wvl: dict = {s: {} for s in self.sensors}
         self.nan_mask:    np.array = None
 
         ancGroup = root.getGroup("ANCILLARY")
@@ -75,11 +76,11 @@ class PIUDataStore:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
                     raise NotImplementedError
-                
+
                 # finally
                 # TODO: These are not yet cropped to calibrated bands
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
-    
+
     def get_inttime(self, root: HDFRoot):
         for s in ["ES", "LI", "LT"]:
             if ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -337,6 +338,7 @@ class PIUDataStore:
         # self.uncs[s]['cal'], self.coeff[s]['cal'] = unc_cal[ind_rad_wvl],coef_cal[ind_rad_wvl]
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)
         self.ind_rad_wvl[s] = ind_rad_wvl
+        self.rad_wvl[s] = radcal.columns['wvl']
 
     def read_uncertainties(self, root, inpt: HDFGroup, s: str) -> None:
         instrument = ConfigFile.settings['SensorType'].lower()

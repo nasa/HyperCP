@@ -38,7 +38,7 @@ class utils:
 
         :return: returns the interpolated output as either a numpy array or Ordered-Dictionary
         """
-        saveTimetag2 = None
+        saveDatetag,saveTimetag2,y = None,None,None
         if isinstance(columns, dict):
             if "Datetag" in columns:
                 saveDatetag = columns.pop("Datetag")
@@ -69,6 +69,147 @@ class utils:
             return newColumns
         else:
             return new_y
+
+    @staticmethod
+    def interp_L1_L2(l1Data,oldWavebands,newWavebands,uncType):
+        '''
+        :param l1Data: Level 1AQC sized class of raw uncertainties
+        :param oldWavebands: Level 1AQC wavebands
+        :param newWavebands: Level 2 wavebands
+        :param uncType: 'pds' or 'stats' to designate class to be interpolated
+        '''
+        l2Data = {}
+        if uncType.lower() == 'pds':
+
+            l2Data['EsCalUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['cal'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiCalUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['cal'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtCalUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['cal'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsStabUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['stab'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiStabUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['stab'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtStabUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['stab'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsNLinUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['nlin'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiNLinUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['nlin'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtNLinUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['nlin'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsStrayUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['stray'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiStrayUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['stray'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtStrayUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['stray'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsCtUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['ct'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiCtUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['ct'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtCtUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['ct'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LiPolUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LI']['pol'],
+                oldWavebands['LI'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['LtPolUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['LT']['pol'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsCosUnc'] = utils.interp_common_wvls(
+                l1Data.uncs['ES']['cos'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+        else:
+            l2Data['LiStd'] = utils.interp_common_wvls(
+            l1Data['LI']['Signal_std'],
+            oldWavebands['LI'],
+            newWavebands,
+            return_as_dict=False
+            )
+            l2Data['LtStd'] = utils.interp_common_wvls(
+                l1Data['LT']['Signal_std'],
+                oldWavebands['LT'],
+                newWavebands,
+                return_as_dict=False
+            )
+            l2Data['EsStd'] = utils.interp_common_wvls(
+                l1Data['ES']['Signal_std'],
+                oldWavebands['ES'],
+                newWavebands,
+                return_as_dict=False
+            )
+
+        return l2Data
 
     @staticmethod
     def interpolateSamples(Columns, waves, newWavebands):
