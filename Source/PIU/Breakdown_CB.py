@@ -136,32 +136,6 @@ class plottingToolsCB:
             LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
         )
 
-        #  # build table of anc data
-        # aod = ancGrp.datasets['AOD'].columns['AOD'][0]
-        # rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
-        # saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
-        # sza = ancGrp.datasets['SZA'].columns['SZA'][0]
-        # ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
-        # sst = ancGrp.datasets['SST'].columns['SST'][0]
-
-        # col_labels = ['value']
-        # row_labels = [
-        #     'Aerosol Optical Depth',
-        #     'Relative Azimuth',
-        #     'Solar Azimuth',
-        #     'Solar Zenith',
-        #     'Wind Speed',
-        #     'Water Temperature'
-        # ]
-        # table_vals = [
-        #     [aod],
-        #     [rel_az],
-        #     [saa],
-        #     [sza],
-        #     [ws],
-        #     [sst]
-        # ]
-
         # ✅ Build global color map OUTSIDE the if/else
         from itertools import cycle
         all_labels = []
@@ -185,7 +159,6 @@ class plottingToolsCB:
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-                fig, ax = plt.subplots()
 
                 # --- Build figure and axis ---
                 fig = plt.figure(s)
@@ -194,30 +167,8 @@ class plottingToolsCB:
 
                 # --- Data ---
                 vals = [PlotMaths.getpct(BD_UNCS[s][key], BD_VALS[s])[indx] for key in keys]
-
-                # the_table = plt.table(cellText=table_vals,
-                #                       colWidths=[0.1],
-                #                       rowLabels=row_labels,
-                #                       colLabels=col_labels,
-                #                       loc="best",
-                #                       )
-                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
-
-                # ax.pie(
-                #     [
-                #         PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor])[indx]
-                #         for key in component
-                #     ],
-                #     labels=component,
-                #     autopct="%1.1f%%",
-                # )
-                # plt.title(
-                #     f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm"
-                # )
-                # fp = path.join(self.plot_folder, f"pie_chart_CB_{sensor}_{self.station}_{wvl_at_indx}.png")
                 
                 labels_list = labels[s]
-                colors = [LABEL_COLORS[lab] for lab in labels_list]
 
                 # Safety: handle empty or all-zero data
                 if not vals or sum(vals) == 0:
@@ -241,38 +192,48 @@ class plottingToolsCB:
                 combined = (sum(v**2 for v in vals)) ** 0.5
                 
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
-                rel_to_unc = []
+                ref_at_indx = []
                 for i, v in enumerate(vals_sorted):
                     pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
-                    rel_to_unc.append(round(pct,1) + 1)
+                    ref_at_indx.append(round(pct,1) + 1)
                 
-                # --- Styling ---
+                # --- Styling --- # 
                 ax.invert_yaxis()  # largest at top
-                ax.set_xlabel("Uncertainty Contribution Relative to Signal (%)")
+                ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
-
-                # --- Add additional x-axis above plot --- #
-                axs2 = ax.twiny()
-                ticks = ax.get_xticks()
-                ticks2 = (ticks * BD_VALS[s][indx]) / combined # convert ticks from relative to signal to relative to combined total uncertainty
-                axs2.set_xticks(ticks2)  # doesn't line up with bars and we need fewer ticks
-                axs2.set_xlabel("Uncertainty Contribution Relative to Combined Total Uncertainty (%)")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
+                # --- Add additional x-axis above plot --- #
+                # axs2 = ax.twiny()    
+                # axs2.set_xlabel("Proportion of total uncertainty (%)")
+                
+                # ticks = ax.get_xticks()
+                # tick_labs = [round((ticks[i] / combined) * 100) for i in range(len(ticks))]
+                # axs2.set_xticks(ticks, tick_labs)
+
+                # --- Add text explaining calculation of combined uncertainty --- #
+                ax.text(
+                    0.95, 0.05, "total uncertainty is calculated by adding contributions in quadrature", 
+                    verticalalignment='bottom', horizontalalignment='right',
+                    transform=ax.transAxes,
+                    color='black', fontsize=15,
+                    wrap=True,
+                    bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                )
                 plt.tight_layout()
                 fp = path.join(
                     self.plot_folder,
                     f"{s}_CB_bar_{self.station}_{wvl_at_indx}.png",
                 )
                 self.save_figure(s=s, fp=fp, legend=False, grid=False)
-                plt.close(fig)
+                # plt.close(fig)
 
         return BD_UNCS
 
     def plot_bar_class_l2(
         self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp
-    ) -> dict[str, np.array]:
+    ) -> Optional[bool]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = "Factory"
         else:
@@ -327,47 +288,58 @@ class plottingToolsCB:
                     plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
                     plt.axis('off')
                     plt.tight_layout()
-                    return
+                    return False
 
                 # --- Sort by value descending for readability ---       
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
                 colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
 
-                # --- Plot horizontal bars ---
+                # --- Plot horizontal bars --- #
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
-                # --- Add percentage labels to the right of each bar ---
                 
-                # Combined uncertainty
+                # --- Combined uncertainty --- #
                 combined = (sum(v**2 for v in vals)) ** 0.5
                 
+                # --- Add percentage labels to the right of each bar --- #
+                ref_at_indx = []
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
                     pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+                    ref_at_indx.append(pct)
 
-                # --- Styling ---
+                # --- Styling --- #
                 ax.invert_yaxis()  # largest at top
-                ax.set_xlabel("Uncertainty Contribution")
+                ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
                 # --- Add additional x-axis above plot --- #
-                axs2 = ax.twiny()
-                ticks = ax.get_xticks()
-                ticks2 = (ticks * BD_VALS[s][indx]) / combined # convert ticks from relative to signal to relative to combined total uncertainty
-                axs2.set_xticks(ticks2)  # doesn't line up with bars and we need fewer ticks
-                axs2.set_xlabel("Uncertainty Contribution Relative to Combined Total Uncertainty (%)")                
+                # axs2 = ax.twiny()    
+                # axs2.set_xlabel("Proportion of total uncertainty (%)")
+                
+                # ticks = ax.get_xticks()
+                # tick_labs = [round((ticks[i] / combined) * 100) for i in range(len(ticks))]
+                # axs2.set_xticks(ticks, tick_labs)
+
+                # --- Add text explaining calculation of combined uncertainty --- #
+                ax.text(
+                    0.95, 0.05, "total uncertainty is calculated by adding contributions in quadrature", 
+                    verticalalignment='bottom', horizontalalignment='right',
+                    transform=ax.transAxes,
+                    color='black', fontsize=15,
+                    wrap=True,
+                    bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                )             
 
                 plt.tight_layout()
                 fp = path.join(
                     self.plot_folder, f"{s}_CB_bar_{cast}_{wvl_at_indx}.png"
                 )
                 self.save_figure(s=s, fp=fp, legend=False, grid=False)
-                plt.close(fig)
-
-        # return BD_UNCS
+                # plt.close(fig)
 
     def plot_sample(
         self,
@@ -392,7 +364,7 @@ class plottingToolsCB:
                 y_mean / cal
             )  # multiply uncertainties by cal to convert into irradiance/radiance
 
-        u_rel = self.getpct(y, y_mean)
+        u_rel = PlotMaths.getpct(y, y_mean)
         try:
             plt.figure(f"{s}_{self.station}")
         except AttributeError:
@@ -441,6 +413,7 @@ class plottingToolsCB:
                 umask(orig_umask)
 
         plt.savefig(fp)
+        plt.close()
 
 
 class PlotMaths:
