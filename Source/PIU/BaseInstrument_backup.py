@@ -1,6 +1,6 @@
 '''Base class for instrument uncertainty analysis.'''
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Any, Tuple
+from typing import Union#, Optional, Any
 import warnings
 import copy
 
@@ -53,10 +53,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     ## Regime Agnostic Methods ##
 
     @abstractmethod
-    def lightDarkStats(self, grp: Union[HDFGroup, dict[str, HDFGroup]], XSlice: dict, sensortype: str) -> dict[str, np.array]:
+    def lightDarkStats(self, grp: Union[HDFGroup, dict[str: HDFGroup]], XSlice: dict, sensortype: str) -> dict[str: np.array]:
         pass
 
-    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array, y: Optional[list]=None) -> dict[str, np.array]:
+    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array) -> dict[str: np.array]:
         """
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
@@ -92,20 +92,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # L1AQC unsliced data group is passed, but only used for reference.
                 utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
                 utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
-                if y is not None:  # TODO: trios case    
-                    rawSlice[s_type]['LIGHT']['datetime'] = [rawSlice[s_type]['LIGHT']['datetime'][i] for i in y]
-                    for k, dat in rawSlice[s_type]['LIGHT']['data'].items():    
-                        rawSlice[s_type]['LIGHT']['data'][k] = [dat[i] for i in y]
-
                 args =[
-                    copy.deepcopy(rawData[s_type]),
-                    copy.deepcopy(rawSlice[s_type]),
+                    {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
+                    {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
                     s_type
-                ]
-                    # {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
-                    # {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
-                    # s_type
-                    # ]
+                    ]
             else:
                 writeLogFileAndPrint("WARNING sensor not recognised")
                 args = None
@@ -132,12 +123,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBased(self,
-                   node: HDFRoot, 
-                   uncGrp: HDFGroup, 
-                   stats: dict[str, np.array], 
-                   xslice: dict[str, dict[str, np.array]],
-                   ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
+    def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -157,8 +143,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
-            return (False, None)
-        
+            return False, None
+
+        # es_wvl, li_wvl, lt_wvl = [np.array(list(S.keys()), dtype=float).flatten() for S in [es, li, lt]]
+        # es, li, lt = [np.array(list(S.values()), dtype=float).flatten() for S in [es, li, lt]]
+
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es, label='HCP es')
+        # plt.plot(list(stats['ES']['std_Signal'].keys()), es_test, label='MF es')
+        # plt.savefig("debug_es.png")
+        # plt.show()
+
         ones   = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
         zeroes = np.zeros_like(PDS.uncs['ES']['cal'])
 
@@ -188,12 +184,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                          np.array(PDS.uncs['ES']['stray']) / 100,  # change straylight and set nl uncs with file
                          np.array(PDS.uncs['LI']['stray']) / 100 if 'LI' in PDS.uncs else zeroes,
                          np.array(PDS.uncs['LT']['stray']) / 100 if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['ES']['ct']), 
-                         np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, 
-                         np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, 
-                         np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, 
-                         np.array( PDS.uncs['ES']['cos']),
+                         np.array(PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['ct']) if 'LT' in PDS.uncs else zeroes,
+                         np.array(PDS.uncs['LI']['pol']) if 'LI' in PDS.uncs else zeroes, np.array( PDS.uncs['LT']['pol']) if 'LT' in PDS.uncs else zeroes, np.array( PDS.uncs['ES']['cos']),
         ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -210,14 +202,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             print('WARNING: Negative output uncertainties encountered in es, li, and/or lt.')
 
         es, li, lt = UNC_obj_CB.instruments(*means)
-
-        es_diff = (es_slc - es)
-        li_diff = (li_slc - li)
-        lt_diff = (lt_slc - lt)
-
-        msk_es = np.where(es != 0)
-        msk_li = np.where(li != 0)
-        msk_lt = np.where(lt != 0)
 
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
@@ -270,10 +254,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
-        data_wvl = np.asarray(
-            list(stats['ES']['Signal_std_Interpolated'].keys()),
-            dtype=float
-        )
+        data_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),
+                              dtype=float)
         out = dict(
             esUnc=utils.interp_common_wvls(ES_unc[PDS.ind_rad_wvl['ES']],
                                            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
@@ -327,21 +309,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ) for k in BD_UNCS['LT'].keys()
         }
 
-        return (out, BD_UNCS)
+        return out, BD_UNCS
 
-    def ClassBasedL2(self, 
-                     node: HDFRoot, 
-                     uncGrp: HDFGroup, 
-                     PDS: pds, 
-                     stats: dict[str, Union[np.array, dict]], 
-                     rhoScalar: Union[float, np.array], 
-                     rhoVec: np.array,
-                     rhoDelta: np.array, 
-                     f0: np.array, 
-                     f0_unc: np.array,
-                     waveSubset: np.array, 
-                     xSlice: dict[str, dict[str, np.array]]
-                     ) -> Union[dict[str, bool], bool]:
+    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 
@@ -355,9 +325,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         :return: dictionary of output uncertainties that are generated
         """
-
-        # NOTE: In the process of changing from interpolation of common-band L2 -> L1 sensor bands
-        #   to PDS sensor bands to common bands.
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
             mDraws = 100
@@ -371,157 +338,143 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # These are the L1AQC raw wavelengths, in this case for Es
         radcalwvls = np.asarray(list(xSlice['esSTD_RAW'].keys()), dtype=float)[PDS.ind_rad_wvl['ES']]
 
-        # PDS bands are in PDS.rad_wvl[sensor]
-
         # stdevs taken at instrument wavebands (not common wavebands) so we can use them to get the radcal keys
         # Interpolate L2 datasets back into their L1AQC wavebands in order to extract
         if rhoScalar is not None:  # make rho a constant array if scalar
-            # rho = np.ones(len(radcalwvls)) * rhoScalar
-            # rhoUNC = utils.interp_common_wvls(np.array(rhoDelta, dtype=float),
-            #                                  waveSubset,
-            #                                  radcalwvls,
-            #                                  return_as_dict=False
-            # )
-            rho = np.ones(len(waveSubset)) * rhoScalar
-            rhoUNC = np.array(rhoDelta,dtype=float)
+            rho = np.ones(len(radcalwvls)) * rhoScalar
+            rhoUNC = utils.interp_common_wvls(np.array(rhoDelta, dtype=float),
+                                             waveSubset,
+                                             radcalwvls,
+                                             return_as_dict=False
+            )
         else:  # zhang rho needs to be interpolated to radcal wavebands (len must be 255)
-            # rho = utils.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
-            #                                waveSubset,
-            #                                radcalwvls,
-            #                                return_as_dict=False
-            # )
-            # rhoUNC = utils.interp_common_wvls(rhoDelta,
-            #                                  waveSubset,
-            #                                  radcalwvls,
-            #                                  return_as_dict=False
-            # )
-            rho = np.array(rhoVec,dtype=float)
-            rhoUNC = np.array(rhoDelta,dtype=float)
+            rho = utils.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
+                                           waveSubset,
+                                           radcalwvls,
+                                           return_as_dict=False
+            )
+            rhoUNC = utils.interp_common_wvls(rhoDelta,
+                                             waveSubset,
+                                             radcalwvls,
+                                             return_as_dict=False
+            )
 
         # interpolate to radcal wavebands - check string for radcal group based on factory or class-based processing
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
-        # es = utils.interp_common_wvls(
-        #     np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
-        #     np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False
-        # )
-        es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
-        # li = utils.interp_common_wvls(
-        #     np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
-        #     np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False
-        # )
-        li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
-        # lt = utils.interp_common_wvls(
-        #     np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
-        #     np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False
-        # )
-        lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
+        es = utils.interp_common_wvls(
+            np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
+            np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False
+        )
+        li = utils.interp_common_wvls(
+            np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
+            np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False
+        )
+        lt = utils.interp_common_wvls(
+            np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
+            np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False
+        )
         es_noise = np.array(list(stats['ES']['Signal_noise'].values()))[PDS.ind_rad_wvl['ES']].flatten()
-        # li_noise = utils.interp_common_wvls(
-        #     np.array(list(stats['LI']['Signal_noise'].values())).flatten(),
-        #     np.array(list(stats['LI']['Signal_noise'].keys()),dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False,
-        # )
-        li_noise = np.array(list(stats['LI']['Signal_noise'].values()))[PDS.ind_rad_wvl['LI']].flatten()
-        # lt_noise = utils.interp_common_wvls(
-        #     np.array(list(stats['LT']['Signal_noise'].values())).flatten(),
-        #     np.array(list(stats['LT']['Signal_noise'].keys()),dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False,
-        # )
-        lt_noise = np.array(list(stats['LT']['Signal_noise'].values()))[PDS.ind_rad_wvl['LT']].flatten()
-        # f0 = utils.interp_common_wvls(
-        #     np.asarray(list(f0.values()), dtype=float).flatten(),
-        #     np.asarray(list(f0.keys()), dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False
-        # )
-        f0 = np.asarray(list(f0.values()), dtype=float).flatten()
-        f0_unc = np.asarray(list(f0_unc.values()), dtype=float).flatten()
-        # f0_unc = utils.interp_common_wvls(
-        #     np.asarray(list(f0_unc.values()), dtype=float).flatten(),
-        #     np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
-        #     radcalwvls,
-        #     return_as_dict=False
-        # )
+        li_noise = utils.interp_common_wvls(
+            np.array(list(stats['LI']['Signal_noise'].values())).flatten(),
+            np.array(list(stats['LI']['Signal_noise'].keys()),dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False,
+        )
+        lt_noise = utils.interp_common_wvls(
+            np.array(list(stats['LT']['Signal_noise'].values())).flatten(),
+            np.array(list(stats['LT']['Signal_noise'].keys()),dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False,
+        )
+        f0 = utils.interp_common_wvls(
+            np.asarray(list(f0.values()), dtype=float).flatten(),
+            np.asarray(list(f0.keys()), dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False
+        )
+        f0_unc = utils.interp_common_wvls(
+            np.asarray(list(f0_unc.values()), dtype=float).flatten(),
+            np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
+            radcalwvls,
+            return_as_dict=False
+        )
 
         ones = np.ones_like(es)
 
-        lw_means = [
-            lt, rho, li,
-            ones, ones,
-            ones, ones,
-            ones, ones,
-            ones, ones,
-            ones, ones,
-            ones, ones
-        ]
+        lw_means = [lt, rho, li,
+                    ones, ones,
+                    ones, ones,
+                    ones, ones,
+                    ones, ones,
+                    ones, ones,
+                    ones, ones
+                    ]
 
-        # l1Wavebands = {}
-        l1Wavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
-        PDSL2 = utils.interp_L1_L2(PDS,l1Wavebands,waveSubset,'pds')
+        # TODO: PDS elements need to be interpolated to the radcalwvls....
+        # Looked at the possibility of doing this within PIUDataStore, but maybe it's best here?
+        # Most are spectrally flat, but not ct.
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),
             rhoUNC,
             np.abs(li_noise * li),
-            PDSL2['LiCalUnc'] / 200,
-            PDSL2['LtCalUnc'] / 200,
-            PDSL2['LiStabUnc'],
-            PDSL2['LtStabUnc'],
-            PDSL2['LiNLinUnc'],
-            PDSL2['LtNLinUnc'],
-            PDSL2['LiStrayUnc'] / 100,
-            PDSL2['LtStrayUnc'] / 100,
-            PDSL2['LiCtUnc'],
-            PDSL2['LtCtUnc'],
-            PDSL2['LiPolUnc'],
-            PDSL2['LtPolUnc'],
+            PDS.uncs['LI']['cal'] / 200,
+            PDS.uncs['LT']['cal'] / 200,
+            PDS.uncs['LI']['stab'],
+            PDS.uncs['LT']['stab'],
+            PDS.uncs['LI']['nlin'],
+            PDS.uncs['LT']['nlin'],
+            PDS.uncs['LI']['stray'] / 100,
+            PDS.uncs['LT']['stray'] / 100,
+            PDS.uncs['LI']['ct'],
+            PDS.uncs['LT']['ct'],
+            PDS.uncs['LI']['pol'],
+            PDS.uncs['LT']['pol'],
         ]
 
         lwAbsUnc = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
 
-        rrs_means = [
-            lt, rho, li, es,
-            ones, ones, ones,
-            ones, ones, ones,
-            ones, ones, ones,
-            ones, ones, ones,
-            ones, ones, ones,
-            ones, ones, ones
-        ]
+        rrs_means = [lt, rho, li, es,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones
+                     ]
 
         rrs_uncertainties = [
             np.abs(lt_noise * lt),
             rhoUNC,
             np.abs(li_noise * li),
             np.abs(es_noise * es),
-            PDSL2['EsCalUnc'] / 200,
-            PDSL2['LiCalUnc'] / 200,
-            PDSL2['LtCalUnc'] / 200,
-            PDSL2['EsStabUnc'],
-            PDSL2['LiStabUnc'],
-            PDSL2['LtStabUnc'],
-            PDSL2['EsNLinUnc'],
-            PDSL2['LiNLinUnc'],
-            PDSL2['LtNLinUnc'],
-            PDSL2['EsStrayUnc'] / 100,
-            PDSL2['LiStrayUnc'] / 100,
-            PDSL2['LtStrayUnc'] / 100,
-            PDSL2['EsCtUnc'],
-            PDSL2['LiCtUnc'],
-            PDSL2['LtCtUnc'],
-            PDSL2['LiPolUnc'],
-            PDSL2['LtPolUnc'],
-            PDSL2['EsCosUnc'],
+            PDS.uncs['ES']['cal'] / 200,
+            PDS.uncs['LI']['cal'] / 200,
+            PDS.uncs['LT']['cal'] / 200,
+            PDS.uncs['ES']['stab'],
+            PDS.uncs['LI']['stab'],
+            PDS.uncs['LT']['stab'],
+            PDS.uncs['ES']['nlin'],
+            PDS.uncs['LI']['nlin'],
+            PDS.uncs['LT']['nlin'],
+            PDS.uncs['ES']['stray'] / 100,
+            PDS.uncs['LI']['stray'] / 100,
+            PDS.uncs['LT']['stray'] / 100,
+            PDS.uncs['ES']['ct'],
+            PDS.uncs['LI']['ct'],
+            PDS.uncs['LT']['ct'],
+            PDS.uncs['LI']['pol'],
+            PDS.uncs['LT']['pol'],
+            PDS.uncs['ES']['cos'],
         ]
+
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
@@ -529,16 +482,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
 
         # then propagate perturbation uncertainty
-        # Stats are still in raw wavebands, like PDS
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
-
-        StatsL2 = utils.interp_L1_L2(stats,l1Wavebands,waveSubset,'stats')
-
         pert_uncs[0:3] = [
-            np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(stats['LT']["Signal_std"]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             zeroes,
-            np.abs(StatsL2['LiStd']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(stats['LI']["Signal_std"]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
         ]
 
         BD_UNCS['Lw']['pert'] = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
@@ -546,16 +495,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
         pert_uncs[0:4] = [
-            np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(stats['LT']["Signal_std"]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             np.zeros_like(ones),
-            np.abs(StatsL2['LiStd']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
-            np.abs(StatsL2['EsStd']) * np.abs(es),
+            np.abs(stats['LI']["Signal_std"]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(stats['ES']["Signal_std"]) * np.abs(es),
         ]
 
         BD_UNCS['Rrs']['pert'] = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
         # rrs = UNC_obj_CB.RRS(*rrs_means)
 
-        # BUG: Unclear how this used to work. f0 and f0_unc are odicts by design, but generate_sample expects list or np.array
         sample_f0 = cm.generate_sample(mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(mDraws, f0,  None,   None)
         no_unc_rrs = cm.generate_sample(mDraws, BD_VALS['Rrs'], None,   None)
@@ -576,36 +524,33 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 )
 
         # these are absolute values!
-        # rhoUNC_CWB = utils.interp_common_wvls(
-        #     rhoUNC,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
-        rhoUNC_CWB = rhoUNC
+        rhoUNC_CWB = utils.interp_common_wvls(
+            rhoUNC,
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
         # lwAbsUnc[PDS.nan_mask] = np.nan
-        # lwAbsUnc = utils.interp_common_wvls(
-        #     lwAbsUnc,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
-        # nlwAbsUnc = utils.interp_common_wvls(
-        #     np.sqrt((rrsAbsUnc**2 * f0**2) +
-        #     (BD_VALS['Rrs']**2 * f0_unc**2)),
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
-        nlwAbsUnc = np.sqrt((rrsAbsUnc**2 * f0**2) +
-            (BD_VALS['Rrs']**2 * f0_unc**2))
+        lwAbsUnc = utils.interp_common_wvls(
+            lwAbsUnc,
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
+        nlwAbsUnc = utils.interp_common_wvls(
+            np.sqrt((rrsAbsUnc**2 * f0**2) +
+            (BD_VALS['Rrs']**2 * f0_unc**2)),
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
         # rrsAbsUnc[PDS.nan_mask] = np.nan
-        # rrsAbsUnc = utils.interp_common_wvls(
-        #     rrsAbsUnc,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
+        rrsAbsUnc = utils.interp_common_wvls(
+            rrsAbsUnc,
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
+            waveSubset,
+            return_as_dict=False
+        )
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy

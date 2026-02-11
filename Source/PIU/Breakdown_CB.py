@@ -143,7 +143,7 @@ class plottingToolsCB:
             all_labels.extend(group)
         all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
 
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        palette = plt.cm.tab20(np.linspace(0, 1, 20)) #pylance linting error?
         color_cycle = cycle(palette)
         LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
 
@@ -159,6 +159,7 @@ class plottingToolsCB:
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
+                # fig, ax = plt.subplots()
 
                 # --- Build figure and axis ---
                 fig = plt.figure(s)

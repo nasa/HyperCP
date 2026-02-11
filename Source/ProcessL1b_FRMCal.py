@@ -83,11 +83,6 @@ class ProcessL1b_FRMCal:
         nband = len(wvl)
 
         # SIXS called over 3min bin
-        ## SIXS configuration
-        n_mesure = len(irr_datetime)
-        nband = len(wvl)
-
-        # SIXS called over 3min bin
         deltat = (irr_datetime[-1]-irr_datetime[0])/len(irr_datetime)
         n_min = int(3*60/deltat.total_seconds())  # nb of mesures over a bin
         if n_min == 0:
@@ -127,13 +122,6 @@ class ProcessL1b_FRMCal:
             s.sensor_altitude()
 
             s.to_be_implemented()
-
-            # Create placeholder to contain the values
-            # percent_direct_solar_irradiance = [0] * len(wvl)
-            # percent_diffuse_solar_irradiance = [0] * len(wvl)
-            # direct_solar_irradiance = [0] * len(wvl)
-            # diffuse_solar_irradiance = [0] * len(wvl)
-            # environmental_irradiance = [0] * len(wvl)
 
             # Determine the number of workers to use
             num_workers = os.cpu_count()
@@ -428,9 +416,8 @@ class ProcessL1b_FRMCal:
         now = dt.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        loggingHCP.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
-
-        loggingHCP.writeLogFileAndPrint("Applying factory calibrations.")
+        loggingHCP.writeLogFileAndPrint(f"ProcessL1b_FRMCal.processL1b: {timestr}")
+        loggingHCP.writeLogFileAndPrint("Applying FRM calibrations.")
 
         for gp in node.groups:
             if 'L1AQC' not in gp.id:
@@ -471,6 +458,14 @@ class ProcessL1b_FRMCal:
             # Read FRM characterisation
             radcal_wvl = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['1'][1:].tolist())
             radcal_cal = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['2']
+
+            # Capture calibrated vs. buffered bands
+            # skip first pixel
+            ind_rad_wvl = (radcal_cal[1:] >0).tolist()
+            whrTrue = np.where(ind_rad_wvl)[0]
+            grp.attributes['CAL_START'] = str(min(whrTrue))
+            grp.attributes['CAL_STOP'] = str(max(whrTrue))
+
             dark = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['4'][1:].tolist())
             S1 = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['8']
