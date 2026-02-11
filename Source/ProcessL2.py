@@ -1455,7 +1455,7 @@ class ProcessL2:
         elif ConfigFile.settings["fL1bCal"] == 3:  # FRM-Sensor Specific
             from Source.PIU.PIUDataStore import PIUDataStore
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
-            
+
             l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
             x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc

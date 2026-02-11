@@ -108,11 +108,11 @@ class PIUDataStore:
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
         # read data
         grp = raw_grps[s_type]
-        
+
         radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
         self.coeff[s_type]['radcal_wvl'] = radcal_wvl
         ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
-        
+
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":
             radcal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
@@ -129,7 +129,7 @@ class PIUDataStore:
         # define input data
         self.coeff[s_type]['n_iter'] = 5
         self.coeff[s_type]['radcal_cal'] = radcal_raw[ind_raw_wvl]
-        
+
         S1 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '6', return_df=True)  # needs to be pandas dataframes
         S2 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '8', return_df=True)
 
@@ -137,7 +137,7 @@ class PIUDataStore:
         S1 = S1.drop(S1.index[0])
         self.coeff[s_type]['t2'] = S2.iloc[0]
         S2 = S2.drop(S2.index[0])
-        
+
         S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
         S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
 
@@ -171,9 +171,9 @@ class PIUDataStore:
         ind_zero = radcal_raw[ind_raw_wvl] <= 0
         ind_nan = np.isnan(radcal_raw[ind_raw_wvl])
         self.coeff[s_type]['ind_nocal'] = ind_nan | ind_zero
-        
+
         self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_nocal'] == False], dtype=float)
-        
+
         # non-lin CB correction currently implemented the same for all sensor
         self.coeff[s_type]['cb_alpha'] = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '2')[1:]
         self.uncs[s_type]['cb_alpha']  = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '3')[1:]
@@ -185,7 +185,7 @@ class PIUDataStore:
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
         self.uncs[s_type]['stab'] = np.ones_like(self.coeff[s_type]['ind_nocal']) * stab_unc # 1% stability uncertainty estimate for class based
-        
+
         if s_type.upper() == "ES":
             raw_zen = uncGrp.getDataset(s_type + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
             zenith_ang = np.asarray([float(x) for x in raw_zen])
@@ -222,7 +222,7 @@ class PIUDataStore:
                     )  # get std across the 4 measurements azi_0, azi_90, zen, -zen
 
             zen_unc = np.sqrt(total_coserror_err**2 + tot_asymmetry_err**2)
-            
+
             # cut indexes that are out of range
             zen_avg_coserr[0:i1, :] = 0
             zen_avg_coserr[i2:, :] = 0
@@ -281,16 +281,16 @@ class PIUDataStore:
             # to convert the polarisation and stability uncertainty from a percentage to absolute values we must multiply by the magnitude of the correction.
             # Since we are using CB regime, we do not apply the correction. Therefore the correction = 1 since it is applied by multiplying.
             # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary. 
-        
+
     def readHyperCal(self, grp, uncGrp, raw_slices, s_type):
         radcal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
         self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
         self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
         self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
         self.coeff[s_type]['cal_int'] = radcal_raw.pop(0)
-    
+
         return radcal_raw
-    
+
     def readTriOSCal(self, grp, uncGrp, raw_slices, s_type):
         radcal_raw = np.array([rc[0] for rc in grp.getDataset(f"CAL_{s_type}").data])
         raw_data = np.asarray(list(raw_slices[s_type]['data'].values())).transpose() / 65535.0
@@ -303,7 +303,7 @@ class PIUDataStore:
         B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
         self.coeff[s_type]['nband'] = len(B0)
         grp.attributes["nmes"] = len(raw_data)  # TODO: why is this necessary?
-        
+
         back = np.array([B0 + B1*(int_time[n]/self.coeff[s_type]['cal_int']) for n in range(len(raw_data))])
         back_corr = raw_data - back
 
