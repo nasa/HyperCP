@@ -462,7 +462,7 @@ class ProcessL1b_FRMCal:
             # Capture calibrated vs. buffered bands
             # skip first pixel
             ind_rad_wvl = (radcal_cal[1:] >0).tolist()
-            whrTrue = np.where(ind_rad_wvl)[0]    
+            whrTrue = np.where(ind_rad_wvl)[0]
             grp.attributes['CAL_START'] = str(min(whrTrue))
             grp.attributes['CAL_STOP'] = str(max(whrTrue))
 

@@ -387,6 +387,14 @@ class ProcessL1bTriOS:
             else ConfigFile.settings['SensorType']
         radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
 
+        # Identify calibrated bands
+        for gp in node.groups:
+            if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
+                calData = gp.datasets[f'CAL_{gp.id}'].data
+                whrTrue = np.where(calData)[0]
+                gp.attributes['CAL_START'] = str(min(whrTrue))
+                gp.attributes['CAL_STOP'] = str(max(whrTrue))
+
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['fL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
@@ -426,9 +434,7 @@ class ProcessL1bTriOS:
                 direct_ratio = res_sixS['direct_ratio']
                 diffuse_ratio = res_sixS['diffuse_ratio']
                 # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
-                # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
                 model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
-                # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
 
                 sixS_grp = node.addGroup("SIXS_MODEL")
                 for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
