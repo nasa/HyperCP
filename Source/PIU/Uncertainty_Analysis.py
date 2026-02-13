@@ -139,8 +139,7 @@ class Propagate:
             corr_between = self.corr_matrix_Default_Instruments
         else:
             corr_between = None
-            
-        # NOTE: ISSUE #95
+
         unc = self.MCP.propagate_random(self.instruments,
                                         mean_vals,
                                         uncertainties,
@@ -152,10 +151,7 @@ class Propagate:
                                         )
 
         # separate uncertainties and sensor values from their lists - for clarity
-        try:
-            Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
-        except:
-            print('hi')
+        Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
 
         return Es_unc, Li_unc, Lt_unc
 

@@ -39,7 +39,8 @@ class PIUDataStore:
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
 
         # NOTE: These are temporarily stored in root attributes for each instrument.
-        # Used below by readCalFactory for SeaBird
+        # Used below by readCalFactory for SeaBird for each instrument. Not clear how used later in PDS objects
+        # BUG: These can be different for different instruments, but that's overwritten below
         self.cal_start: int = None
         self.cal_stop:  int = None
 
@@ -68,9 +69,8 @@ class PIUDataStore:
             else:
                 self.get_inttime(root)
                 if self.cal_level == 2:
-                    [self.readCalClassBased(inpt, sensor) for sensor in self.sensors]
+                    [self.readCalClassBased(root,inpt, sensor) for sensor in self.sensors]
                 elif ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    # TODO: These cal/coefs are not yet cropped to calibrated bands
                     [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
@@ -314,13 +314,21 @@ class PIUDataStore:
         return radcal_raw
 
     #### Class-Based ####
-    def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
+    def readCalClassBased(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
         ind_rad_wvl = np.array(radcal.columns['1']) > 0 # where radcal wvls are available
         corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
+        # read cal start and cal stop for cropping to calibrated bands
+        self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
+        self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
+        ind_rad_wvl[0:self.cal_start] = False
+        ind_rad_wvl[self.cal_stop+1:] = False
 
-        self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
-        self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
+        # self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
+        # self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
+        # NOTE: Retain all 255 bands here
+        self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2'])) / corr_factor
+        self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))
 
         self.ind_rad_wvl[s] = ind_rad_wvl
         self.rad_wvl[s] = radcal.columns['1']

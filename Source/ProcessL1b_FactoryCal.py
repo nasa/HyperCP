@@ -196,6 +196,7 @@ class ProcessL1b_FactoryCal:
     def processL1b_SeaBird(node, calibrationMap):
         '''
         Calibrates L1a using information from calibration file
+        Run for factory and class-based regimes
         '''
 
         esUnits = None
@@ -206,9 +207,6 @@ class ProcessL1b_FactoryCal:
         now = dt.datetime.now()
         # get effective calibration and save to node attributes
         start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
-        # node.attributes['CAL_START'] = str(start)
-        # node.attributes['CAL_STOP'] = str(end)
-        # node.attributes['CAL_LINES'] = lines
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
