@@ -39,8 +39,8 @@ class PIUDataStore:
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
 
         # NOTE: These are temporarily stored in root attributes for each instrument.
-        # Used below by readCalFactory for SeaBird for each instrument. Not clear how used later in PDS objects
-        # BUG: These can be different for different instruments, but that's overwritten below
+        # Possible BUG: These can be different for different instruments, but that's overwritten below
+        #   Used below by readCalFactory for SeaBird for each instrument. Not clear how used later in PDS objects
         self.cal_start: int = None
         self.cal_stop:  int = None
 
@@ -82,6 +82,9 @@ class PIUDataStore:
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
 
     def get_inttime(self, root: HDFRoot):
+
+    # NOTE: Why are we using the MEAN integration time of all the samples?? What does this get used for?
+    #   Is ensemble average what we're after?
         for s in ["ES", "LI", "LT"]:
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 gp = root.getGroup(f"{s}_LIGHT_L1AQC")
@@ -92,17 +95,23 @@ class PIUDataStore:
                 )
 
                 cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
-                int_time = np.array(
+                cal_int_time = np.array(
                     [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
                 )
-                int_time = int(np.mean(int_time[~np.isnan(int_time)][1:]) * 1000) # convert to int (*1000 for 4sf of information)
+
+                cal_int_time = int(np.mean(cal_int_time[~np.isnan(cal_int_time)][1:]) * 1000) # convert to int (*1000 for 4sf of information)
                 # cut all 0s and first pixel
             else:
                 gp = root.getGroup(f"{s}_L1AQC")
-                int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
-            
-            self.coeff[s]['cal_int']  = int_time
-            self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
+                if ConfigFile.settings['SensorType'].lower() == "trios":
+                    cal_int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
+                    self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist())) # FILE AVERAGE sample integration time (1x float)
+                elif ConfigFile.settings['SensorType'].lower() == "dalec":
+                    cal_int_time = gp.attributes['cal_int_time'] # NOTE: This may be wrong. See ProcessL1bDALEC. Reach out to IMO.
+                    self.coeff[s]['int_time'] = np.mean(gp.datasets['INTTIME'].columns[s])
+
+            self.coeff[s]['cal_int']  = cal_int_time    # Calibration integration time (1x float)
+
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):

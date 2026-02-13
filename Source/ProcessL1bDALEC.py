@@ -63,6 +63,14 @@ class ProcessL1bDALEC:
         a0 = cd.data['a0'].tolist()
         tempco_ed=cd.data['Tempco_Ed'].tolist()
 
+        # NOTE: Calibration integration time is not explicitly provided.
+        #   Instead a "sensor integration time offset [ms]" is this:
+        gp.attributes['cal_int_time'] = delta_t_ed
+        #   UNCLEAR exactly how cal_int_time relates to actual calibration integration time.
+        # Now copy it over to the L1AQC carryover group
+        L1AQCgp = node.getGroup('ES_L1AQC')
+        L1AQCgp.attributes['cal_int_time'] = delta_t_ed
+
         # K1=d0*(V-DC)+d1
         # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
 
@@ -88,6 +96,14 @@ class ProcessL1bDALEC:
         b0 = cd.data['b0'].tolist()
         tempco_lu=cd.data['Tempco_Lu'].tolist()
 
+        # NOTE: Calibration integration time is not explicitly provided.
+        #   Instead a "sensor integration time offset [ms]" is this:
+        gp.attributes['cal_int_time'] = delta_t_lu
+        #   UNCLEAR exactly how cal_int_time relates to actual calibration integration time.
+        # Now copy it over to the L1AQC carryover group
+        L1AQCgp = node.getGroup('LT_L1AQC')
+        L1AQCgp.attributes['cal_int_time'] = delta_t_lu
+
         # K2=e1*(V-DC)+e0
         # Lu=b0*((V-DC)/(Inttime+DeltaT_Lu)/K2)/(Tempco_Lu*(Temp-Tref)+1)
 
@@ -112,6 +128,14 @@ class ProcessL1bDALEC:
         cd=gpc.datasets['Cal_LI']
         c0 = cd.data['c0'].tolist()
         tempco_lsky=cd.data['Tempco_Lsky'].tolist()
+
+        # NOTE: Calibration integration time is not explicitly provided.
+        #   Instead a "sensor integration time offset [ms]" is this:
+        gp.attributes['cal_int_time'] = delta_t_lsky
+        #   UNCLEAR exactly how cal_int_time relates to actual calibration integration time.
+        # Now copy it over to the L1AQC carryover group
+        L1AQCgp = node.getGroup('LI_L1AQC')
+        L1AQCgp.attributes['cal_int_time'] = delta_t_lsky
 
         # K3=f0*(V-DC)+f1
         # Lsky=c0*((V-DC)/(Inttime+DeltaT_Lsky)/K3)/(Tempco_Lsky*(Temp-Tref)+1)
@@ -274,13 +298,16 @@ class ProcessL1bDALEC:
             ds.columnsToDataset()
 
         # Calibration
+        ###############################################################################
+        # NOTE: Class-based and Sensor-specific regimes are not yet supported for DALEC
+        ###############################################################################
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
         if ConfigFile.settings['fL1bCal'] == 1 or ConfigFile.settings['fL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
-            # process are the same. The class-based characterisation will be used
+            # processes are the same. The class-based characterisation will be used
             # in the uncertainty computation.
             ProcessL1bDALEC.processES(node)
             ProcessL1bDALEC.processLT(node)
