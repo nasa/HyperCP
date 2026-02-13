@@ -140,6 +140,7 @@ class Propagate:
         else:
             corr_between = None
 
+        # NOTE: There does not appear to have been any provsion for trios es only. Working on it.
         unc = self.MCP.propagate_random(self.instruments,
                                         mean_vals,
                                         uncertainties,
@@ -430,6 +431,15 @@ class Propagate:
         liSignal = np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol)
         ltSignal = np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
         # add integration time adjustment to measurement function
+
+        all_zeros = (liSignal == 0).all()
+        if all_zeros:
+            # Case for ES-ONLY configuration
+            self.cal_int["LI"],self.cal_int["LT"],self.int_time["LI"],self.int_time["LT"] = np.nan,np.nan,np.nan,np.nan
+            self.cal_int["LT"] = np.nan
+            self.int_time["LI"] = np.nan
+            self.int_time["LT"] = np.nan
+
 
         return (
             esSignal * (self.cal_int["ES"]/self.int_time["ES"]), 

@@ -853,6 +853,7 @@ class ProcessL1b_Interp:
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
         # which makes the most sense for minimizing error.
         #
+        verbose = False
         if ConfigFile.settings['SensorType'].lower() == 'trios es only':
             interpData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
         else:
@@ -894,9 +895,8 @@ class ProcessL1b_Interp:
             # NOTE: only specified datasets in each group will be interpolated and
             # carried forward. For radiometers, this means that ancillary metadata such as
             # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
-            
+
             # Required:
-            verbose = False
             if not ProcessL1b_Interp.interpTimestamps(esData, interpData, "ES", fileName, verbose):
                 return None
             if not ProcessL1b_Interp.interpTimestamps(liData, interpData, "LI", fileName, verbose):
