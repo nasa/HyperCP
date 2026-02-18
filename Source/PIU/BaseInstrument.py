@@ -1,10 +1,12 @@
 '''Base class for instrument uncertainty analysis.'''
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Any, Tuple
+from typing import OrderedDict, Union, Optional, Any, Tuple
 import warnings
 import copy
+import time
 
 # maths
+from Source.utils.interpolating import interp
 import numpy as np
 
 # from datetime import datetime
@@ -22,6 +24,7 @@ from Source.PIU.utils import utils
 from Source.PIU.PIUDataStore import PIUDataStore as pds
 
 # UTILITIES
+import Source.utils.interpolating as interpolating
 from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
@@ -56,7 +59,31 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     def lightDarkStats(self, grp: Union[HDFGroup, dict[str, HDFGroup]], XSlice: dict, sensortype: str) -> dict[str, np.array]:
         pass
 
-    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array, y: Optional[list]=None) -> dict[str, np.array]:
+    @staticmethod
+    def get_interp_data(
+            es_slice_dtimes, 
+            li_slice_dtimes, 
+            lt_slice_dtimes,
+        ) -> np.array:
+        # Interpolate all datasets to the SLOWEST radiometric sampling rate
+        esLength = len(es_slice_dtimes)
+        liLength = len(li_slice_dtimes)
+        ltLength = len(lt_slice_dtimes)
+
+        interpData = None; s = None  # always interpolate to the slowest intrument to reduce error
+        if esLength < liLength and esLength < ltLength:
+            writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+            interpData = es_slice_dtimes
+        elif liLength < ltLength:
+            writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+            interpData = li_slice_dtimes
+        else:
+            writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+            interpData = lt_slice_dtimes
+
+        return interpData
+
+    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array, y: Optional[list]=None) -> Union[dict[str, np.array], bool]:
         """
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
@@ -66,52 +93,72 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         :return: dictionary of statistics used later in the processing pipeline. Keys are:
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
         """
+
         stats = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         for s_type in self.sensors:
             # filter nans
-            from Source.PIU.utils import utils
-
+            rawGrp = None
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
+                # what about trios es only branch?
+                # where are the trios timestamps?
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['datetime'],
+                    rawSlice['LI']['datetime'],
+                    rawSlice['LT']['datetime'],
+                )
                 # L1AQC unsliced data group is passed and used for calibration data contained therein.
                 utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
-                args = [copy.deepcopy(rawData[s_type]),
-                        copy.deepcopy(rawSlice[s_type]),
-                        s_type]
-                    # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                rawGrp     = rawData[s_type]
+                lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['data'])
+                darkData   = None  # trios stores dark data in standard sequence - no shutter
             elif i_type.lower() == "dalec":
                 # NOTE: Under development
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['light']['datetime'],
+                    rawSlice['LI']['light']['datetime'],
+                    rawSlice['LT']['light']['datetime'],
+                )
                 # L1AQC unsliced data group is passed, but not used.
                 utils.apply_NaN_Mask(rawSlice[s_type]['light'])
                 utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
-                args = [
-                    {'L1AQC': copy.deepcopy(rawData[s_type].datasets[s_type]), 'DARK': copy.deepcopy(rawData[s_type].datasets['DARK_CNT'])},
-                    {'LIGHT': copy.deepcopy(rawSlice[s_type]['light']), 'DARK': copy.deepcopy(rawSlice[s_type]['dark'])},
-                    s_type
-                ]
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                lightTimer = copy.deepcopy(rawSlice[s_type]['light']['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['light']['data'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['dark']['data'])
             elif i_type.lower() == "seabird":
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['LIGHT']['datetime'],
+                    rawSlice['LI']['LIGHT']['datetime'],
+                    rawSlice['LT']['LIGHT']['datetime'],
+                )
                 # L1AQC unsliced data group is passed, but only used for reference.
                 utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
                 utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
-                if y is not None:  # TODO: trios case    
-                    rawSlice[s_type]['LIGHT']['datetime'] = [rawSlice[s_type]['LIGHT']['datetime'][i] for i in y]
-                    for k, dat in rawSlice[s_type]['LIGHT']['data'].items():    
-                        rawSlice[s_type]['LIGHT']['data'][k] = [dat[i] for i in y]
-
-                args =[
-                    copy.deepcopy(rawData[s_type]),
-                    copy.deepcopy(rawSlice[s_type]),
-                    s_type
-                ]
-                    # {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
-                    # {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
-                    # s_type
-                    # ]
-            else:
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                lightTimer = copy.deepcopy(rawSlice[s_type]['LIGHT']['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['LIGHT']['data'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['DARK']['data'])
+            else: 
                 writeLogFileAndPrint("WARNING sensor not recognised")
-                args = None
+                return False  # makes annoyting pylance squiggles go away
 
             try:
-                stats[s_type] = self.lightDarkStats(*args)
+                if not self.interp_and_slice_raw_data(lightData, lightTimer, interpData):
+                    writeLogFileAndPrint("unable to interpolate light signal (DN) to common timestamps")
+                    raise(ValueError)
+                if i_type.lower() not in ["sorad", "trios", "trios es only"]:
+                    if not self.interp_and_slice_raw_data(darkData, lightTimer, interpData):
+                        writeLogFileAndPrint("unable to interpolate dark signal (DN) to common timestamps")
+                        raise(ValueError)
+                args = [
+                    rawGrp if rawGrp is not None else None,
+                    {k: [lightData[k][i] for i in y] for k in lightData} if y is not None else lightData,
+                    {k: [darkData[k][i] for i in y] for k in darkData} if (y is not None) and (darkData is not None) else darkData,
+                    s_type,
+                ]
+                stats[s_type] = self.lightDarkStats(*[a for a in args if a is not None])
             except (ValueError, IndexError, KeyError):
                 writeLogFileAndPrint("Could not generate statistics for the ensemble")
                 return False
@@ -640,7 +687,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         return UNC, BD_UNCS
 
-
     def ClassBasedL2ESOnly(self, waveSubset: np.array, xSlice) -> dict:
         """
         Sames as ClassBasedL2 except only process Es signal, which results in band convolution of Es uncertainties only.
@@ -677,7 +723,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 }
 
         return UNC
-
 
     @abstractmethod
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
@@ -803,6 +848,26 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNCS["nlwUNC"] = nlwDelta
 
         return UNCS
+
+    @staticmethod
+    def interp_and_slice_raw_data(xData, xTimer, yTimer, kind='linear'):               
+        xDataNew = OrderedDict()
+        try:
+            for k in xData.keys():
+                if k not in ["Datetag", "Timetag2", "Datetime"]:                    
+                    y = np.copy(xData[k]).tolist()
+
+                    xTS    = [time.mktime(xDT.timetuple()) for xDT in xTimer]
+                    newXTS = [time.mktime(xDT.timetuple()) for xDT in yTimer]
+                    if kind == 'cubic':
+                        xDataNew[k] = interpolating.interpSpline(xTS, y, newXTS)
+                    else:
+                        xDataNew[k] = interpolating.interp(xTS, y, newXTS, fill_value=np.nan)
+        except ValueError:
+            return False            
+        else:
+            xData = xDataNew
+            return True
 
     def get_band_outputs(self, sensor_key: str, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
                          esUNC, liUNC, ltUNC, rhoUNC, waveSubset, xSlice) -> dict:

@@ -1191,7 +1191,8 @@ class ProcessL2:
                             for k, grp in raw_groups.items()}
         else:
             raw_groups = {k: map_raw_groups[k] for k in groups}
-            raw_slices = {k: {'data': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end)}
+            raw_slices = {k: {'datetime': grp.datasets['DATETIME'].data[start:end],
+                              'data': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end)}
                           for k, grp in raw_groups.items()}
 
         # %% Get Configuration
@@ -1246,16 +1247,7 @@ class ProcessL2:
             raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
             for key, group in raw_groups.items():
                 group.id = f'{key}_L1AQC'
-        
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
-        slice_std = {
-            k: {
-                str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()
-            } for k in data_slice.keys()
-        }  # standard deviation is relatvie to signal - i.e. in %
-        if not stats:
-            logging.writeLogFileAndPrint("statistics not generated")
-            return False
+
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
         # %% Convolve to satellite bands
@@ -1280,9 +1272,6 @@ class ProcessL2:
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
         satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
-                                for satellite in convolve_to_satellite}
-        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
-                                for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}
 
         # %% Get index of N lowest Lt frames => selection
@@ -1347,10 +1336,21 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                 return False
             
-        if enable_percent_lt:  # if percent_lt then recalculate sensor statistics 
-            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
-            slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
-                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
+        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+        if isinstance(stats, bool): 
+            logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal")
+            return False
+        
+        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
+                    for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
+        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
+                                for k, sliceData in slice_std.items()}
+                                for satellite in convolve_to_satellite}  # why is this done before glitter removal? - Ashley
+        
+        if not stats:
+            logging.writeLogFileAndPrint("statistics not generated")
+            return False
+
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
 
@@ -1935,8 +1935,8 @@ class ProcessL2:
                 if grp.id == 'IRRADIANCE' or grp.id == 'RADIANCE':
                     for sensorType in ['ES','LI','LT']:
                         if grp.datasets[ds].id == sensorType:
-                            node.attributes[f'{sensorType}_START_PIXEL'] = grp.datasets[ds].attributes['CAL_START']
-                            node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']
+                            node.attributes[f'{sensorType}_START_PIXEL'] = grp.datasets[ds].attributes['CAL_START'] if 'CAL_START' in grp.datasets[ds].attributes else None
+                            node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']   if 'CAL_STOP'  in grp.datasets[ds].attributes else None
 
             # Carry over L1AQC data for use in uncertainty budgets
             if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
