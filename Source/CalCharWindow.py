@@ -37,70 +37,15 @@ class CalCharWindow(QtWidgets.QDialog):
     def initUI(self):
         ''' Initialize the GUI '''
 
-        # Sensor information (not implemented for DALEC
-        # SERIAL NUMBERS and cl/char files needed for full FRM case
-        # NB: This is needed only for FRM regimes (class and full)
-        ConfigFile.settings['neededCalCharsFRM'] = {}
-        ConfigFile.settings['serialNumber'] = {}
 
-        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
-            for k,v in ConfigFile.settings['CalibrationFiles'].items():
+        self.serialNumber_neededCalChars_FullFRM()
 
-                # Keep only ini files for the identification of serial numbers
-                if not k.endswith('.ini'):
-                    continue
+        self.FidRadDB_api = new_api(server_url='https://ocdb.eumetsat.int')
 
-                # sensorType is frameType only for TriOS
-                sensorType = v['frameType']
-                serialNumber = k.split('.ini')[0]
-
-                # infer serial number from cal file name
-                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
-
-                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
-                if sensorType in  ['LI', 'LT']:
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
-                elif sensorType == 'ES':
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
-
-        elif ConfigFile.settings['SensorType'].lower() == 'seabird':
-
-            # Force use of thermistor
-            ConfigFile.settings["fL1bThermal"] = 1
-
-            # SeaBird: sensor type inferred from calibration map
-            calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
-            Controller.generateContext(calibrationMap)
-
-            for k,v in ConfigFile.settings['CalibrationFiles'].items():
-                # Serial numbers will be inferred from these specific cal files
-                if not ((k.startswith('HSL') or k.startswith('HED')) and k.endswith('.cal')):
-                    continue
-
-                # SeaBird: sensor type inferred from calibration map
-                sensorType = calibrationMap[k].sensorType
-
-                # extract digits to compose serial number
-                serialNumber0 = '%04d' % int(''.join([k0 for k0 in k[len('HSE'):-len('.cal')] if k0.isdigit()]))
-                serialNumber = 'SAT' + serialNumber0
-
-                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
-
-                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
-                if sensorType in  ['LI', 'LT']:
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
-                elif sensorType == 'ES':
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
-
-        elif ConfigFile.settings['SensorType'] == 'Dalec':
-            # TODO
-            # Not yet implemented, and not needed for now, as FRM regimes are not available still for DALEC.
-            pass
-
-        if ConfigFile.settings['SensorType'] == 'Dalec':
-            # FRM regimes not yet implemented, forcing factory mode.
-            ConfigFile.settings["fL1bCal"] = 1
-
+        self.available_files_FidRadDB = {}
+        for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+            for serialNumber_calCharType in serialNumber_calCharTypes:
+                self.available_files_FidRadDB[serialNumber_calCharType] = self.FidRadDB_call_queue(self.FidRadDB_api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
 
         # Thermal source selection
         ThermalLabel = QtWidgets.QLabel(" Select source of internal sensor working temperature:", self)
@@ -378,6 +323,71 @@ class CalCharWindow(QtWidgets.QDialog):
 
     ###################################### GUI-controlled functions ###############################################
 
+    def serialNumber_neededCalChars_FullFRM(self):
+            # Sensor information (not implemented for DALEC
+            # SERIAL NUMBERS and cl/char files needed for full FRM case
+            # NB: This is needed only for FRM regimes (class and full)
+            ConfigFile.settings['neededCalCharsFRM'] = {}
+            ConfigFile.settings['serialNumber'] = {}
+
+            if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
+                for k,v in ConfigFile.settings['CalibrationFiles'].items():
+
+                    # Keep only ini files for the identification of serial numbers
+                    if not k.endswith('.ini'):
+                        continue
+
+                    # sensorType is frameType only for TriOS
+                    sensorType = v['frameType']
+                    serialNumber = k.split('.ini')[0]
+
+                    # infer serial number from cal file name
+                    ConfigFile.settings['serialNumber'][sensorType] = serialNumber
+
+                    # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
+                    if sensorType in  ['LI', 'LT']:
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                    elif sensorType == 'ES':
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+            elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+
+                # Force use of thermistor
+                ConfigFile.settings["fL1bThermal"] = 1
+
+                # SeaBird: sensor type inferred from calibration map
+                calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
+                Controller.generateContext(calibrationMap)
+
+                for k,v in ConfigFile.settings['CalibrationFiles'].items():
+                    # Serial numbers will be inferred from these specific cal files
+                    if not ((k.startswith('HSL') or k.startswith('HED')) and k.endswith('.cal')):
+                        continue
+
+                    # SeaBird: sensor type inferred from calibration map
+                    sensorType = calibrationMap[k].sensorType
+
+                    # extract digits to compose serial number
+                    serialNumber0 = '%04d' % int(''.join([k0 for k0 in k[len('HSE'):-len('.cal')] if k0.isdigit()]))
+                    serialNumber = 'SAT' + serialNumber0
+
+                    ConfigFile.settings['serialNumber'][sensorType] = serialNumber
+
+                    # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
+                    if sensorType in  ['LI', 'LT']:
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                    elif sensorType == 'ES':
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+            elif ConfigFile.settings['SensorType'] == 'Dalec':
+                # TODO
+                # Not yet implemented, and not needed for now, as FRM regimes are not available still for DALEC.
+                pass
+
+            if ConfigFile.settings['SensorType'] == 'Dalec':
+                # FRM regimes not yet implemented, forcing factory mode.
+                ConfigFile.settings["fL1bCal"] = 1
+
     def ThermalStatusUpdate(self):
         if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
@@ -487,7 +497,7 @@ class CalCharWindow(QtWidgets.QDialog):
         except Exception as e:
             print('Unable to list files of type %s in FidRadDB: %s' % (serialNumber_calCharType,e))
 
-    def FidRadDB_download_files_queue(self, queue, api, file, path_out):
+    def FidRadDB_download_files_queue(self, queue, api, files, path_out):
         '''
         Put the OCDB download files command into a parallel queue...
         :param queue: a multithread parameter...
@@ -496,16 +506,19 @@ class CalCharWindow(QtWidgets.QDialog):
         :return:
         '''
         try:
-            queue.put(OCDBApi.fidrad_download_file(api, file, path_out))
+            if len(files) == 0:
+                queue.put(print('Nothing to download'))
+            for file in files:
+                queue.put(OCDBApi.fidrad_download_file(api, file, path_out))
         except Exception as e:
-            print('Unable to download file %s from FidRadDB: %s' % (file,e))
+            print('Unable to download files from FidRadDB: %s' % (e))
 
     def FidRadDB_call_queue(self, api, call_type='list_files', **kwargs):
         '''
         Call FidRadDB within a thread (to avoid FidRadDB time outs to block the opening of the Cal/Char window
         :param api: the OCDB API
         :param call_type: a string, either 'list_files' or 'download_files
-        :param kwargs: a dctionary, containing the options needed to execute the OCDB API functions
+        :param kwargs: a dictionary, containing the options needed to execute the OCDB API functions
         :return:
         '''
         # List all files available in FidRadDB and locally
@@ -516,7 +529,7 @@ class CalCharWindow(QtWidgets.QDialog):
             call_args = (queue, api, kwargs['serialNumber_calCharType'])
         elif call_type == 'download_files':
             call_function = self.FidRadDB_download_files_queue
-            call_args = (queue, api, kwargs['file'], kwargs['path_out'])
+            call_args = (queue, api, kwargs['files'], kwargs['path_out'])
         else:
             raise NotImplementedError
 
@@ -539,7 +552,7 @@ class CalCharWindow(QtWidgets.QDialog):
                 print("Issue connecting to FidRadDB: %s. Skipping search ..." % kwargs['serialNumber_calCharType'])
                 filesInFidRadDB = []
             elif call_type == 'download_files':
-                print("Issue connecting to FidRadDB: %s. Skipping download ..." % kwargs['file'])
+                print("Issue connecting to FidRadDB: %s. Skipping download ..." % kwargs['files'])
             self.FidRadDB_connect_flag = False
         else: # successful connection case
             if call_type == 'list_files':
@@ -551,7 +564,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
             elif call_type == 'download_files':
                 queue.get()
-                print('File %s successfully downloaded from FidRadDB' % kwargs['file'])
+                print('File %s successfully downloaded from FidRadDB' % kwargs['files'])
 
             self.FidRadDB_connect_flag = True
 
@@ -604,8 +617,6 @@ class CalCharWindow(QtWidgets.QDialog):
             missingFilesList = []
         else:
 
-            api = new_api(server_url='https://ocdb.eumetsat.int')
-
             # Loop over sensorType
             for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
 
@@ -633,7 +644,7 @@ class CalCharWindow(QtWidgets.QDialog):
                     if fL1bCal == 2 and not is_RADCAL:
                         continue
 
-                    filesInFidRadDB = self.FidRadDB_call_queue(api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
+                    filesInFidRadDB = self.available_files_FidRadDB[serialNumber_calCharType]
 
                     filesInLocalDB = sorted([f for f in os.listdir(Path(self.path_FidRadDB)) if (re.match('[C][P][_]%s[_][0-9]{14}[\.][tT][xX][tT]' % serialNumber_calCharType, f) is not None)])
 
@@ -736,9 +747,6 @@ class CalCharWindow(QtWidgets.QDialog):
         # Define path to local repository of FidRadDB sensor-specific files.
         # path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
 
-        # Attempt connection to OCDB/FidRadDB
-        api = new_api(server_url='https://ocdb.eumetsat.int')
-
         # Check if files are already in local FidRadDB repository
         # If not download them first to local FidRadDB repository
         # Then, copy them to calPath
@@ -746,10 +754,12 @@ class CalCharWindow(QtWidgets.QDialog):
 
         self.FidRadDB_timeout = 3  # Reset timeout to 3 seconds when attempting Download!
 
+        files_to_be_downloaded = []
+
         for serialNumber_calCharType in missingFilesList:
 
             # Attempt listing of files available in OCDB/FidRadDB
-            cal_char_files_remote = self.FidRadDB_call_queue(api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
+            cal_char_files_remote = self.available_files_FidRadDB[serialNumber_calCharType]
             cal_char_files_remote = [os.path.basename(file) for file in cal_char_files_remote]
 
             # See what's already available in the local repository of FidRadDB sensor-specific cal/char files
@@ -769,7 +779,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
                 # If not in local FidRadDB repo, then attempt download
                 if not os.path.exists(dest_FidRadDB_local):
-                    self.FidRadDB_call_queue(api, call_type='download_files', file=file, path_out=self.path_FidRadDB)
+                    files_to_be_downloaded = files_to_be_downloaded + [file]
 
                 # # If existing in local FidRadDB repo and not in sel.calibrationPath, then attempt copying file...
                 # if os.path.exists(dest_FidRadDB_local) and not os.path.exists(dest_CalPath):
@@ -779,6 +789,8 @@ class CalCharWindow(QtWidgets.QDialog):
                 #         print(f'Could not copy {os.path.basename(file)} to {ConfigFile.getCalibrationDirectory()}. Check permissions, and try manually ...')
                 #     else:
                 #         print(f'{os.path.basename(file)} copied to {ConfigFile.getCalibrationDirectory()} from {self.path_FidRadDB}')
+
+        self.FidRadDB_call_queue(self.FidRadDB_api, call_type='download_files', files=files_to_be_downloaded, path_out=self.path_FidRadDB)
 
         # Check completeness of ConfigFile.getCalibrationDirectory() after file download and copying
         self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
