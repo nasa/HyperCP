@@ -6,9 +6,11 @@ import re
 import numpy as np
 from pathlib import Path
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QTimer
 
 import multiprocessing
+import threading
+import time
 
 from ocdb.api.OCDBApi import new_api, OCDBApi
 from Source.ConfigFile import ConfigFile
@@ -21,17 +23,24 @@ class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
 
     window_closed = pyqtSignal()
+    finished = pyqtSignal(dict)
+
     def __init__(self, name, parent=None):
         super().__init__(parent)
         self.name = name
+
+        self.smthg = "A"
+        self.thread = None
+        self.stop_event = threading.Event()  # Event to signal thread to stop
+        self.timer = None  # Store timer reference
+
         # Define path to local repository of FidRadDB sensor-specific files.
-        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
-            else ConfigFile.settings['SensorType']
+        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" else ConfigFile.settings['SensorType']
         self.path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
         self.setModal(True)
         self.FidRadDB_timeout = 3  # Seconds it will attempt to connect to FidRadDB (tigggererd everytime the cal/char window is opened)
         # NB: Once an attempt fails, time_out is set to 0.1 until Download button is clicked or window re-initialized, to avoid unnecessary waiting
-        self.FidRadDB_connect_flag = True
+        self.FidRadDB_connect_flag = False
         self.initUI()
 
     def initUI(self):
@@ -39,13 +48,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
 
         self.serialNumber_neededCalChars_FullFRM()
-
         self.FidRadDB_api = new_api(server_url='https://ocdb.eumetsat.int')
-
-        self.available_files_FidRadDB = {}
-        for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
-            for serialNumber_calCharType in serialNumber_calCharTypes:
-                self.available_files_FidRadDB[serialNumber_calCharType] = self.FidRadDB_call_queue(self.FidRadDB_api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
 
         # Thermal source selection
         ThermalLabel = QtWidgets.QLabel(" Select source of internal sensor working temperature:", self)
@@ -225,6 +228,8 @@ class CalCharWindow(QtWidgets.QDialog):
         self.cancelButton = QtWidgets.QPushButton("Cancel")
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
+
+        self.start_check('list_files')
 
         # determine cal status and multi cal options according to settings at initialisation
         self.CalStatusUpdate()
@@ -483,7 +488,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # Force multical to most recent as other options are not supported for non-FRM regime
         self.MultiCalOptions('most_recent')
 
-    def FidRadDB_list_files_queue(self, queue, api, serialNumber_calCharType):
+    def FidRadDB_list_files(self):
         '''
         Put the OCDB list files command into a parallel queue...
         :param queue: a multithread parameter...
@@ -492,12 +497,18 @@ class CalCharWindow(QtWidgets.QDialog):
         :return:
         '''
         try:
-            list_files = OCDBApi.fidrad_list_files(api, serialNumber_calCharType)
-            queue.put(list_files)
+            aailable_files = {}
+            for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+                for serialNumber_calCharType in serialNumber_calCharTypes:
+                    aailable_files[serialNumber_calCharType] = OCDBApi.fidrad_list_files(self.FidRadDB_api, serialNumber_calCharType)
         except Exception as e:
             print('Unable to list files of type %s in FidRadDB: %s' % (serialNumber_calCharType,e))
+        else:
+            aailable_files = {}
 
-    def FidRadDB_download_files_queue(self, queue, api, files, path_out):
+        return aailable_files
+
+    def FidRadDB_download_files(self):
         '''
         Put the OCDB download files command into a parallel queue...
         :param queue: a multithread parameter...
@@ -505,15 +516,19 @@ class CalCharWindow(QtWidgets.QDialog):
         :param serialNumber_calCharType: a string, e.g. 'SAM_8329_POLAR' or 'SAM_8329_RADCAL'
         :return:
         '''
+        files = self.files_to_be_downloaded
+        path_out = self.path_FidRadDB
         try:
             if len(files) == 0:
-                queue.put(print('Nothing to download'))
+                print('Nothing to download')
             for file in files:
-                queue.put(OCDBApi.fidrad_download_file(api, file, path_out))
+                OCDBApi.fidrad_download_file(self.FidRadDB_api, file, path_out)
         except Exception as e:
             print('Unable to download files from FidRadDB: %s' % (e))
 
-    def FidRadDB_call_queue(self, api, call_type='list_files', **kwargs):
+        return {}
+
+    def FidRadDB_call(self, call_type):
         '''
         Call FidRadDB within a thread (to avoid FidRadDB time outs to block the opening of the Cal/Char window
         :param api: the OCDB API
@@ -521,57 +536,93 @@ class CalCharWindow(QtWidgets.QDialog):
         :param kwargs: a dictionary, containing the options needed to execute the OCDB API functions
         :return:
         '''
-        # List all files available in FidRadDB and locally
-        queue = multiprocessing.Queue()
 
         if call_type == 'list_files':
-            call_function = self.FidRadDB_list_files_queue
-            call_args = (queue, api, kwargs['serialNumber_calCharType'])
+            result = self.FidRadDB_list_files()
         elif call_type == 'download_files':
-            call_function = self.FidRadDB_download_files_queue
-            call_args = (queue, api, kwargs['files'], kwargs['path_out'])
+            result = self.FidRadDB_download_files()
         else:
             raise NotImplementedError
 
-        # Start the thread
-        p = multiprocessing.Process(
-            target=call_function,
-            args=call_args
-        )
-        p.start()
-        # Define time out!
-        p.join(self.FidRadDB_timeout)
+        return result
 
-        # If thread is alive after timeout, then kill and raise time out status (FidRadDB_connect_flag=False)
-        # Also reduce timeout to minimum (0.1) unless download is re-atempted by user.
-        if p.is_alive(): # timeout case
-            p.terminate()
-            p.join()
-            self.FidRadDB_timeout = 0.1 # Timeout reduced to avoid excessive waiting... Re-set to 3 when Download button is clicked
-            if call_type == 'list_files':
-                print("Issue connecting to FidRadDB: %s. Skipping search ..." % kwargs['serialNumber_calCharType'])
-                filesInFidRadDB = []
-            elif call_type == 'download_files':
-                print("Issue connecting to FidRadDB: %s. Skipping download ..." % kwargs['files'])
-            self.FidRadDB_connect_flag = False
-        else: # successful connection case
-            if call_type == 'list_files':
-                filesInFidRadDB = queue.get()
-                if filesInFidRadDB == 0:
-                    print('No files of type %s available in FidRadDB' % kwargs['serialNumber_calCharType'])
-                else:
-                    print('Files of type %s found in FidRadDB' % kwargs['serialNumber_calCharType'])
+    def start_check(self, call_type):
+        self.FullCalRadioButton.setDisabled(True)
+        self.ClassCalRadioButton.setDisabled(True)
+        self.DefaultCalRadioButton.setDisabled(True)
+        self.FidRadDBdownload.setDisabled(True)
 
-            elif call_type == 'download_files':
-                queue.get()
-                print('File %s successfully downloaded from FidRadDB' % kwargs['files'])
+        self.stop_event.clear()
 
-            self.FidRadDB_connect_flag = True
+        # Start timeout timer - store reference so we can cancel it
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.on_timeout)
+        self.timer.start(3000)  # 3 second timeout
 
-        if call_type == 'list_files':
-            return filesInFidRadDB
-        elif call_type == 'download_files':
+        # Start thread
+        self.thread = threading.Thread(target=self.worker, args=(call_type,self.stop_event))
+        self.thread.daemon = True
+        self.thread.start()
+
+    def worker(self, call_type, stop_event):
+
+        if stop_event.is_set():
+            print("Worker stopped by timeout")
+            self.available_files_FidRadDB = {}
+            for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+                for serialNumber_calCharType in serialNumber_calCharTypes:
+                    self.available_files_FidRadDB[serialNumber_calCharType] = []
             return
+
+        if not stop_event.is_set():
+            result = self.FidRadDB_call(call_type)
+            self.finished.emit(result)  # This is thread-safe!
+
+    def on_result(self, result):
+
+        self.FullCalRadioButton.setDisabled(False)
+        self.ClassCalRadioButton.setDisabled(False)
+        self.DefaultCalRadioButton.setDisabled(False)
+        self.FidRadDBdownload.setDisabled(False)
+
+        self.FidRadDB_connect_flag = True
+
+        if len(result) > 0:
+            self.available_files_FidRadDB = result
+
+        if self.timer and self.timer.isActive():
+            self.timer.stop()
+            print("Timer cancelled - worker finished")
+
+        self.cleanup()
+
+    def on_timeout(self):
+
+        self.FullCalRadioButton.setDisabled(False)
+        self.ClassCalRadioButton.setDisabled(False)
+        self.DefaultCalRadioButton.setDisabled(False)
+        self.FidRadDBdownload.setDisabled(False)
+
+        self.FidRadDB_connect_flag = False
+
+        self.available_files_FidRadDB = {}
+        for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+            for serialNumber_calCharType in serialNumber_calCharTypes:
+                self.available_files_FidRadDB[serialNumber_calCharType] = []
+
+        self.cleanup()
+
+    def cleanup(self):
+        """Clean up resources"""
+        # Clean up timer
+        if self.timer:
+            self.timer.stop()
+            self.timer.deleteLater()
+            self.timer = None
+
+        # Clean up thread reference
+        self.thread = None
 
     def ClassCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Class-based")
@@ -754,7 +805,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         self.FidRadDB_timeout = 3  # Reset timeout to 3 seconds when attempting Download!
 
-        files_to_be_downloaded = []
+        self.files_to_be_downloaded = []
 
         for serialNumber_calCharType in missingFilesList:
 
@@ -790,7 +841,7 @@ class CalCharWindow(QtWidgets.QDialog):
                 #     else:
                 #         print(f'{os.path.basename(file)} copied to {ConfigFile.getCalibrationDirectory()} from {self.path_FidRadDB}')
 
-        self.FidRadDB_call_queue(self.FidRadDB_api, call_type='download_files', files=files_to_be_downloaded, path_out=self.path_FidRadDB)
+        self.start_check('download_files')
 
         # Check completeness of ConfigFile.getCalibrationDirectory() after file download and copying
         self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
