@@ -47,7 +47,8 @@ def downloadZhangLUT(fpfZhangLUT, force=False):
             # Check the hash of the file
             print('Checking file...')
             thisHash = md5(fpfZhangLUT)
-            if thisHash == '1a33ed647d9c7359b0800915bd0229c7':
+            # if thisHash == '1a33ed647d9c7359b0800915bd0229c7':
+            if thisHash == 'd9197436125f97c3bd8f00c6ee0185be':
                 print('File checks out.')
             else:
                 print(f'Error in downloaded file {fpfZhangLUT}. Recommend you delete the downloaded file and try again.')
