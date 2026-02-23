@@ -10,10 +10,6 @@ import scipy as sp
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
-
-
-
-
 # Source
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
@@ -472,8 +468,7 @@ class ProcessL2:
                     else:  # apply the sensor specific Lw and Rrs uncertainties
                         lwUNC[k] = xUNC[f'lwUNC_{sensor}'][i]
                         rrsUNC[k] = xUNC[f'rrsUNC_{sensor}'][i]
-            #print(sensor+" rrsUNC")
-            #print(rrsUNC)
+
         else:
             # factory case
             for wvl in waveSubset:
@@ -770,7 +765,7 @@ class ProcessL2:
         """
         esXSlice = xSlice['es']  # mean
         esXmedian = xSlice['esMedian']
-        esXRemaining = xSlice['esRemaining']
+        # esXRemaining = xSlice['esRemaining']
         esXstd = xSlice['esSTD']
 
         dateTime = timeObj['dateTime']
@@ -867,76 +862,6 @@ class ProcessL2:
         newESUNCData.columnsToDataset()
 
 
-    # @staticmethod
-    # def filterData(group, badTimes, sensor = None):
-    #     ''' Delete flagged records. Sensor is only specified to get the timestamp.
-    #         All data in the group (including satellite sensors) will be deleted. '''
-
-    #     logging.writeLogFileAndPrint(f'Remove {group.id} Data')
-    #     timeStamp = None
-    #     if sensor is None:
-    #         if group.id == "ANCILLARY":
-    #             timeStamp = group.getDataset("LATITUDE").data["Datetime"]
-    #         if group.id == "IRRADIANCE":
-    #             timeStamp = group.getDataset("ES").data["Datetime"]
-    #         if group.id == "RADIANCE":
-    #             timeStamp = group.getDataset("LI").data["Datetime"]
-    #         if group.id == "SIXS_MODEL":
-    #             timeStamp = group.getDataset("direct_ratio").data["Datetime"]
-    #     else:
-    #         if group.id == "IRRADIANCE":
-    #             timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
-    #         if group.id == "RADIANCE":
-    #             timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
-    #         if group.id == "REFLECTANCE":
-    #             timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
-
-    #     startLength = len(timeStamp)
-    #     logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
-
-    #     # Delete the records in badTime ranges from each dataset in the group
-    #     finalCount = 0
-    #     originalLength = len(timeStamp)
-    #     for dateTime in badTimes:
-    #         # Need to reinitialize for each loop
-    #         startLength = len(timeStamp)
-    #         newTimeStamp = []
-
-    #         # logging.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
-
-    #         start = dateTime[0]
-    #         stop = dateTime[1]
-
-    #         if startLength > 0:
-    #             rowsToDelete = []
-    #             for i in range(startLength):
-    #                 if start <= timeStamp[i] and stop >= timeStamp[i]:
-    #                     try:
-    #                         rowsToDelete.append(i)
-    #                         finalCount += 1
-    #                     except Exception as err:
-    #                         print(err)
-    #                 else:
-    #                     newTimeStamp.append(timeStamp[i])
-    #             group.datasetDeleteRow(rowsToDelete)
-    #         else:
-    #             logging.writeLogFileAndPrint('Data group is empty. Continuing.')
-    #         timeStamp = newTimeStamp.copy()
-
-    #     if len(badTimes) == 0:
-    #         startLength = 1 # avoids div by zero below when finalCount is 0
-
-    #     for ds in group.datasets:
-    #         # if ds != "STATION":
-    #         try:
-    #             group.datasets[ds].datasetToColumns()
-    #         except Exception as err:
-    #             print(err)
-
-    #     logging.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed')
-    #     return finalCount/originalLength
-
-
     @staticmethod
     def interpolateColumn(columns, wl):
         ''' Interpolate wavebands to estimate a single, unsampled waveband '''
@@ -1005,7 +930,7 @@ class ProcessL2:
                 badTimes.append(timeTag)
                 logging.writeLogFileAndPrint(f'Ensemble {indx} of {field} flagged for negative Rrs')
 
-            # NOTE: This was a bad idea. Changed 2/6/26
+            # NOTE: This was a bad idea. Changed 2/6/26 to retain negative values.
             # # Set negatives to 0
             # NIR = [VIS[-1] + 1, max(wavelengths)]
             # UV = [min(wavelengths),VIS[0]-1]
@@ -1178,8 +1103,6 @@ class ProcessL2:
             logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance ensemble is less than 1 minute. Skipping.")
             return False
 
-        # TODO Check why SIXS code used to be here but data manipulation is not used later on, hence dropped
-
         # %% Get active raw groups (based on data available in groups, required to get std)
         # NOTE: "raw" here refers to pre-calibration L1AQC datasets
         map_raw_groups = {'ES': esRawGroup, 'LI': liRawGroup, 'LT': ltRawGroup}
@@ -1211,7 +1134,6 @@ class ProcessL2:
             sensor, sensor_type = HyperOCR(), 'SeaBird'
         else:
             raise ValueError('Sensor type not supported.')
-        # TODO check why Delete Datetime, Datetag, and Timetag2 from slices
 
         # %% Compute mean datetime of slice
         # Based on Es timestamp only

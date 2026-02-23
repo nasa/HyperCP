@@ -4,9 +4,9 @@ from collections import OrderedDict
 
 # math
 import os.path
+from datetime import datetime as dt
 import numpy as np
 import pandas as pd
-from datetime import datetime as dt
 
 # Source
 from Source import PATH_TO_CONFIG
@@ -192,7 +192,7 @@ class PIUDataStore:
         ind_nan = np.isnan(radcal_raw[ind_raw_wvl])
         self.coeff[s_type]['ind_nocal'] = ind_nan | ind_zero
 
-        self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_nocal'] == False], dtype=float)
+        self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl][~self.coeff[s_type]['ind_nocal']], dtype=float)
 
         # non-lin CB correction currently implemented the same for all sensor
         self.coeff[s_type]['cb_alpha'] = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '2')[1:]
@@ -200,7 +200,7 @@ class PIUDataStore:
 
         # Stability is handled with Class Based processing
         cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")
-        meas_date = dt.strptime(self.cast.split('_')[-1], "%Y%m%d%H%M%S")
+        meas_date = dt.strptime(self.cast.rsplit("_", maxsplit=1)[-1], "%Y%m%d%H%M%S")
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
@@ -252,7 +252,7 @@ class PIUDataStore:
             # Compute full hemisperical coserror
             zen0 = np.argmin(np.abs(zenith_ang))
             zen90 = np.argmin(np.abs(zenith_ang - 90))
-            deltaZen = (zenith_ang[1::] - zenith_ang[:-1])
+            deltaZen = zenith_ang[1::] - zenith_ang[:-1]
             full_hemi_coserror = np.zeros(zen_avg_coserr.shape[0])
             sensitivity_coeff = np.zeros(zen_avg_coserr.shape[0])
             zen_unc_sum = np.zeros(zen_avg_coserr.shape[0])
@@ -285,7 +285,7 @@ class PIUDataStore:
         else:
             self.coeff[s_type]['PANEL'] = np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['2'])
             self.uncs[s_type]['PANEL'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['3'])/100)*self.coeff[s_type]['PANEL']
-            
+
             # Polarisation unc from class based processing
             pol = uncGrp.getDataset(f"CLASS_{self.instrument_calfile_name(instrument)}_{s_type}_POLDATA_CAL") 
             pol.datasetToColumns()
@@ -300,7 +300,7 @@ class PIUDataStore:
             # thoughts - Ashley
             # to convert the polarisation and stability uncertainty from a percentage to absolute values we must multiply by the magnitude of the correction.
             # Since we are using CB regime, we do not apply the correction. Therefore the correction = 1 since it is applied by multiplying.
-            # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary. 
+            # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary.
 
     def readHyperCal(self, grp, uncGrp, raw_slices, s_type):
         radcal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
@@ -362,9 +362,6 @@ class PIUDataStore:
         ind_rad_wvl[0:self.cal_start] = False
         ind_rad_wvl[self.cal_stop+1:] = False
 
-        # TODO: This would truncate to calibrated bands...
-        # unc_cal, coef_cal = self.extract_factory_cal(node, radcal, s)
-        # self.uncs[s]['cal'], self.coeff[s]['cal'] = unc_cal[ind_rad_wvl],coef_cal[ind_rad_wvl]
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)
         self.ind_rad_wvl[s] = ind_rad_wvl
         self.rad_wvl[s] = radcal.columns['wvl']
@@ -401,7 +398,7 @@ class PIUDataStore:
                     _, sza_range = k.split('RANGE')
                     lw, up = sza_range.split('-')
                     break
-            
+
             if sza_range is not None:
                 if float(lw) > self.sza:
                     self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR", col_name='1')
@@ -414,21 +411,21 @@ class PIUDataStore:
                 self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_CAL", col_name='1')
         else:
             self.uncs[s]['pol'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_POLDATA_CAL", col_name='1')
-        
+
         # self.nan_mask = np.where(any([(u[s] <= 0) for u in self.uncs]))  # not implemented
 
     #### General Read Methods ####
     @staticmethod
     def read_sixS_model(node):
         res_sixS = {}
-        
+
         # Create a temporary group to pop date time columns
         newGrp = node.addGroup('temp')
         newGrp.copy(node.getGroup('SIXS_MODEL'))
         for ds in newGrp.datasets:
             newGrp.datasets[ds].datasetToColumns()
         sixS_gp = node.getGroup('temp')
-        
+
         sixS_gp.getDataset("direct_ratio").columns.pop('Datetime')
         sixS_gp.getDataset("direct_ratio").columns.pop('Timetag2')
         sixS_gp.getDataset("direct_ratio").columns.pop('Datetag')
@@ -467,39 +464,20 @@ class PIUDataStore:
             return "RAMSES"
         else:
             return "DALEC"
-    
+
     @staticmethod
     def read_cal(grp: HDFGroup, s: str, cal_name: str, idx: Optional[str]=None, return_df: bool = False) -> Union[np.ndarray, pd.DataFrame]:
         try:
             if grp.getDataset(s + cal_name) is None:
                 print("here")
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)[idx]
-        except (IndexError, KeyError) as err:
+        except (IndexError, KeyError):
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)
         try:  # ask forgiveness not permission
             data = data if return_df else np.asarray(data.tolist())
         except AttributeError:
             data = np.asarray(data)
         return data
-    
-    def clipSL(self, s: str) -> None:
-        # start = self.cal_start
-        # stop = self.cal_stop
-        ind_wvl = self.ind_rad_wvl[s]
-
-        # In case radcal is shorter than straylight uncertainty, clip straylight uncertainty
-        #   presumes both start at the first pixel (SeaBird cal files buffer the UV pixels, but not always the NIR).
-
-
-        # if (ind_wvl is not None) and (len(ind_wvl) == len(self.uncs[s]['stray'])):
-        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][ind_wvl]
-        # elif (start is not None) and (stop is not None):
-        #     self.uncs[s]['stray'] = self.uncs[s]['stray'][start:stop + 1]
-        if (ind_wvl is not None) and (len(ind_wvl) < len(self.uncs[s]['stray'])):
-            self.uncs[s]['stray'] =  self.uncs[s]['stray'][0:len(ind_wvl)]
-        else:
-            msg = "cannot mask straylight"
-            print(msg)  # to cover for potential coding errors, should not be hit in normal use
 
     @staticmethod
     def extract_factory_cal(node: HDFGroup, radcal: np.array, s: str) -> tuple[np.array, np.array]:

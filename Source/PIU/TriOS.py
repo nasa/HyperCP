@@ -1,19 +1,14 @@
 # python packages
-import pandas as pd
-from copy import deepcopy
 from collections import OrderedDict
-import warnings
+from typing import Union
 
 # maths
+import pandas as pd
 import numpy as np
 import comet_maths as cm
 
-# typing
-from typing import Optional, Union, Any
-
 # Source files
 from Source.HDFGroup import HDFGroup
-from Source.ConfigFile import ConfigFile
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -40,7 +35,7 @@ class TriOS(BaseInstrument):
         """
 
         (
-            raw_cal, 
+            raw_cal,
             raw_back,
             raw_data,
             raw_wvl,
@@ -106,7 +101,7 @@ class TriOS(BaseInstrument):
         for i, wvl in enumerate(raw_wvl):
             signal_noise[wvl] = pow(
                 (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
-        
+
         std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
 
         return dict(
@@ -119,18 +114,16 @@ class TriOS(BaseInstrument):
         )
 
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
-        
+
         output_UNC = {}
         output_BD_UNCS = {k: {} for k in self.sensors}  # breakdown uncertainties
         output_BD_CORR = {k: {} for k in self.sensors}  # breakdown correction magnitudes
-        
+
         for s_type in self.sensors:
             print(f"FRM Processing, {s_type}")
 
             # set up uncertainty propagation
             import punpy
-            import comet_maths as cm
-            from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
@@ -145,7 +138,7 @@ class TriOS(BaseInstrument):
             sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
             sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
             sample_n_iter =   cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
-            
+
             sample_Ct =   cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
             sample_LAMP = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
             sample_PANEL = None
@@ -177,17 +170,19 @@ class TriOS(BaseInstrument):
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
             sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
-            no_lin_corr_indx = DATA['cb_alpha'] == -2e-7   # TODO: clarify with Tartu why alpha != 0 for TriOS
+            # TODO: clarify with Tartu why alpha != 0 for TriOS
+            no_lin_corr_indx = DATA['cb_alpha'] == -2e-7
             sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
             # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
-            
+
             BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
+            sample_zen_ang,sample_zen_avg_coserror,sample_fhemi_coserr = None,None,None
 
             if s_type.upper() == "ES":
-                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
+                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES,
                                                               [sample_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
                                                               )
-                
+
                 # compute cosine error based on lab characterisation and cosine response asymmetry
                 sample_zen_ang = cm.generate_sample(mDraws, DATA['zenith_ang'], None, None)
                 sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'], UNC['zenith_ang'], "syst")
@@ -198,13 +193,13 @@ class TriOS(BaseInstrument):
                                                               [sample_sl_corr, sample_LAMP, sample_PANEL,
                                                                sample_cal_int,
                                                                sample_t1])
-            import matplotlib.pyplot as plt
+            # import matplotlib.pyplot as plt
             BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_sl_corr))
 
             ind_nocal = DATA['ind_nocal']
-            sample_updated_radcal_gain[:, ind_nocal == True] = 1
+            sample_updated_radcal_gain[:, ind_nocal] = 1
 
-            BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
+            BD_UNCS['radcal'][ind_nocal] = 0  # set radcal uncertainty to 0 where calibration is not applied
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
             # dark correction
@@ -221,7 +216,7 @@ class TriOS(BaseInstrument):
             BD_UNCS.update(LPU.nonLinearity(BD_UNCS, BD_CORR['alpha_mag'], sample_dark_corr))
             BD_CORR['nlin'] = np.mean(sample_nlin_corr, axis=0)
             BD_CORR['clin'] = np.mean(sample_dark_corr, axis=0) - BD_CORR['nlin']
-            
+
             # apply cal to absolute uncs at the end of the process to put them all in the same units. then put them relative to final signal
             # Straylight Correction
             if self.sl_method.upper() == 'ZONG':  # for internal use only, Zong set as default in HCP
@@ -243,12 +238,12 @@ class TriOS(BaseInstrument):
 
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
-            
+
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
             cal_corr_signal = np.mean(sample_cal_corr, axis=0)  # calibrated signal for sensitivity coeffs
             BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
-            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
+            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
@@ -291,36 +286,36 @@ class TriOS(BaseInstrument):
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
                 ct_corr_signal = np.mean(sample_ct_corr, axis=0)
-                
+
                 BD_UNCS['pol'] = np.sqrt(ct_corr_signal**2 * UNC['pol']**2)
                 signal = np.mean(sample_pol_corr, axis=0)
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
-            
+
             LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
 
             ind_nocal = DATA['ind_nocal']
-            output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
-            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ind_nocal == False]  # keep samples raw
+            output_UNC[f"{s_type.lower()}Unc"] = unc[~ind_nocal]  # relative uncertainty
+            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ~ind_nocal]  # keep samples raw
 
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
             wvls = DATA["wvls"]
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
-                output_UNC[f"{s_type.lower()}Unc"], 
+                output_UNC[f"{s_type.lower()}Unc"],
                 wvls, 
                 newWaveBands, 
                 return_as_dict=True
                 )
             output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(
-                output_UNC[f"{s_type.lower()}Sample"], 
+                output_UNC[f"{s_type.lower()}Sample"],
                 wvls,
                 newWaveBands
                 )
-        
-        return output_UNC, output_BD_CORR, output_BD_UNCS   
+
+        return output_UNC, output_BD_CORR, output_BD_UNCS
 
 
 class TriOSUtils:
@@ -344,10 +339,10 @@ class TriOSUtils:
         ind_nan = np.array([np.isnan(rc[0]) for rc in raw_cal])
         ind_nocal = ind_nan | ind_zero
         raw_cal = np.array([rc[0] for rc in raw_cal])
-        raw_cal[ind_nocal==True] = 1
+        raw_cal[ind_nocal] = 1
 
         return (
-            raw_cal, 
+            raw_cal,
             raw_back,
             raw_data,
             raw_wvl,
@@ -356,3 +351,4 @@ class TriOSUtils:
             DarkPixelStart,
             DarkPixelStop,
             )
+    

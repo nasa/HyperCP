@@ -1,4 +1,5 @@
 import os
+import warnings
 import numpy as np
 
 # for analysis NPL developed packages
@@ -6,7 +7,6 @@ import punpy
 from Source.Weight_RSR import Weight_RSR
 
 # zhangWrapper
-import collections
 from Source import ZhangRho, PATH_TO_DATA
 from Source.RhoCorrections import RhoCorrections
 
@@ -17,7 +17,6 @@ from Source.HDFRoot import HDFRoot
 from Source.utils.loggingHCP import writeLogFileAndPrint
 from Source.utils.comparing import find_nearest
 
-import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
@@ -107,9 +106,9 @@ class Propagate:
     def __init__(self, M: int = 100, cores: int = 1):
         self._platform: str = ''  # internally used variable to store platform string to use in L2 conv products
         self._wavebands: np.array = None  # stores wavebands for convolution
-        self.cal_int: dict  = None
-        self.int_time: dict = None
-        
+        self.cal_int = {}
+        self.int_time = {}
+
         if isinstance(cores, int):
             self.MCP = punpy.MCPropagation(M, parallel_cores=cores)
         else:
@@ -419,7 +418,7 @@ class Propagate:
         except InterpolationError as err:
             writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
             zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
-        
+
         return zhang
 
     # Measurement Functions
@@ -436,13 +435,9 @@ class Propagate:
         if all_zeros:
             # Case for ES-ONLY configuration
             self.cal_int["LI"],self.cal_int["LT"],self.int_time["LI"],self.int_time["LT"] = np.nan,np.nan,np.nan,np.nan
-            self.cal_int["LT"] = np.nan
-            self.int_time["LI"] = np.nan
-            self.int_time["LT"] = np.nan
-
 
         return (
-            esSignal * (self.cal_int["ES"]/self.int_time["ES"]), 
+            esSignal * (self.cal_int["ES"]/self.int_time["ES"]),
             liSignal * (self.cal_int["LI"]/self.int_time["LI"]),
             ltSignal * (self.cal_int["LT"]/self.int_time["LT"])
         )
@@ -617,11 +612,11 @@ class Propagate:
 
         # === The sensor ===
         # Current database is not limited near these values
-        
+
         # sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
         relAz = np.min([180, 180 - relAz]) # TJ - I got an instance where rel_az was > 180, so added this as a fix.
         sensor = {'ang': np.array([sva,  relAz]), 'wv': np.array(waveBands)} 
-    
+
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
 
         return rho
