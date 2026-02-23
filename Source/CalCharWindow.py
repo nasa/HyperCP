@@ -999,12 +999,12 @@ class CalCharWindow(QtWidgets.QDialog):
         missingFilesStrings, missingFilesList = self.missing_FidRadDB_cal_char_files()
         if len(missingFilesList) != 0:
 
-            cannot_process_flag = np.any([True if ('Must' in string or 'neither' in string) else False for string in missingFilesStrings.values()])
+            cannot_process_flag = np.any([True if ('Must' in string or 'neither' in string or 'not available' in string) else False for string in missingFilesStrings.values()])
 
             if cannot_process_flag:
                 # WARNING
                 QtWidgets.QMessageBox.warning(None, "No match", "Missing FidRadDB cal/char files:<br>%s<br>"
-                                                                "<br>Please copy them to %s from local source or FidRadDB (https://ocdb.eumetsat.int)." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
+                                                                "<br>Please copy them to %s from local source or attempt downloading them from FidRadDB." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
 
                 closeFlag = False
 
