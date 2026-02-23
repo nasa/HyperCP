@@ -8,11 +8,24 @@ from pathlib import Path
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
-import multiprocessing
+import threading
+import urllib.request
+
+
+# Wrap the original urlopen with a fixed timeout argument (must be before ocdb import)
+# TODO: Ask OCDB team to implement a timeout option
+time_out = 5
+original_urlopen = urllib.request.urlopen
+def urlopen_default_timeout(*args, **kwargs):
+    print('Modified urlopen called to enforce timeout of %s seconds' % time_out)
+    if 'timeout' in kwargs:
+        return urllib.request.urlopen(*args, **kwargs)  # If timeout is already specified, use it
+    return original_urlopen(*args, **kwargs, timeout=time_out)
+urllib.request.urlopen = urlopen_default_timeout
 
 from ocdb.api.OCDBApi import new_api, OCDBApi
+
 from Source.ConfigFile import ConfigFile
-# from Source import PATH_TO_CONFIG
 from Source.Controller import Controller
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source import PACKAGE_DIR as CODE_HOME
@@ -21,86 +34,36 @@ class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
 
     window_closed = pyqtSignal()
+    finished = pyqtSignal()
+
     def __init__(self, name, parent=None):
         super().__init__(parent)
         self.name = name
+
+        # Define cal/char serial numbers
+        self.serialNumber_neededCalChars_FullFRM()
+
+        # FidRadDB thread...
+        self._thread = None
+        self.FidRadDB_api = new_api(server_url='https://ocdb.eumetsat.int')
+        self.FidRadDB_connect_flag = False
+        self.available_files_FidRadDB = {}
+
+        # FidRadDB thread...Will execute worker_done once thread emits signal to "finished"
+        self.finished.connect(self.worker_done)
+
         # Define path to local repository of FidRadDB sensor-specific files.
-        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
-            else ConfigFile.settings['SensorType']
+        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" else ConfigFile.settings['SensorType']
         self.path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
+
+        # Blocks input to other windows in the application
         self.setModal(True)
-        self.FidRadDB_timeout = 3  # Seconds it will attempt to connect to FidRadDB (tigggererd everytime the cal/char window is opened)
-        # NB: Once an attempt fails, time_out is set to 0.1 until Download button is clicked or window re-initialized, to avoid unnecessary waiting
-        self.FidRadDB_connect_flag = True
+
+        # Initialize UI
         self.initUI()
 
     def initUI(self):
         ''' Initialize the GUI '''
-
-        # Sensor information (not implemented for DALEC
-        # SERIAL NUMBERS and cl/char files needed for full FRM case
-        # NB: This is needed only for FRM regimes (class and full)
-        ConfigFile.settings['neededCalCharsFRM'] = {}
-        ConfigFile.settings['serialNumber'] = {}
-
-        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
-            for k,v in ConfigFile.settings['CalibrationFiles'].items():
-
-                # Keep only ini files for the identification of serial numbers
-                if not k.endswith('.ini'):
-                    continue
-
-                # sensorType is frameType only for TriOS
-                sensorType = v['frameType']
-                serialNumber = k.split('.ini')[0]
-
-                # infer serial number from cal file name
-                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
-
-                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
-                if sensorType in  ['LI', 'LT']:
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
-                elif sensorType == 'ES':
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
-
-        elif ConfigFile.settings['SensorType'].lower() == 'seabird':
-
-            # Force use of thermistor
-            ConfigFile.settings["fL1bThermal"] = 1
-
-            # SeaBird: sensor type inferred from calibration map
-            calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
-            Controller.generateContext(calibrationMap)
-
-            for k,v in ConfigFile.settings['CalibrationFiles'].items():
-                # Serial numbers will be inferred from these specific cal files
-                if not ((k.startswith('HSL') or k.startswith('HED')) and k.endswith('.cal')):
-                    continue
-
-                # SeaBird: sensor type inferred from calibration map
-                sensorType = calibrationMap[k].sensorType
-
-                # extract digits to compose serial number
-                serialNumber0 = '%04d' % int(''.join([k0 for k0 in k[len('HSE'):-len('.cal')] if k0.isdigit()]))
-                serialNumber = 'SAT' + serialNumber0
-
-                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
-
-                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
-                if sensorType in  ['LI', 'LT']:
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
-                elif sensorType == 'ES':
-                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
-
-        elif ConfigFile.settings['SensorType'] == 'Dalec':
-            # TODO
-            # Not yet implemented, and not needed for now, as FRM regimes are not available still for DALEC.
-            pass
-
-        if ConfigFile.settings['SensorType'] == 'Dalec':
-            # FRM regimes not yet implemented, forcing factory mode.
-            ConfigFile.settings["fL1bCal"] = 1
-
 
         # Thermal source selection
         ThermalLabel = QtWidgets.QLabel(" Select source of internal sensor working temperature:", self)
@@ -229,7 +192,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.calFileMostRecent.clicked.connect(lambda: self.MultiCalOptions('most_recent'))
 
         # Option 2: Pre and post average
-        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations") 
+        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations")
         self.calFilePrePost.setAutoExclusive(False)
         self.calFilePrePost.clicked.connect(lambda: self.MultiCalOptions('pre_post'))
 
@@ -281,8 +244,14 @@ class CalCharWindow(QtWidgets.QDialog):
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
-        # determine cal status and multi cal options according to settings at initialisation
+        self.populate_available_files_FidRadDB() # Required by worker and CalStatusUpdate
         self.CalStatusUpdate()
+
+        if ConfigFile.settings["fL1bCal"] == 1:
+            self.FidRadDB_initial_check = False
+        else:
+            self.start_worker('list_files')
+            self.FidRadDB_initial_check = True
 
         if ConfigFile.settings['MultiCal'] == 0:
             self.MultiCalOptions('most_recent')
@@ -378,6 +347,80 @@ class CalCharWindow(QtWidgets.QDialog):
 
     ###################################### GUI-controlled functions ###############################################
 
+    def serialNumber_neededCalChars_FullFRM(self):
+        '''
+        define keys in ConfigFile.settings:
+            - 'neededCalCharsFRM' --> For each sensor type (LI, LT, ES), list which cal/char files are needed for the full FRM case
+            - 'serialNumber' --> For each sensor type (LI, LT, ES), identify serial number
+        :return:
+        '''
+        # Sensor information (not implemented for DALEC
+        # SERIAL NUMBERS and cl/char files needed for full FRM case
+        # NB: This is needed only for FRM regimes (class and full)
+        ConfigFile.settings['neededCalCharsFRM'] = {}
+        ConfigFile.settings['serialNumber'] = {}
+
+        # Identify serial number for TriOS case
+        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
+            for k,v in ConfigFile.settings['CalibrationFiles'].items():
+
+                # Keep only ini files for the identification of serial numbers
+                if not k.endswith('.ini'):
+                    continue
+
+                # sensorType is frameType only for TriOS
+                sensorType = v['frameType']
+                serialNumber = k.split('.ini')[0]
+
+                # infer serial number from cal file name
+                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
+
+                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
+                if sensorType in  ['LI', 'LT']:
+                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                elif sensorType == 'ES':
+                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+        # SeaBird case
+        elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+
+            # Force use of thermistor
+            ConfigFile.settings["fL1bThermal"] = 1
+
+            # SeaBird: sensor type inferred from calibration map
+            calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
+            Controller.generateContext(calibrationMap)
+
+            for k,v in ConfigFile.settings['CalibrationFiles'].items():
+                # Serial numbers will be inferred from these specific cal files
+                if not ((k.startswith('HSL') or k.startswith('HED')) and k.endswith('.cal')):
+                    continue
+
+                # SeaBird: sensor type inferred from calibration map
+                sensorType = calibrationMap[k].sensorType
+
+                # extract digits to compose serial number
+                serialNumber0 = '%04d' % int(''.join([k0 for k0 in k[len('HSE'):-len('.cal')] if k0.isdigit()]))
+                serialNumber = 'SAT' + serialNumber0
+
+                ConfigFile.settings['serialNumber'][sensorType] = serialNumber
+
+                # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type (e.g. ES)
+                if sensorType in  ['LI', 'LT']:
+                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                elif sensorType == 'ES':
+                    ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+        # DALEC
+        elif ConfigFile.settings['SensorType'] == 'Dalec':
+            # TODO
+            # Not yet implemented, and not needed for now, as FRM regimes are not available still for DALEC.
+            pass
+
+        if ConfigFile.settings['SensorType'] == 'Dalec':
+            # FRM regimes not yet implemented, forcing factory mode.
+            ConfigFile.settings["fL1bCal"] = 1
+
     def ThermalStatusUpdate(self):
         if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
@@ -464,7 +507,188 @@ class CalCharWindow(QtWidgets.QDialog):
             # self.calFilePrePost.setDisabled(False) TODO: commented as not yet implemented
             self.calFileChoose.setDisabled(False)
 
-        self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
+        self.missing_FidRadDB_cal_char_files()
+
+
+    def FidRadDB_list_files(self):
+        '''
+        Put the OCDB list files command into a parallel queue...
+        :return:
+        available_files: dictionary, for each sensor type (LT, LI, ES) (and resp. serial number) listed corresponding files from FidRadDB
+        success, Boolean, True unless exception in FidRadDB connection raised
+        '''
+        available_files = {}
+        try:
+            for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+                for serialNumber_calCharType in serialNumber_calCharTypes:
+                    available_files[serialNumber_calCharType] = OCDBApi.fidrad_list_files(self.FidRadDB_api, serialNumber_calCharType)
+        except Exception as e:
+            print('Unable to list files of type in FidRadDB: %s' % e)
+            success = False
+            for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+                for serialNumber_calCharType in serialNumber_calCharTypes:
+                    available_files[serialNumber_calCharType] = []
+        else:
+            print('Files successfully listed from FidRadDB.')
+            success = True
+
+        self.available_files_FidRadDB = available_files
+
+        return success
+
+    def FidRadDB_download_files(self):
+        '''
+        Download FidRadDB files according to self.files_to_be_downloaded, to be stored at self.path_FidRadDB
+        :return:
+        success: Boolean, True unless exception raised while downloading
+        '''
+
+        # First attempt listing files from FidRadDB
+        success = self.FidRadDB_list_files()
+
+        # List the files that are missing according to the selected cal/char regime
+        _, missingFilesList = self.missing_FidRadDB_cal_char_files(out_of_thread=False)
+
+        # Nothing to download, return
+        if len(missingFilesList) == 0:
+            print('All cal./char. files were found under %s for the selected regime, nothing to download' % ConfigFile.getCalibrationDirectory())
+            return
+
+        # Initialise list to be inputted to the FidRadDB download function
+        self.files_to_be_downloaded = []
+
+        for serialNumber_calCharType in missingFilesList:
+
+            # List files available in OCDB/FidRadDB
+            cal_char_files_remote = self.available_files_FidRadDB[serialNumber_calCharType]
+            cal_char_files_remote = [os.path.basename(file) for file in cal_char_files_remote]
+
+            # See what's already available in the local repository of FidRadDB sensor-specific cal/char files
+            cal_char_files_local = [os.path.basename(file) for file in glob.glob(os.path.join(self.path_FidRadDB,'*%s*' % serialNumber_calCharType))]
+
+            # The files of interest will be the concatenation of both lists...
+            # NB: We may have different time tags, however in principle we care for all time tags...
+            #     and then we choose at L1B based on selected multical option)
+            cal_char_files = list(set(cal_char_files_remote + cal_char_files_local))
+
+            # Loop on targeted cal/char files...
+            for file in cal_char_files:
+
+                # /full/path destination files...
+                dest_FidRadDB_local = os.path.join(self.path_FidRadDB, file)
+                # dest_CalPath = os.path.join(ConfigFile.getCalibrationDirectory(), file)
+
+                # If not in local FidRadDB repo, then attempt download
+                if not os.path.exists(dest_FidRadDB_local):
+                    self.files_to_be_downloaded = self.files_to_be_downloaded + [file]
+
+
+        # Needed inputs to perform download
+        files = self.files_to_be_downloaded
+        path_out = self.path_FidRadDB
+
+        # Attempt download
+        try:
+            if len(files) == 0:
+                print('Nothing found in FidRadDB (unreachable?)')
+            for file in files:
+                _ = OCDBApi.fidrad_list_files(self.FidRadDB_api, file)
+                msg = OCDBApi.fidrad_download_file(self.FidRadDB_api, file, path_out)
+                if not msg.startswith('File successfully'):
+                    success = False
+        except Exception as e:
+            print('Unable to download files from FidRadDB: %s' % e)
+            success = False
+
+        if success:
+            print('Files successfully listed and downloaded from FidRadDB.')
+        else:
+            print('FidRadDB connection timed out')
+
+        return success
+
+    def populate_available_files_FidRadDB(self):
+        '''
+        Fill up self.available_files_FidRadDB with empty lists
+        :return:
+        '''
+
+        for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
+            for serialNumber_calCharType in serialNumber_calCharTypes:
+                if serialNumber_calCharType not in self.available_files_FidRadDB:
+                    self.available_files_FidRadDB[serialNumber_calCharType] = []
+
+        return
+
+    def start_worker(self, call_type):
+        '''
+        Start FidRadDB parallel thread
+
+        :param call_type: a string ether 'list_files' or 'download_files'
+        :return:
+        '''
+
+        # Disable all UI buttons that could trigger two FidRadDB threads...
+        self.FullCalRadioButton.setDisabled(True)
+        self.ClassCalRadioButton.setDisabled(True)
+        self.DefaultCalRadioButton.setDisabled(True)
+        self.FidRadDBdownload.setDisabled(True)
+        self.addCalCharFilesButton.setDisabled(True)
+
+        # Just before thread starts line edits show checking status (cannot be done inside thread otherwise UI can crash)
+        self.FidRadDBcalCharDirCheckES.setText('Checking FidRadDB, (%i sec)...' % time_out)
+        self.FidRadDBcalCharDirCheckES.setCursorPosition(0)  # Avoid text getting trimmed from the left
+        self.FidRadDBcalCharDirCheckLT.setText('Checking FidRadDB, (%i sec)...' % time_out)
+        self.FidRadDBcalCharDirCheckLT.setCursorPosition(0)
+        self.FidRadDBcalCharDirCheckLI.setText('Checking FidRadDB, (%i sec)...' % time_out)
+        self.FidRadDBcalCharDirCheckLI.setCursorPosition(0)
+
+        # Start thread
+        # self._thread_alive = True
+        self._thread = threading.Thread(target=self.worker, args=(call_type,))
+        self._thread.daemon = True
+        self._thread.start()
+
+    def worker(self, call_type):
+        '''
+        Connection to FidRadDB...
+        :param call_type: string ... either for 'list_files' ro for 'download_files'
+        :return:
+        '''
+
+        print('Attempting connection to FidRadDB ...')
+
+        if call_type == 'list_files':
+            success = self.FidRadDB_list_files()
+        else: # 'download_files':
+            success = self.FidRadDB_download_files()
+
+        # This will modify the status text for each sensor
+        if not success:
+            self.FidRadDB_connect_flag = False
+        else:
+            self.FidRadDB_connect_flag = True
+
+        # Emit signal to "finished" so that worker_done will be triggered
+        self.finished.emit()
+
+    def worker_done(self):
+        '''
+        Once 'finished' receives the signal from worker, this function is activated out of the thread to re-enable a few
+        functionalities in CalCharWindow (this should not be done inside the thread).
+        Also re-check the missing cal/char files...
+        :return:
+        '''
+
+        # Re-enable UI functionalities
+        self.FullCalRadioButton.setDisabled(False)
+        self.ClassCalRadioButton.setDisabled(False)
+        self.DefaultCalRadioButton.setDisabled(False)
+        self.FidRadDBdownload.setDisabled(False)
+        self.addCalCharFilesButton.setDisabled(False)
+
+        # check the missing cal/char files...
+        self.missing_FidRadDB_cal_char_files()
 
     def DefaultCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Factory")
@@ -473,105 +697,26 @@ class CalCharWindow(QtWidgets.QDialog):
         # Force multical to most recent as other options are not supported for non-FRM regime
         self.MultiCalOptions('most_recent')
 
-    def FidRadDB_list_files_queue(self, queue, api, serialNumber_calCharType):
-        '''
-        Put the OCDB list files command into a parallel queue...
-        :param queue: a multithread parameter...
-        :param api: the OCDB API
-        :param serialNumber_calCharType: a string, e.g. 'SAM_8329_POLAR' or 'SAM_8329_RADCAL'
-        :return:
-        '''
-        try:
-            list_files = OCDBApi.fidrad_list_files(api, serialNumber_calCharType)
-            queue.put(list_files)
-        except Exception as e:
-            print('Unable to list files of type %s in FidRadDB: %s' % (serialNumber_calCharType,e))
-
-    def FidRadDB_download_files_queue(self, queue, api, file, path_out):
-        '''
-        Put the OCDB download files command into a parallel queue...
-        :param queue: a multithread parameter...
-        :param api: the OCDB API
-        :param serialNumber_calCharType: a string, e.g. 'SAM_8329_POLAR' or 'SAM_8329_RADCAL'
-        :return:
-        '''
-        try:
-            queue.put(OCDBApi.fidrad_download_file(api, file, path_out))
-        except Exception as e:
-            print('Unable to download file %s from FidRadDB: %s' % (file,e))
-
-    def FidRadDB_call_queue(self, api, call_type='list_files', **kwargs):
-        '''
-        Call FidRadDB within a thread (to avoid FidRadDB time outs to block the opening of the Cal/Char window
-        :param api: the OCDB API
-        :param call_type: a string, either 'list_files' or 'download_files
-        :param kwargs: a dctionary, containing the options needed to execute the OCDB API functions
-        :return:
-        '''
-        # List all files available in FidRadDB and locally
-        queue = multiprocessing.Queue()
-
-        if call_type == 'list_files':
-            call_function = self.FidRadDB_list_files_queue
-            call_args = (queue, api, kwargs['serialNumber_calCharType'])
-        elif call_type == 'download_files':
-            call_function = self.FidRadDB_download_files_queue
-            call_args = (queue, api, kwargs['file'], kwargs['path_out'])
-        else:
-            raise NotImplementedError
-
-        # Start the thread
-        p = multiprocessing.Process(
-            target=call_function,
-            args=call_args
-        )
-        p.start()
-        # Define time out!
-        p.join(self.FidRadDB_timeout)
-
-        # If thread is alive after timeout, then kill and raise time out status (FidRadDB_connect_flag=False)
-        # Also reduce timeout to minimum (0.1) unless download is re-atempted by user.
-        if p.is_alive(): # timeout case
-            p.terminate()
-            p.join()
-            self.FidRadDB_timeout = 0.1 # Timeout reduced to avoid excessive waiting... Re-set to 3 when Download button is clicked
-            if call_type == 'list_files':
-                print("Issue connecting to FidRadDB: %s. Skipping search ..." % kwargs['serialNumber_calCharType'])
-                filesInFidRadDB = []
-            elif call_type == 'download_files':
-                print("Issue connecting to FidRadDB: %s. Skipping download ..." % kwargs['file'])
-            self.FidRadDB_connect_flag = False
-        else: # successful connection case
-            if call_type == 'list_files':
-                filesInFidRadDB = queue.get()
-                if filesInFidRadDB == 0:
-                    print('No files of type %s available in FidRadDB' % kwargs['serialNumber_calCharType'])
-                else:
-                    print('Files of type %s found in FidRadDB' % kwargs['serialNumber_calCharType'])
-
-            elif call_type == 'download_files':
-                queue.get()
-                print('File %s successfully downloaded from FidRadDB' % kwargs['file'])
-
-            self.FidRadDB_connect_flag = True
-
-        if call_type == 'list_files':
-            return filesInFidRadDB
-        elif call_type == 'download_files':
-            return
-
     def ClassCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Class-based")
         ConfigFile.settings["fL1bCal"] = 2
         self.CalStatusUpdate()
+        if not self.FidRadDB_initial_check:
+            self.start_worker('list_files')
+            self.FidRadDB_initial_check = True
 
     def FullCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Instrument-specific FRM")
         ConfigFile.settings["fL1bCal"] = 3
         self.CalStatusUpdate()
+        if not self.FidRadDB_initial_check:
+            self.start_worker('list_files')
+            self.FidRadDB_initial_check = True
 
-    def missing_FidRadDB_cal_char_files(self, fL1bCal):
+    def missing_FidRadDB_cal_char_files(self, out_of_thread=True):
         '''
+        out_of_thread: a Boolean, True if executed out of the FidRadDB thread
+
         Check which FidRadDB-like cal/char files are missing from ConfigFile.getCalibrationDirectory() according to the selected cal/char regime, fL1bCal
         if fL1bCal = 0
             non-FRM regime: No FidRadDB-like cal/char files are needed...
@@ -583,8 +728,8 @@ class CalCharWindow(QtWidgets.QDialog):
                 ES: STRAY, THERMAL, ANGULAR
 
         Output:
-        missingFilesStrings
-        missingFilesList:
+        missingFilesStrings: String to be printed in the line edit
+        missingFilesList: List with missing cal/char files
         '''
 
 
@@ -593,18 +738,16 @@ class CalCharWindow(QtWidgets.QDialog):
             missingFilesStrings = {'ES':'All needed files found', 'LT':'No LT sensor', 'LI':'No LI sensor'}
         else:
             missingFilesStrings = {'ES':'All needed files found', 'LT':'All needed files found', 'LI':'All needed files found'}
-        # missingFilesStrings = {'ES':'', 'LT':'', 'LI':''}
+
         missingFilesList = []
         # Define path to local repository of FidRadDB sensor-specific files.
         # path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
 
         # Perform checks according to cal/char regime
-        if fL1bCal == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             missingFilesStrings = {k:'No FidRadDB cal./char. files needed' for k in missingFilesStrings.keys()}
             missingFilesList = []
         else:
-
-            api = new_api(server_url='https://ocdb.eumetsat.int')
 
             # Loop over sensorType
             for sensorType, serialNumber_calCharTypes in ConfigFile.settings['neededCalCharsFRM'].items():
@@ -630,10 +773,10 @@ class CalCharWindow(QtWidgets.QDialog):
                     is_RADCAL = serialNumber_calCharType.split('_')[-1] == 'RADCAL'
 
                     # Skip if class-based and file is not RADCAL
-                    if fL1bCal == 2 and not is_RADCAL:
+                    if ConfigFile.settings['fL1bCal'] == 2 and not is_RADCAL:
                         continue
 
-                    filesInFidRadDB = self.FidRadDB_call_queue(api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
+                    filesInFidRadDB = self.available_files_FidRadDB[serialNumber_calCharType]
 
                     filesInLocalDB = sorted([f for f in os.listdir(Path(self.path_FidRadDB)) if (re.match('[C][P][_]%s[_][0-9]{14}[\.][tT][xX][tT]' % serialNumber_calCharType, f) is not None)])
 
@@ -682,13 +825,14 @@ class CalCharWindow(QtWidgets.QDialog):
                 # Missing file list
                 missingFilesList = missingFilesList + missingFiles + outdatedFiles + missingInFidRadDBFiles
 
-        # Update line edits
-        self.FidRadDBcalCharDirCheckES.setText(missingFilesStrings['ES'])
-        self.FidRadDBcalCharDirCheckES.setCursorPosition(0) # Avoid text getting trimmed from the left
-        self.FidRadDBcalCharDirCheckLT.setText(missingFilesStrings['LT'])
-        self.FidRadDBcalCharDirCheckLT.setCursorPosition(0)
-        self.FidRadDBcalCharDirCheckLI.setText(missingFilesStrings['LI'])
-        self.FidRadDBcalCharDirCheckLI.setCursorPosition(0)
+        # # Update line edits (not to be executed if inside thread)
+        if out_of_thread:
+            self.FidRadDBcalCharDirCheckES.setText(missingFilesStrings['ES'])
+            self.FidRadDBcalCharDirCheckES.setCursorPosition(0) # Avoid text getting trimmed from the left
+            self.FidRadDBcalCharDirCheckLT.setText(missingFilesStrings['LT'])
+            self.FidRadDBcalCharDirCheckLT.setCursorPosition(0)
+            self.FidRadDBcalCharDirCheckLI.setText(missingFilesStrings['LI'])
+            self.FidRadDBcalCharDirCheckLI.setCursorPosition(0)
 
         return missingFilesStrings, missingFilesList
 
@@ -715,73 +859,14 @@ class CalCharWindow(QtWidgets.QDialog):
                     print(f'{os.path.basename(file)} copied to {self.path_FidRadDB}')
 
         # Check completeness of self.path_FidRadDB after file copying
-        self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
+        self.missing_FidRadDB_cal_char_files()
 
     def FidRadDBdownloadClicked(self):
         '''
-        For the list of missing files (listed according to serial number and cal/char type):
-        - attempts download from OCDB/FidRadDB if file not found in local FidRadDB sensor-specific repository, "self.path_FidRadDB".
+        Attempt listing and downloading from FidRadDB
         '''
 
-        ConfigFile.settings['FidRadDB'] = 1 # TODO deprecated... remove
-
-        # First list missing files
-        _, missingFilesList = self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
-
-        # Nothing to download, return
-        if len(missingFilesList) == 0:
-            print('All cal./char. files were found under %s, nothing to download' % ConfigFile.getCalibrationDirectory())
-            return
-
-        # Define path to local repository of FidRadDB sensor-specific files.
-        # path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
-
-        # Attempt connection to OCDB/FidRadDB
-        api = new_api(server_url='https://ocdb.eumetsat.int')
-
-        # Check if files are already in local FidRadDB repository
-        # If not download them first to local FidRadDB repository
-        # Then, copy them to calPath
-        # Loop over missing files according to cal_char type and serial number...
-
-        self.FidRadDB_timeout = 3  # Reset timeout to 3 seconds when attempting Download!
-
-        for serialNumber_calCharType in missingFilesList:
-
-            # Attempt listing of files available in OCDB/FidRadDB
-            cal_char_files_remote = self.FidRadDB_call_queue(api, call_type='list_files', serialNumber_calCharType=serialNumber_calCharType)
-            cal_char_files_remote = [os.path.basename(file) for file in cal_char_files_remote]
-
-            # See what's already available in the local repository of FidRadDB sensor-specific cal/char files
-            cal_char_files_local = [os.path.basename(file) for file in glob.glob(os.path.join(self.path_FidRadDB,'*%s*' % serialNumber_calCharType))]
-
-            # The files of interest will be the concatenation of both lists...
-            # NB: We may have different time tags, however in principle we care for all time tags...
-            #     and then we choose at L1B based on selected multical option)
-            cal_char_files = list(set(cal_char_files_remote + cal_char_files_local))
-
-            # Loop on targeted cal/char files...
-            for file in cal_char_files:
-
-                # /full/path destination files...
-                dest_FidRadDB_local = os.path.join(self.path_FidRadDB, file)
-                # dest_CalPath = os.path.join(ConfigFile.getCalibrationDirectory(), file)
-
-                # If not in local FidRadDB repo, then attempt download
-                if not os.path.exists(dest_FidRadDB_local):
-                    self.FidRadDB_call_queue(api, call_type='download_files', file=file, path_out=self.path_FidRadDB)
-
-                # # If existing in local FidRadDB repo and not in sel.calibrationPath, then attempt copying file...
-                # if os.path.exists(dest_FidRadDB_local) and not os.path.exists(dest_CalPath):
-                #     try:
-                #         shutil.copy(dest_FidRadDB_local, dest_CalPath)
-                #     except:
-                #         print(f'Could not copy {os.path.basename(file)} to {ConfigFile.getCalibrationDirectory()}. Check permissions, and try manually ...')
-                #     else:
-                #         print(f'{os.path.basename(file)} copied to {ConfigFile.getCalibrationDirectory()} from {self.path_FidRadDB}')
-
-        # Check completeness of ConfigFile.getCalibrationDirectory() after file download and copying
-        self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
+        self.start_worker('download_files')
 
     def MultiCalOptions(self,option_multical):
         # Enable/disable and check/uncheck features based on selected multi cal options.
@@ -911,15 +996,15 @@ class CalCharWindow(QtWidgets.QDialog):
         closeFlag = True
 
         # Checks if missing cal/char files, if yes raise a Warning!!
-        missingFilesStrings, missingFilesList = self.missing_FidRadDB_cal_char_files(ConfigFile.settings['fL1bCal'])
+        missingFilesStrings, missingFilesList = self.missing_FidRadDB_cal_char_files()
         if len(missingFilesList) != 0:
 
-            cannot_process_flag = np.any([True if ('Must' in string or 'neither' in string) else False for string in missingFilesStrings.values()])
+            cannot_process_flag = np.any([True if ('Must' in string or 'neither' in string or 'not available' in string) else False for string in missingFilesStrings.values()])
 
             if cannot_process_flag:
                 # WARNING
                 QtWidgets.QMessageBox.warning(None, "No match", "Missing FidRadDB cal/char files:<br>%s<br>"
-                                                                "<br>Please copy them to %s from local source or FidRadDB (https://ocdb.eumetsat.int)." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
+                                                                "<br>Please copy them to %s from local source or attempt downloading them from FidRadDB." % ('<br>'.join(missingFilesList), ConfigFile.getCalibrationDirectory()))
 
                 closeFlag = False
 
@@ -957,10 +1042,14 @@ class CalCharWindow(QtWidgets.QDialog):
             print("Cal/char - Save/Close Pressed")
             self.window_closed.emit()
             # event.accept()
+            # Return to original URL open time out
+            # urllib.request.urlopen = original_urlopen
             self.close()
 
     def cancelButtonPressed(self):
         print("Cal/char - Cancel Pressed")
         self.window_closed.emit()
         # event.accept()
+        # Return to original URL open time out
+        # urllib.request.urlopen = original_urlopen
         self.close()
