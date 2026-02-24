@@ -1,10 +1,10 @@
 # linting
 from typing import Optional, Union
 from collections import OrderedDict
+from os import path
+from datetime import datetime as dt
 
 # math
-import os.path
-from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 
@@ -15,6 +15,7 @@ from Source.CalibrationFileReader import CalibrationFileReader
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.HDFDataset import HDFDataset
+from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
 # PIU
 from Source.PIU.utils import utils
@@ -97,9 +98,9 @@ class PIUDataStore:
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 gp = root.getGroup(f"{s}_LIGHT_L1AQC")
 
-                calPath = os.path.join(
+                calPath = path.join(
                     PATH_TO_CONFIG,
-                    f"{os.path.splitext(ConfigFile.filename)[0]}_Calibration"
+                    f"{path.splitext(ConfigFile.filename)[0]}_Calibration"
                 )
 
                 cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
@@ -131,7 +132,7 @@ class PIUDataStore:
 
         radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
         self.coeff[s_type]['radcal_wvl'] = radcal_wvl
-        ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
+        ind_raw_wvl = radcal_wvl > 0  # remove any index for which we do not have radcal wvls available
 
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":
@@ -164,7 +165,7 @@ class PIUDataStore:
         if instrument in ["trios", "trios es only"]:  # if trios then convert to same units as signal
             S1 = S1/65535.0
             S2 = S2/65535.0
-            S1_unc = np.asarray(S1_unc/65535.0, dtype=float)  # TODO: does this need to cast to np.array?
+            S1_unc = np.asarray(S1_unc/65535.0, dtype=float)
             S2_unc = np.asarray(S2_unc/65535.0, dtype=float)
 
         self.coeff[s_type]['S1'] = np.asarray(S1, dtype=float)[ind_raw_wvl]
@@ -213,7 +214,7 @@ class PIUDataStore:
             self.coeff[s_type]['cos'] = np.asarray(pd.DataFrame(uncGrp.getDataset(s_type+"_ANGDATA_COSERROR").data))[1:, 2:]
             self.uncs[s_type]['cos'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_ANGDATA_UNCERTAINTY").data))[1:, 2:] / 100) * np.abs(self.coeff[s_type]['cos'])
             self.coeff[s_type]['cos_90'] = np.asarray(pd.DataFrame(uncGrp.getDataset(s_type+"_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
-            self.uncs[s_type]['cos_90'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_ANGDATA_UNCERTAINTY_AZ90").data))[1:, 2:] / 100) * np.abs(self.coeff[s_type]['cos_90'])    
+            self.uncs[s_type]['cos_90'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_ANGDATA_UNCERTAINTY_AZ90").data))[1:, 2:] / 100) * np.abs(self.coeff[s_type]['cos_90'])
 
             # get indexes for first and last radiometric calibration wavelengths in range [300-1000]
             i1 = np.argmin(np.abs(radcal_wvl - 300))
@@ -223,9 +224,9 @@ class PIUDataStore:
             azi_avg_coserr = (self.coeff[s_type]['cos'] + self.coeff[s_type]['cos_90']) / 2.
             # each value has 4 numbers azi = 0, azi = 90, -zen, +zen which need their TU uncertainties combining
             total_coserror_err = np.sqrt(
-                self.uncs[s_type]['cos']**2 + 
-                self.uncs[s_type]['cos_90']**2 + 
-                self.uncs[s_type]['cos'][:, ::-1]**2 + 
+                self.uncs[s_type]['cos']**2 +
+                self.uncs[s_type]['cos_90']**2 +
+                self.uncs[s_type]['cos'][:, ::-1]**2 +
                 self.uncs[s_type]['cos_90'][:, ::-1]**2
                 )
 
@@ -287,7 +288,7 @@ class PIUDataStore:
             self.uncs[s_type]['PANEL'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['3'])/100)*self.coeff[s_type]['PANEL']
 
             # Polarisation unc from class based processing
-            pol = uncGrp.getDataset(f"CLASS_{self.instrument_calfile_name(instrument)}_{s_type}_POLDATA_CAL") 
+            pol = uncGrp.getDataset(f"CLASS_{self.instrument_calfile_name(instrument)}_{s_type}_POLDATA_CAL")
             pol.datasetToColumns()
             x = pol.columns['0']
             y = pol.columns['1']
@@ -322,7 +323,7 @@ class PIUDataStore:
         B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:]
         B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
         self.coeff[s_type]['nband'] = len(B0)
-        grp.attributes["nmes"] = len(raw_data)  # TODO: why is this necessary?
+        grp.attributes["nmes"] = len(raw_data)
 
         back = np.array([B0 + B1*(int_time[n]/self.coeff[s_type]['cal_int']) for n in range(len(raw_data))])
         back_corr = raw_data - back
@@ -355,7 +356,7 @@ class PIUDataStore:
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
-        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0 
+        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0
         # read cal start and cal stop for cropping to calibrated bands
         self.cal_start = int(node.attributes[f'{s}_START_PIXEL'])
         self.cal_stop = int(node.attributes[f'{s}_STOP_PIXEL'])
@@ -377,7 +378,7 @@ class PIUDataStore:
             raise NotImplementedError
 
         cal_date  = dt.strptime(root.getGroup(calDate_string).attributes['CalibrationDate'], "%Y%m%d%H%M%S")
-        meas_date = dt.strptime(self.cast.split('_')[-1], "%Y%m%d%H%M%S")
+        meas_date = dt.strptime(self.cast.rsplit('_',maxsplit=1)[-1], "%Y%m%d%H%M%S")
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
@@ -390,7 +391,7 @@ class PIUDataStore:
         self.uncs[s]['ct'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_TEMPDATA_CAL", col_name=f'{s}_TEMPERATURE_UNCERTAINTIES')
 
         if "ES" in s.upper():
-            lw = None 
+            lw = None
             up = None
             sza_range = None
             for k in inpt.datasets.keys():
@@ -489,10 +490,6 @@ class PIUDataStore:
         :param cCal: dict for storing calibration
         :param cCoef: dict for storing calibration coeficients 
         """
-        from os import path
-        from Source import PATH_TO_CONFIG
-        from Source.CalibrationFileReader import CalibrationFileReader
-        from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
         cal = np.asarray(list(radcal.columns['unc']))
         calFolder = path.splitext(ConfigFile.filename)[0] + "_Calibration"

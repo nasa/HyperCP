@@ -23,6 +23,7 @@ from Source.PIU.Uncertainty_Analysis import Propagate
 from Source.PIU.HyperOCR import HyperOCR, HyperOCRUtils
 from Source.PIU.TriOS import TriOS
 from Source.PIU.DALEC import Dalec
+from Source.PIU.PIUDataStore import PIUDataStore
 
 #Utilities
 from Source.utils import loggingHCP as logging
@@ -1302,7 +1303,8 @@ class ProcessL2:
 
         # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
         # any of the current Rho corrections yet (even though cloud IS passed to Zhang_Rho)
-        for param in ['CLOUD', 'WAVE_HT', 'STATION']:  # TODO CHECK If need second loop or could skip the [-1] for optional parameters
+        # TODO CHECK If need second loop or could skip the [-1] for optional parameters
+        for param in ['CLOUD', 'WAVE_HT', 'STATION']:
             if "WAVE_HT" in newAncGroup.datasets:
                 l = newAncGroup.getDataset(param).data[param].copy()
                 anc_slice[param] = l[0] if isinstance(l, list) else l
@@ -1370,7 +1372,6 @@ class ProcessL2:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
                 else:
-                    from Source.PIU.PIUDataStore import PIUDataStore
                     pds = PIUDataStore(node, uncGroup)
 
                     x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)
@@ -1379,7 +1380,6 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")
                 return False
         elif ConfigFile.settings["fL1bCal"] == 3:  # FRM-Sensor Specific
-            from Source.PIU.PIUDataStore import PIUDataStore
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
 
             l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
@@ -1927,7 +1927,7 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("Applying Pitarch et al. 2025 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='O25')
                 # brdf_unc = node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER_unc_O25").columns
-            
+
             # BD_ds = node.getGroup("BREAKDOWN").addDataset("BRDF")
             # BD_ds.columns['BRDF'] = brdf_unc
 

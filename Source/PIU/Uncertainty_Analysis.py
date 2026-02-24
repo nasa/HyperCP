@@ -337,7 +337,8 @@ class Propagate:
         else:
             msg = "sensor not supported"
             print(msg)
-            raise SensorNotSupportedError("sensor not suppored, perhaps there is a typo in the sensor string")
+            # raise SensorNotSupportedError("sensor not suppored, perhaps there is a typo in the sensor string")
+            raise Exception("sensor not suppored, perhaps there is a typo in the sensor string")
 
         return func
 

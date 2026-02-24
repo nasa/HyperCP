@@ -9,6 +9,7 @@ import comet_maths as cm
 
 # Source files
 from Source.HDFGroup import HDFGroup
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -35,7 +36,7 @@ class TriOS(BaseInstrument):
         """
 
         (
-            raw_cal,
+            _,
             raw_back,
             raw_data,
             raw_wvl,
@@ -158,7 +159,6 @@ class TriOS(BaseInstrument):
 
             if self.sl_method.upper() == 'ZONG':  # for internal coding use only, set by default in HCP
                 sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
-                from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
                 sample_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])
@@ -305,8 +305,8 @@ class TriOS(BaseInstrument):
             wvls = DATA["wvls"]
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
                 output_UNC[f"{s_type.lower()}Unc"],
-                wvls, 
-                newWaveBands, 
+                wvls,
+                newWaveBands,
                 return_as_dict=True
                 )
             output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(

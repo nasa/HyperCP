@@ -20,6 +20,7 @@ from Source.Weight_RSR import Weight_RSR
 from Source.PIU.Uncertainty_Analysis import Propagate
 from Source.PIU.utils import utils
 from Source.PIU.PIUDataStore import PIUDataStore as pds
+from Source.PIU.Breakdown_CB import PlotMaths
 
 # UTILITIES
 from Source.utils.loggingHCP import writeLogFileAndPrint
@@ -69,7 +70,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         stats = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         for s_type in self.sensors:
             # filter nans
-            from Source.PIU.utils import utils
 
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
                 # L1AQC unsliced data group is passed and used for calibration data contained therein.
@@ -220,8 +220,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
 
-        from Source.PIU.Breakdown_CB import PlotMaths
-        BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
+        # BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
+        BD_UNCS, _ = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
 
         # # check if negative signal for any pixels
         # is_negative = np.any([ x < 0 for x in means])
@@ -443,7 +443,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
-        from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
 
         # then propagate perturbation uncertainty

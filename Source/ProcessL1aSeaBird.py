@@ -7,7 +7,7 @@ import numpy as np
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.MainConfig import MainConfig
-from Source.RawFileReader import RawFileReader
+from Source.RawSeaBirdReader import RawFileReader
 from Source.ConfigFile import ConfigFile
 import Source.utils.loggingHCP as logging
 import Source.utils.dating as dating
@@ -72,7 +72,7 @@ class ProcessL1aSeaBird:
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
-            gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))            
+            gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))
             if gp.id != 'SAS' and gp.id != 'Reference':
                 root.groups.append(gp)
 
