@@ -1154,6 +1154,8 @@ class ProcessL2:
             del data_slice[k]['Datetime']
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
+
+        # All calibrated wavelengths
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
         # if ConfigFile.settings["SensorType"].lower() != "dalec":
         stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
@@ -1315,6 +1317,7 @@ class ProcessL2:
         if es_only:
             rho_scalar, rho_vec, rho_unc = None, None, None
         else:
+            # Wavelengths returned may be a subset for Z17 (350-1000 nm). Same for rho_vec, rho_unc
             rho_scalar, rho_vec, rho_unc, wavelengths = ProcessL2.calculate_rho_sky_for_ensemble(wavelengths.tolist(), slice_mean, anc_slice)
 
         # %% Get TSIS-1 and convolve to satellite bands
@@ -1360,7 +1363,7 @@ class ProcessL2:
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
                     # x_breakdown_unc[k.upper()] = {
-                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in 
+                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in
                     #     zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
                     # }  # TODO figure out why this doesn't work - Ashley
 
@@ -1372,6 +1375,7 @@ class ProcessL2:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
                 else:
+                    # Returned for all reported wavebands
                     pds = PIUDataStore(node, uncGroup)
 
                     x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)

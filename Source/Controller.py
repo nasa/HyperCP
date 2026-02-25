@@ -483,6 +483,7 @@ class Controller:
                 if (
                     ConfigFile.settings['bL2UncertaintyBreakdownPlot']
                     and ConfigFile.settings["SensorType"].lower() != "trios es only"
+                    and plotDeltaBool
                 ):
                     plotting.plotUncertainties(node, filename)
                 if ConfigFile.settings["SensorType"].lower() == "trios es only":

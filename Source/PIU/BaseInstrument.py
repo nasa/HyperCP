@@ -352,22 +352,52 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # These are the L1B-interpolated, common wavebands.
         waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
 
-        # PDS bands are in PDS.rad_wvl[sensor]
-        # stdevs taken at instrument wavebands (not common wavebands) so we can use them to get the radcal keys
-        # Interpolate L2 datasets back into their L1AQC wavebands in order to extract
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset)) * rhoScalar
             rhoUNC = np.array(rhoDelta,dtype=float)
         else:  # zhang rho needs to be interpolated to radcal wavebands (len must be 255)
-            rho = np.array(rhoVec,dtype=float)
+            # When did rhoVec go from list to dict?
+            rho = np.array(list(rhoVec.values()),dtype=float)
             rhoUNC = np.array(rhoDelta,dtype=float)
 
+        l1bWavebands = np.asarray(list(xSlice['es'].keys()), dtype=float).flatten()
+        # xSlice is in L1B wavebands (i.e., interpolated to common wavebands)
         es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
         li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
         lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
-        es_noise = np.array(list(stats['ES']['Signal_noise'].values()))[PDS.ind_rad_wvl['ES']].flatten()
-        li_noise = np.array(list(stats['LI']['Signal_noise'].values()))[PDS.ind_rad_wvl['LI']].flatten()
-        lt_noise = np.array(list(stats['LT']['Signal_noise'].values()))[PDS.ind_rad_wvl['LT']].flatten()
+        
+        # stats are in L1A wavebands, all reported, cal'd and uncal'd. Instead of subsetting to calibrated wavebands,
+        #   interpolate to the L1B SUBSET, which includes rho limitations.
+        # es_noise = np.array(list(stats['ES']['Signal_noise'].values()))[PDS.ind_rad_wvl['ES']].flatten()
+        es_noise = utils.interp_common_wvls(np.array(list(stats['ES']['Signal_noise'].values()))[PDS.ind_rad_wvl['ES']].flatten(),
+                                            np.array(list(stats['ES']['Signal_noise'].keys()),dtype=float)[PDS.ind_rad_wvl['ES']],
+                                            waveSubset,
+                                            return_as_dict=False
+            )
+        li_noise = utils.interp_common_wvls(np.array(list(stats['LI']['Signal_noise'].values()))[PDS.ind_rad_wvl['LI']].flatten(),
+                                            np.array(list(stats['LI']['Signal_noise'].keys()),dtype=float)[PDS.ind_rad_wvl['LI']],
+                                            waveSubset,
+                                            return_as_dict=False
+            )
+        lt_noise = utils.interp_common_wvls(np.array(list(stats['LT']['Signal_noise'].values()))[PDS.ind_rad_wvl['LT']].flatten(),
+                                            np.array(list(stats['LT']['Signal_noise'].keys()),dtype=float)[PDS.ind_rad_wvl['LT']],
+                                            waveSubset,
+                                            return_as_dict=False
+            )
+
+        # In case wavelength was subset for Z17, truncate the L1B-L2 bands.
+        #   L1B bands are interpolated to common waveband centers. These are contained in rhoVec, but rhoVec 
+        #   may be truncated by the LUT limitations.
+        if len(l1bWavebands) != len(waveSubset):
+            start = int(np.where(l1bWavebands == waveSubset[0])[0])
+            stop = start + len(waveSubset)
+            es = es[start:stop]
+            li = li[start:stop]
+            lt = lt[start:stop]
+            es_noise = es_noise[start:stop]
+            li_noise = li_noise[start:stop]
+            lt_noise = lt_noise[start:stop]
+
         f0 = np.asarray(list(f0.values()), dtype=float).flatten()
         f0_unc = np.asarray(list(f0_unc.values()), dtype=float).flatten()
 
@@ -382,9 +412,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ones, ones
                     ]
 
-        # l1Wavebands = {}
-        l1Wavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
-        PDSL2 = utils.interp_L1_L2(PDS,l1Wavebands,waveSubset,'pds')
+        l1aWavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
+        PDSL2 = utils.interp_L1_L2(PDS,l1aWavebands,waveSubset,'pds')
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),
@@ -450,7 +479,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
 
-        StatsL2 = utils.interp_L1_L2(stats,l1Wavebands,waveSubset,'stats')
+        StatsL2 = utils.interp_L1_L2(stats,l1aWavebands,waveSubset,'stats')
 
         pert_uncs[0:3] = [
             np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
