@@ -122,8 +122,7 @@ class PIUDataStore:
                     cal_int_time = gp.attributes['cal_int_time'] # NOTE: This may be wrong. See ProcessL1bDALEC. Reach out to IMO.
                     self.coeff[s]['int_time'] = np.mean(gp.datasets['INTTIME'].columns[s])
 
-                self.coeff[s]['cal_int']  = cal_int_time    # Calibration integration time (1x float)
-
+                self.coeff[s]['cal_int'] = cal_int_time  # Calibration integration time (1x float)
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
@@ -187,7 +186,7 @@ class PIUDataStore:
         self.uncs[s_type]['Ct'] = Ct_unc[ind_raw_wvl]
 
         self.coeff[s_type]['LAMP'] = self.read_cal(uncGrp, s_type, "_RADCAL_LAMP", '2')
-        self.uncs[s_type]['LAMP'] = (self.read_cal(uncGrp, s_type, "_RADCAL_LAMP", '3') / 100) * self.coeff[s_type]['LAMP']
+        self.uncs[s_type]['LAMP'] = (self.read_cal(uncGrp, s_type, "_RADCAL_LAMP", '3') / 200) * self.coeff[s_type]['LAMP']
 
         ind_zero = radcal_raw[ind_raw_wvl] <= 0
         ind_nan = np.isnan(radcal_raw[ind_raw_wvl])
@@ -285,7 +284,7 @@ class PIUDataStore:
 
         else:
             self.coeff[s_type]['PANEL'] = np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['2'])
-            self.uncs[s_type]['PANEL'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['3'])/100)*self.coeff[s_type]['PANEL']
+            self.uncs[s_type]['PANEL'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(s_type + "_RADCAL_PANEL").data)['3'])/200)*self.coeff[s_type]['PANEL']
 
             # Polarisation unc from class based processing
             pol = uncGrp.getDataset(f"CLASS_{self.instrument_calfile_name(instrument)}_{s_type}_POLDATA_CAL")

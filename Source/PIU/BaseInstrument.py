@@ -269,14 +269,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         es, li, lt = UNC_obj_CB.instruments(*means)
 
-        es_diff = (es_slc - es)
-        li_diff = (li_slc - li)
-        lt_diff = (lt_slc - lt)
-
-        msk_es = np.where(es != 0)
-        msk_li = np.where(li != 0)
-        msk_lt = np.where(lt != 0)
-
         # plot class based L1B uncertainties
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
@@ -297,14 +289,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ES_unc = es_unc / np.abs(es)
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
-
-            # quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
-            # quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
-            # quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
-
-            # pct_diff_es = ((quad_es - es_unc)/es)*100
-            # pct_diff_li = ((quad_li - li_unc)/li)*100
-            # pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
 
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))

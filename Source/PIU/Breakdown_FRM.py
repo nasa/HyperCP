@@ -240,26 +240,21 @@ class plottingToolsFRM:
             ax.set_ylabel("Contributors")
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
-            # --- Add additional x-axis above plot --- #
-            # axs2 = ax.twiny()
-            # axs2.axes.get_xaxis().set_visible(False)
-            # axs2.set_xlabel("Proportion of total uncertainty (%)")
-            
-            # ticks = ax.get_xticks()
-            # tick_labs = [round((ticks[i] / combined) * 100) for i in range(len(ticks))]
-            # axs2.set_xticks(ticks, tick_labs)
-
             # --- Add text explaining calculation of combined uncertainty --- #
-            ax.text(
-                0.95, 0.05, "total uncertainty is calculated by adding contributions in quadrature", 
-                verticalalignment='bottom', horizontalalignment='right',
-                transform=ax.transAxes,
-                color='black', fontsize=15,
-                wrap=True,
-                bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+            textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+            plt.gcf().text(0.02, 0.01,
+                            textstr, 
+                            fontsize=14, 
+                            color='black',
+                            wrap=True,
+                            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
             )
 
             plt.tight_layout()
+            plt.subplots_adjust(bottom=0.16)  # create space for text   
+            
             fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
             self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 
 

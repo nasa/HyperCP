@@ -26,7 +26,7 @@ class TriOS(BaseInstrument):
         super().__init__()
         self.name = "TriOS"
 
-    def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> dict[str: Union[np.array, dict]]:
+    def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
         """
         TriOS specific method to get statistics from ensemble
 
@@ -54,7 +54,7 @@ class TriOS(BaseInstrument):
         nmes = len(raw_data)
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixels between dat and back")
-            return None
+            return False
 
         # Data conversion
         mesure = raw_data/65535.0
@@ -63,6 +63,7 @@ class TriOS(BaseInstrument):
         back_corrected_mesure   = np.zeros((nmes, nband))
         offset_corrected_mesure = np.zeros((nmes, nband))
 
+        offset = []
         for n in range(nmes):
             # std(back) + std(raw) add in quad  - what about normalise and cal?
             # Background correction : B0 and B1 read from "back data"
@@ -70,8 +71,8 @@ class TriOS(BaseInstrument):
             back_corrected_mesure[n, :] = mesure[n] - back_mesure[n, :]
 
             # Offset substraction : dark index read from attribute
-            offset = np.mean(back_corrected_mesure[n, DarkPixelStart:DarkPixelStop])
-            offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset
+            offset.append(np.mean(back_corrected_mesure[n, DarkPixelStart:DarkPixelStop]))
+            offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset[-1]
 
             # Normalization for integration time
             # normalized_mesure = offset_corrected_mesure*int_time_t0/int_time[n]
@@ -90,7 +91,7 @@ class TriOS(BaseInstrument):
             return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
-        dark_avg = ones * offset
+        dark_avg = ones * np.mean(offset)
         if nmes > 25:
             dark_std = ones * (np.std(np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0) / pow(nmes, 0.5))
         else:  # already checked for light data so we know nmes > 3

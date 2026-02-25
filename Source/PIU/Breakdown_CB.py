@@ -205,30 +205,27 @@ class plottingToolsCB:
                 ax.set_ylabel("Contributors")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
-                # --- Add additional x-axis above plot --- #
-                # axs2 = ax.twiny()    
-                # axs2.set_xlabel("Proportion of total uncertainty (%)")
-                
-                # ticks = ax.get_xticks()
-                # tick_labs = [round((ticks[i] / combined) * 100) for i in range(len(ticks))]
-                # axs2.set_xticks(ticks, tick_labs)
-
                 # --- Add text explaining calculation of combined uncertainty --- #
-                ax.text(
-                    0.95, 0.05, "total uncertainty is calculated by adding contributions in quadrature", 
-                    verticalalignment='bottom', horizontalalignment='right',
-                    transform=ax.transAxes,
-                    color='black', fontsize=15,
-                    wrap=True,
-                    bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.01, 
+                               textstr, 
+                               fontsize=14, 
+                               color='black',
+                               wrap=True,
+                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
                 )
+
                 plt.tight_layout()
+                plt.subplots_adjust(bottom=0.16)  # create space for text
+                
                 fp = path.join(
                     self.plot_folder,
                     f"{s}_CB_bar_{self.station}_{wvl_at_indx}.png",
                 )
                 self.save_figure(s=s, fp=fp, legend=False, grid=False)
-                # plt.close(fig)
+                plt.close(fig)
 
         return BD_UNCS
 
@@ -298,7 +295,6 @@ class plottingToolsCB:
 
                 # --- Plot horizontal bars --- #
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
-
                 
                 # --- Combined uncertainty --- #
                 combined = (sum(v**2 for v in vals)) ** 0.5
@@ -317,30 +313,26 @@ class plottingToolsCB:
                 ax.set_ylabel("Contributors")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
-                # --- Add additional x-axis above plot --- #
-                # axs2 = ax.twiny()    
-                # axs2.set_xlabel("Proportion of total uncertainty (%)")
-                
-                # ticks = ax.get_xticks()
-                # tick_labs = [round((ticks[i] / combined) * 100) for i in range(len(ticks))]
-                # axs2.set_xticks(ticks, tick_labs)
-
                 # --- Add text explaining calculation of combined uncertainty --- #
-                ax.text(
-                    0.95, 0.05, "total uncertainty is calculated by adding contributions in quadrature", 
-                    verticalalignment='bottom', horizontalalignment='right',
-                    transform=ax.transAxes,
-                    color='black', fontsize=15,
-                    wrap=True,
-                    bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
-                )             
+                textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.01, 
+                               textstr, 
+                               fontsize=14, 
+                               color='black',
+                               wrap=True,
+                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                )
 
                 plt.tight_layout()
+                plt.subplots_adjust(bottom=0.16)  # create space for text   
+
                 fp = path.join(
                     self.plot_folder, f"{s}_CB_bar_{cast}_{wvl_at_indx}.png"
                 )
                 self.save_figure(s=s, fp=fp, legend=False, grid=False)
-                # plt.close(fig)
+                plt.close(fig)
 
     def plot_sample(
         self,
