@@ -147,7 +147,7 @@ class unc_management:
             for s in ['ES', 'LI', 'LT']:
                 if s in grp.id and not s in sensor_list:
                     sensor_list.append(s)#
-                    
+
         for sensor in sensor_list:
             ## retrieve dataset from corresponding instrument
             grp_name = None

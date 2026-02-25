@@ -201,6 +201,13 @@ class ProcessL1aDALEC:
             DateTag = [dating.datetime2DateTag(i) for i in dtime]
             #print(TimeTag2)
 
+            # Update CAL_START and _STOP in group attribute
+            # NOTE: This presumes all factory calibration bands provided are calibrated (currently 190 in 2026)
+            gp.attributes['CAL_START'] = str(0)
+            gp.attributes['CAL_STOP'] = str(len(wl_str) -1)
+
+
+
             gp.addDataset("DATETAG")
             gp.addDataset("TIMETAG2")            
             gp.datasets["DATETAG"].data = np.array(DateTag, dtype=[('NONE', '<f8')])

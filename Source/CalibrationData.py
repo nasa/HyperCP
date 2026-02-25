@@ -95,8 +95,7 @@ class CalibrationData:
                 v = int.from_bytes(b, byteorder='little', signed=True)
             #print("bsle", v)
         elif dataType == "BF":
-            
-            ''' BUG: This is the PYROMETER, and it is not properly interpreted...'''
+            # BUG: This is the PYROMETER, and it is not properly interpreted...
 
             v = struct.unpack("f", b)[0]
             #print("bf", v)
@@ -132,4 +131,3 @@ class CalibrationData:
             v = -1
             print("dataType unknown: ", dataType)
         return v
-

@@ -593,6 +593,23 @@ class ProcessL1b_Interp:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
+                        # Truncate L1AQC datasets to calibrated bands
+                        # if ds in ['ES','LI','LT']:
+                        #     if ds == 'ES':
+                        #         cal_start = float(node.getGroup('IRRADIANCE').getDataset(ds).attributes['CAL_START'])
+                        #         cal_stop = float(node.getGroup('IRRADIANCE').getDataset(ds).attributes['CAL_STOP'])
+                        #     else:
+                        #         cal_start = float(node.getGroup('RADIANCE').getDataset(ds).attributes['CAL_START'])
+                        #         cal_stop = float(node.getGroup('RADIANCE').getDataset(ds).attributes['CAL_STOP'])
+
+                        #     col = newGroup.datasets[ds].columns
+                        #     delKey = []
+                        #     for i,key in enumerate(col.keys()):
+                        #         if i < cal_start or i > cal_stop:
+                        #             delKey.append(key)
+                        #     for key in delKey:
+                        #         del col[key]
+                        #     newGroup.datasets[ds].columnsToDataset()
 
         # Calibrated, dark-corrected, raw waveband buffered
         esData = referenceGroup.getDataset("ES")
@@ -616,6 +633,9 @@ class ProcessL1b_Interp:
         columns.pop("Datetag")
         columns.pop("Timetag2")
         columns.pop("Datetime")
+
+        # NOTE: Truncating to calibrated wavebands
+        # NOT using CAL_START CAL_STOP here, just nan'ed pixels.....
         # Get wavelength values
         esWavelength = []
         for k,v in columns.items():
@@ -796,7 +816,7 @@ class ProcessL1b_Interp:
                 ltDarkGroup.copy(ltL1AQCDark)
                 ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
                 ltLightGroup.copy(ltL1AQCLight)
-       
+
         if satmsgGroup is not None:
             # First make sure it's not empty
             satMSG = satmsgGroup.getDataset("MESSAGE")
@@ -833,6 +853,7 @@ class ProcessL1b_Interp:
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
         # which makes the most sense for minimizing error.
         #
+        verbose = False
         if ConfigFile.settings['SensorType'].lower() == 'trios es only':
             interpData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
         else:
@@ -871,31 +892,17 @@ class ProcessL1b_Interp:
 
             # Perform time interpolation
 
-            # Note that only the specified datasets in each group will be interpolated and
+            # NOTE: only specified datasets in each group will be interpolated and
             # carried forward. For radiometers, this means that ancillary metadata such as
             # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
+
             # Required:
-            verbose = False
             if not ProcessL1b_Interp.interpTimestamps(esData, interpData, "ES", fileName, verbose):
                 return None
             if not ProcessL1b_Interp.interpTimestamps(liData, interpData, "LI", fileName, verbose):
                 return None
             if not ProcessL1b_Interp.interpTimestamps(ltData, interpData, "LT", fileName, verbose):
                 return None
-
-        # NOTE: already interpolated in ancGroup
-        # if robotGroup is not None:
-        #     # Because of the fact that geometries have already been flipped into Ancillary and
-        #     # interpolated prior to applying cal/corrections, some of this is redundant
-        #     # Required:
-        #     if not ProcessL1b_Interp.interpTimestamps(relAzData, interpData, "REL_AZ", fileName):
-        #         return None
-        #     if not ProcessL1b_Interp.interpTimestamps(szaData, interpData, "SZA", fileName, latData, lonData):
-        #         return None
-        #     # Optional, but should all be there with the SOLAR TRACKER or pySAS
-        #     ProcessL1b_Interp.interpTimestamps(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
-        #     if robotGroup.id != "SunTracker_sorad":
-        #         ProcessL1b_Interp.interpTimestamps(pointingData, interpData, "POINTING", fileName)
 
         #     # Optional
         #     if "HUMIDITY" in robotGroup.datasets:
@@ -929,6 +936,7 @@ class ProcessL1b_Interp:
             # Match wavelengths across instruments
             # Calls interpolateWavelengths and matchColumns
             # Includes columnsToDataset for only the radiometry, for remaining groups, see below
+            # NOTE: wavebands are truncated to calibrated bands only here.
             root = ProcessL1b_Interp.matchWavelengths(root)
 
         # FRM uncertainties

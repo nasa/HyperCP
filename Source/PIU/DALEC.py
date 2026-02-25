@@ -13,6 +13,7 @@ from Source.HDFGroup import HDFGroup
 
 # PIU
 from Source.PIU.BaseInstrument import BaseInstrument
+from Source.PIU.PIUDataStore import PIUDataStore as pds
 
 # Utilities
 from Source.utils.loggingHCP import writeLogFileAndPrint
@@ -87,7 +88,8 @@ class Dalec(BaseInstrument):
             Signal_noise=signal_noise,
             )  # output as dictionary for use in ProcessL2/PIU
 
-    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+    # def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+    def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
         output = {}
         return output

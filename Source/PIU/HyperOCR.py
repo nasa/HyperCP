@@ -3,19 +3,16 @@
 from copy import deepcopy
 import calendar
 from inspect import currentframe, getframeinfo
-import warnings
 
 # typing
-from typing import Union, Any, Optional
+from typing import Union
 from collections import OrderedDict
 
 # maths
 import numpy as np
 
 # Source files
-from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
-from Source.ConfigFile import ConfigFile
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
@@ -93,7 +90,7 @@ class HyperOCR(BaseInstrument):
                 # this should be divided by 
             else:
                 signal_noise[wvl] = 0.0
-            
+
             std_signal.append(np.std(lightData[k])/signalAve)  # as % of Dark corrected signal
 
         return dict(
@@ -134,12 +131,12 @@ class HyperOCR(BaseInstrument):
             UNC = PDS.uncs[s_type]
             BD_UNCS = output_BD_UNCS[s_type]  # breakdown uncertainties
             BD_CORR = output_BD_CORR[s_type]  # breakdown correction magnitudes
-            
+
             # generate initial samples with comet maths
             sample_cal_int  = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
             sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
             sample_n_iter   = cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
-            
+
             sample_Ct    = cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
             sample_LAMP  = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
             sample_PANEL = None
@@ -153,7 +150,7 @@ class HyperOCR(BaseInstrument):
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
             sample_k   = cm.generate_sample(mDraws, k, None, None)
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
-            
+
             BD_CORR['S1']  = np.mean(sample_S1, axis=0)
             BD_CORR['S2']  = np.mean(sample_S2, axis=0)
             BD_CORR['S12'] = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
@@ -165,7 +162,8 @@ class HyperOCR(BaseInstrument):
                 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
-                sample_S12_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])  # TODO: REPLACED sample_S12 WITH sample_S1
+                # TODO: REPLACED sample_S12 WITH sample_S1
+                sample_S12_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])
             else:  # use slaper correction if selected - only available as a developer option currently
                 sample_S12_sl_corr = self.get_Slaper_Sl_unc(
                     DATA['S12'], sample_S12, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
@@ -175,16 +173,16 @@ class HyperOCR(BaseInstrument):
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
             sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
             no_lin_corr_indx = DATA['cb_alpha'] == 0
-            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx] 
+            sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
             # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
-            
+
             BD_CORR['alpha_mag'] = np.mean(sample_alpha, axis=0)
 
             # direct comparison between Sample_S12 and alpha is useful but only if we're on the same integration time
             # Sample_S12 is integration time of lab, alpha is integration time of measurement
-
+            sample_zen_ang,sample_zen_avg_coserror,sample_fhemi_coserr = None,None,None
             if s_type.upper() == "ES":
-                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
+                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
                                                               )
 
@@ -197,20 +195,20 @@ class HyperOCR(BaseInstrument):
                                                               [sample_S12_sl_corr, sample_LAMP, sample_PANEL,
                                                                sample_cal_int,
                                                                sample_t1])
-            
-            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_S12_sl_corr))
-            
-            ind_nocal = DATA['ind_nocal']
-            sample_updated_radcal_gain[:, ind_nocal == True] = 1
 
-            BD_UNCS['radcal'][ind_nocal == True] = 0  # set radcal uncertainty to 0 where calibration is not applied 
+            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_S12_sl_corr))
+
+            ind_nocal = DATA['ind_nocal']
+            sample_updated_radcal_gain[:, ind_nocal] = 1
+
+            BD_UNCS['radcal'][ind_nocal] = 0  # set radcal uncertainty to 0 where calibration is not applied
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
-            # NOTE: This is okay as long as it is only for UNC stats and does not change the L2 reflectance product!!
+            # NOTE: This is okay as long as it is only for UNC stats and does not change the L2 reflectance product
             data = np.mean(DATA['light'], axis=0)
-            data[ind_nocal is True] = 0  # 0 out data outside of cal so it doesn't affect statistics
+            data[ind_nocal] = 0  # 0 out data outside of cal so it doesn't affect statistics
             dark = np.mean(DATA['dark'], axis=0)
-            dark[ind_nocal is True] = 0
+            dark[ind_nocal] = 0
 
             # signal uncertainties
             std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
@@ -237,18 +235,18 @@ class HyperOCR(BaseInstrument):
                 sample_sl_corr = self.get_Slaper_Sl_unc(
                     nl_corr_signal, sample_nlin_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
                 )
-            
+
             BD_UNCS.update(LPU.strayLight(BD_UNCS, BD_CORR['nlin'], sample_C_zong))
             BD_CORR['sl'] = np.mean(sample_sl_corr, axis=0)
             BD_CORR['cSl'] = BD_CORR['nlin'] - BD_CORR['sl']
-            
+
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])  # no correction here but must be added to sensitivity coeffs
 
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
             BD_UNCS.update(LPU.calibration(BD_UNCS, BD_CORR['updated_gain'], sample_normalised))
-            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)           
+            BD_CORR['radcal_coefs'] = LPU.get_original_gains(s_type, DATA['S1'], sample_LAMP, sample_PANEL)
 
             # Stability correction
             cal_corr_signal = np.mean(sample_cal_corr, axis=0)
@@ -291,7 +289,7 @@ class HyperOCR(BaseInstrument):
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
                 ct_corr_signal = np.mean(sample_ct_corr, axis=0)
-                
+
                 BD_UNCS['pol'] = np.sqrt(ct_corr_signal**2 * UNC['pol']**2)
                 signal = np.mean(sample_pol_corr, axis=0)
 
@@ -302,24 +300,24 @@ class HyperOCR(BaseInstrument):
             LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
 
             ind_nocal = DATA['ind_nocal']
-            output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
-            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ind_nocal == False]  # keep samples raw
+            output_UNC[f"{s_type.lower()}Unc"] = unc[~ind_nocal]  # relative uncertainty
+            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ~ind_nocal]  # keep samples raw
 
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
             wvls = DATA['wvls']
             output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
-                output_UNC[f"{s_type.lower()}Unc"], 
+                output_UNC[f"{s_type.lower()}Unc"],
                 wvls, 
                 newWaveBands, 
                 return_as_dict=True
                 )
             output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(
-                output_UNC[f"{s_type.lower()}Sample"], 
+                output_UNC[f"{s_type.lower()}Sample"],
                 wvls,
                 newWaveBands
                 )
-            
+
         return output_UNC, output_BD_CORR, output_BD_UNCS
 
 
@@ -354,7 +352,7 @@ class HyperOCRUtils:
             rawGrp['DARK'].datasets[sensortype].data = newDarkData
             rawGrp['DARK'].datasets[sensortype].datasetToColumns()
             return True
-        
+
     @staticmethod
     def LightDarkInterp(lightData, lightTimer, darkData, darkTimer):
         # Interpolate Dark Dataset to match number of elements as Light Dataset
@@ -384,7 +382,7 @@ class HyperOCRUtils:
                 for val in newDarkData[k]:
                     if np.isnan(val):
                         frameinfo = getframeinfo(currentframe())
-                        msg = f'found NaN {frameinfo.lineno}'
+                        # msg = f'found NaN {frameinfo.lineno}'
             else:
                 writeLogFileAndPrint('**************Record too small for splining. Exiting.')
                 return False
@@ -395,7 +393,7 @@ class HyperOCRUtils:
             return False
 
         return newDarkData
-    
+
     @staticmethod
     def check_data(dark, light):
         msg = None

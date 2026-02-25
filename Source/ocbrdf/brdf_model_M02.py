@@ -1,26 +1,24 @@
-import numpy as np
-import xarray as xr
-
-from .brdf_utils import ADF_OCP, solve_2nd_order_poly, drop_unused_coords
-
 ''' Morel et al. (2002) BRDF correction
     R gothic included
     f/Q LUT as in OLCI operational processor (See OLCI "OCP" ADF)
     With OC4ME Chl inversion, 2 iterations, no convergence criterion on delta_Chl applied (1%)
 '''
+import numpy as np
+import xarray as xr
 
-""" Class for M02 coefficients """
-
+# from .brdf_utils import ADF_OCP, solve_2nd_order_poly, drop_unused_coords
+from Source.ocbrdf.brdf_utils import ADF_OCP, drop_unused_coords
 
 class Coeffs():
+    """ Class for M02 coefficients """
     def __init__(self, Rgoth, foq):
         self.Rgoth = Rgoth
         self.foq = foq
 
 
-""" Class for M02 BRDF model """
 class M02:
-    """ Initialise M02 model: BRDF LUT, coeffs, OC4ME parameters, water IOPs LUT
+    """ Class for M02 BRDF model
+        Initialise M02 model: BRDF LUT, coeffs, OC4ME parameters, water IOPs LUT
         Note: bands are fixed and defined at class initilization, but could be initialized in init_pixels if needed
     """
 
@@ -74,12 +72,12 @@ class M02:
         self.OC4MEchl0 = float(LUT_OCP.oc4me_chl0.values)
         self.niter = LUT_OCP.oc4me_niter
 
-    """ Initialize pixel: coefficient at current geometry and water IOP at current bands """
+    #""" Initialize pixel: coefficient at current geometry and water IOP at current bands """
 
     def init_pixels(self, theta_s, theta_v, delta_phi):
         self.coeffs = self.interp_geometries(theta_s, theta_v, delta_phi)
 
-    """ Interpolate coefficients """
+    #""" Interpolate coefficients """
     def interp_geometries(self, theta_s, theta_v, delta_phi):
         # Transform PZA to VZA (Snell's refraction Law)
         theta_v = np.rad2deg(np.arcsin(np.sin(np.deg2rad(theta_v)) / self.n_w))
@@ -96,7 +94,7 @@ class M02:
 
         return Coeffs(Rgoth, foq)
 
-    """ Compute remote-sensing reflectance"""
+    #""" Compute remote-sensing reflectance"""
 
     def forward(self, ds, normalized=False):
 
@@ -120,7 +118,7 @@ class M02:
 
         return forward_mod
 
-    """ Apply QAA to retrieve IOP (omega_b, eta_b) from Rrs """
+    #""" Apply QAA to retrieve IOP (omega_b, eta_b) from Rrs """
 
     def backward(self, ds, iter_brdf):
 
@@ -180,3 +178,4 @@ class M02:
             ds['log10_chl'] += Ak * (ds['log10_chl_OC4ME_Ratio'] ** k)
 
         return ds
+    

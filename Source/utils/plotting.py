@@ -625,7 +625,6 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
 def plotUncertainties(root, filename):
     # read in required values and uncs from root
     # import relevant methods
-    from datetime import datetime as dt
     irrGrp = root.getGroup("IRRADIANCE")
     radGrp = root.getGroup("RADIANCE")
     refGrp = root.getGroup("REFLECTANCE")
@@ -648,11 +647,11 @@ def plotUncertainties(root, filename):
                 casts.append(
                     timeTag2ToDateTime(dateTagToDateTime(date), tt2)
                 )
-                
+
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
-    
+
     # TODO: add BRDF UNC to BD_UNCS if available
     bd_grp = root.getGroup("BREAKDOWN")
     waveSubset = np.array(list(es_cols.keys()), float)

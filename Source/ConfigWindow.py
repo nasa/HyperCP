@@ -859,7 +859,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Third Vertical box
         VBox3 = QtWidgets.QVBoxLayout()
-        # VBox3.setContentsMargins(0,0,0,0)        
+        # VBox3.setContentsMargins(0,0,0,0)
         # VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
          #  Spectral Outlier Filter

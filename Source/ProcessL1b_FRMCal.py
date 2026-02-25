@@ -407,7 +407,7 @@ class ProcessL1b_FRMCal:
 
     @staticmethod
     def processL1b_SeaBird(node, calibrationMap):
-        # calibration of HyperOCR following the FRM processing of FRM4SOC2
+        # calibration of HyperOCR following the sensor-specific regime
         esUnits = None
         liUnits = None
         ltUnits = None

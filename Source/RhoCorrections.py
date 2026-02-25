@@ -42,7 +42,7 @@ class RhoCorrections:
         inFilePath = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
         try:
             lut = HDFRoot.readHDF5(inFilePath)
-        except Exception as err:
+        except FileNotFoundError as err:
             msg = f"Unable to open M99 LUT. {err}"
             logging.writeLogFileAndPrint(msg)
             logging.errorWindow("File Error", msg)
@@ -112,7 +112,7 @@ class RhoCorrections:
                     else:
                         # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
                         rhoDelta.append(np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar)
-                        # necessary to convert to relative before propagating, then converted back to absolute            
+                        # necessary to convert to relative before propagating, then converted back to absolute
             else:
                 # NOTE: It is possible for users to not select any ancillary data in the config, meaning Zhang Rho
                 # will fail. It is far too easy for a user to do this, so I added the following line to make sure the
@@ -123,7 +123,6 @@ class RhoCorrections:
                 # (estimated from Ruddick 2006).
                 rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
         else:
-            # TODO: Check this placeholder for forced 10% Rho uncertainty:
             rhoDelta = []
             for w in waveBands:
                 rhoDelta.append(0.10 * rhoScalar)
@@ -181,7 +180,8 @@ class RhoCorrections:
         else:
             raise ValueError(f'weighting option {weighting_option} not implemented!')
 
-        reg, R_rs_mod, R_g, Lumod, LuEd_meas = model.fit_LuEd(wl, Ls, Lu, Ed, params, weights, geom, anc=(am, rh, pressure))
+        # reg, R_rs_mod, R_g, Lumod, LuEd_meas = model.fit_LuEd(wl, Ls, Lu, Ed, params, weights, geom, anc=(am, rh, pressure))
+        _, _, R_g, _, _ = model.fit_LuEd(wl, Ls, Lu, Ed, params, weights, geom, anc=(am, rh, pressure))
 
         rhoVector = R_g * Ed/Ls
 
@@ -240,7 +240,7 @@ class RhoCorrections:
         """
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
-        """        
+        """
         logging.writeLogFileAndPrint('Calculating Zhang glint correction (LUT).')
         tic = time.time()
         if sva == 30:
