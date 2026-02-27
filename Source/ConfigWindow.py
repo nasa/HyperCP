@@ -198,12 +198,18 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcDeglitchCheckBox = QtWidgets.QCheckBox("", self)
         if ConfigFile.settings["bL1aqcDeglitch"]:
             self.l1aqcDeglitchCheckBox.setChecked(True)
+        self.l1aqcPlotDeglitchLabel = QtWidgets.QLabel("  Plot Deglitch Data", self)
+        self.l1aqcPlotDeglitchCheckBox = QtWidgets.QCheckBox("", self)
+        if ConfigFile.settings["bL1aqcPlotDeglitch"]:
+            self.l1aqcPlotDeglitchCheckBox.setChecked(True)
 
         #   Launch Deglitcher Analysis
         self.l1aqcAnomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
         self.l1aqcAnomalyButton.clicked.connect(self.l1aqcAnomalyButtonPressed)
         self.l1aqcDeglitchCheckBoxUpdate()
-        self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
+        self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcPlotDeglitchCheckBoxUpdate)
+        self.l1aqcPlotDeglitchCheckBoxUpdate()
+        self.l1aqcPlotDeglitchCheckBox.clicked.connect(self.l1aqcPlotDeglitchCheckBoxUpdate)
 
         # L1B
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
@@ -765,6 +771,8 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox = QtWidgets.QHBoxLayout()
         deglitchHBox.addWidget(self.l1aqcDeglitchLabel)
         deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
+        deglitchHBox.addWidget(self.l1aqcPlotDeglitchLabel)
+        deglitchHBox.addWidget(self.l1aqcPlotDeglitchCheckBox)
         VBox2.addLayout(deglitchHBox)
         VBox2.addWidget(self.l1aqcAnomalyButton)
 
@@ -1179,6 +1187,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["SensorType"] = sensor
 
         self.l1aqcDeglitchCheckBoxUpdate()
+        self.l1aqcPlotDeglitchCheckBoxUpdate()
         CurrentSensor = ConfigFile.settings["SensorType"]
         if CurrentSensor.lower() == "seabird":
             comboList = ['ShutterLight','ShutterDark','Not Required']
@@ -1350,8 +1359,30 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = not self.l1aqcDeglitchCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL1aqcDeglitch"] = 0
+            ConfigFile.settings["bL1aqcPlotDeglitch"] = 0
         else:
             ConfigFile.settings["bL1aqcDeglitch"] = 1
+
+    def l1aqcPlotDeglitchCheckBoxUpdate(self):
+        print("ConfigWindow - l1aqcPlotDeglitchCheckBoxUpdate")
+
+        # Confirm SeaBird
+        sensor = self.sensorTypeComboBox.currentText()
+        ConfigFile.settings["SensorType"] = sensor
+
+        if sensor.lower() in ['trios', 'trios es only'] or sensor.lower() == 'dalec':
+            self.l1aqcPlotDeglitchCheckBox.setChecked(False)
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(False)
+            self.l1aqcPlotDeglitchLabel.setEnabled(False)
+        elif sensor.lower() == 'seabird':
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(True)
+            self.l1aqcPlotDeglitchLabel.setEnabled(True)
+
+        disabled = not self.l1aqcPlotDeglitchCheckBox.isChecked()
+        if disabled:
+            ConfigFile.settings["bL1aqcPlotDeglitch"] = 0
+        else:
+            ConfigFile.settings["bL1aqcPlotDeglitch"] = 1
 
     def l1aqcAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")

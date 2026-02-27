@@ -172,12 +172,12 @@ class ProcessL1b_FactoryCal:
                     if c == 'OPTIC3':
                         indx[k].append(i)
 
-        # TODO: assess if this is stricly necessary, all indexes the same in examples used for testing
+        # TODO: this assumes all three sensors have the same start/stop pixels
         start = max(ind[0] for ind in indx.values())  # -1 to cover the first pixel which has no coef but is valid
-        end = min(ind[-1] for ind in indx.values())
+        stop = min(ind[-1] for ind in indx.values())
         if start < 0: #  cannot be less than 0
             start = 0
-        return start, end
+        return start, stop
 
     @staticmethod
     def processL1b_SeaBird(node, calibrationMap):

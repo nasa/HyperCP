@@ -185,7 +185,6 @@ class plottingToolsCB:
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
-                fig, ax = plt.subplots()
 
                 # --- Build figure and axis ---
                 fig = plt.figure(s)
