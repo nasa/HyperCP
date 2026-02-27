@@ -62,7 +62,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
 
-        "Raw" refers to uncalibrated L1AQC data.
+        "Raw" refers to uncalibrated L1AQC data at unique sensor bandcenters.
 
         :return: dictionary of statistics used later in the processing pipeline. Keys are:
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
@@ -140,6 +140,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # create object for running uncertainty propagation, M means number of monte carlo draws
             mDraws = 100
             UNC_obj_CB = Propagate(M=mDraws, cores=0)
+            # PDS has all reported bands, cal'd and not cal'd, at L1A waveband centers IN FACTORY MODE
+            # TODO: CLASS MODE HAS 255 bands in PDS regardless of reported
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
@@ -162,6 +164,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNC_obj_CB.cal_int  = {sensor: PDS.coeff[sensor]['cal_int'] for sensor in stats.keys()}
         UNC_obj_CB.int_time = {sensor: PDS.coeff[sensor]['int_time'] for sensor in stats.keys()}
 
+        # stats also has all reported bands, cal'd and not cal'd, at L1A waveband centers. IN FACTORY and CLASS MODE
+
+        # BUG: designed for pySAS where all 255 are reported, but not working for PML CLASS with fewer reported bands.
         means = [stats['ES']['ave_Light'],
                  stats['ES']['ave_Dark'],
                  stats['LI']['ave_Light'] if 'LI' in stats else ones,
@@ -178,7 +183,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                  ones, ones, ones,
         ]
 
-        uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+        uncertainties = [stats['ES']['std_Light'],
+                         stats['ES']['std_Dark'],
                          stats['LI']['std_Light'] if 'LI' in stats else zeroes,
                          stats['LI']['std_Dark'] if 'LI' in stats else zeroes,
                          stats['LT']['std_Light'] if 'LT' in stats else zeroes,
@@ -186,7 +192,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                          (PDS.uncs['ES']['cal'] / 200 * PDS.coeff['ES']['cal']),
                          (PDS.uncs['LI']['cal'] / 200 * PDS.coeff['LI']['cal']) if 'LI' in PDS.uncs else zeroes,
                          (PDS.uncs['LT']['cal'] / 200 * PDS.coeff['LT']['cal']) if 'LT' in PDS.uncs else zeroes,
-                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else zeroes,
+                         PDS.uncs['ES']['stab'],
+                         PDS.uncs['LI']['stab'] if 'LI' in PDS.uncs else zeroes,
                          PDS.uncs['LT']['stab'] if 'LT' in PDS.uncs else zeroes,
                          PDS.uncs['ES']['nlin'],
                          PDS.uncs['LI']['nlin'] if 'LI' in PDS.uncs else zeroes,
@@ -365,7 +372,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
         li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
         lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
-        
+
         # stats are in L1A wavebands, all reported, cal'd and uncal'd. Instead of subsetting to calibrated wavebands,
         #   interpolate to the L1B SUBSET, which includes rho limitations.
         # es_noise = np.array(list(stats['ES']['Signal_noise'].values()))[PDS.ind_rad_wvl['ES']].flatten()
@@ -413,7 +420,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ]
 
         l1aWavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
-        PDSL2 = utils.interp_L1_L2(PDS,l1aWavebands,waveSubset,'pds')
+        PDSL2 = utils.interp_L1A_L2sub(PDS,l1aWavebands,waveSubset,'pds')
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),
@@ -479,7 +486,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
 
-        StatsL2 = utils.interp_L1_L2(stats,l1aWavebands,waveSubset,'stats')
+        StatsL2 = utils.interp_L1A_L2sub(stats,l1aWavebands,waveSubset,'stats')
 
         pert_uncs[0:3] = [
             np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,

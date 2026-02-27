@@ -71,11 +71,11 @@ class utils:
             return new_y
 
     @staticmethod
-    def interp_L1_L2(l1Data,oldWavebands,newWavebands,uncType):
+    def interp_L1A_L2sub(l1Data,oldWavebands,newWavebands,uncType):
         '''
         :param l1Data: Level 1AQC sized class of raw uncertainties
         :param oldWavebands: Level 1AQC wavebands
-        :param newWavebands: Level 2 wavebands
+        :param newWavebands: Level 2 wavebands, common bands truncated for rho limitation
         :param uncType: 'pds' or 'stats' to designate class to be interpolated
         '''
         l2Data = {}
@@ -189,7 +189,7 @@ class utils:
                 newWavebands,
                 return_as_dict=False
             )
-        else:
+        else: # stats
             l2Data['LiStd'] = utils.interp_common_wvls(
             l1Data['LI']['Signal_std'],
             oldWavebands['LI'],
@@ -210,6 +210,28 @@ class utils:
             )
 
         return l2Data
+
+    @staticmethod
+    def pad_wavebands_L1A(stats, fidradBands):
+        '''Retain uninterpolated L1A wavebands, but pad them to 255 pixels based of ES RADCAL_CAL bands
+            Do not edit the Signal_std_Interpolated dataset.'''
+        sensors = ['ES','LI','LT']
+        datasets = ['ave_Light','ave_Dark','std_Light','std_Dark','Signal_std']
+        dicts = ['Signal_noise']
+
+        # Reported L1A bands are in Signal_noise dict
+        for sType in sensors:
+            l1Abands = np.array(list(stats[sType][dicts[0]].keys()), dtype=float)
+            if sType != 'ES':
+                        fidradBands[0:len(l1Abands)] = l1Abands
+            if len(l1Abands) < 255:
+                for ds in datasets:
+                    stats[sType][ds] = utils.interp_common_wvls(
+                        stats[sType][ds],
+                        l1Abands,
+                        fidradBands,
+                        return_as_dict=False
+                        )
 
     @staticmethod
     def interpolateSamples(Columns, waves, newWavebands):

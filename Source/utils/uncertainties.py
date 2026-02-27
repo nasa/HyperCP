@@ -123,7 +123,7 @@ class unc_management:
                         # unc_management.interp_2_col(ds, x_new)
                         ds.columns['0'] = ds.columns['0'][0:len(x_new)]
                         ds.columns['1'] = ds.columns['1'][0:len(x_new)]
-                        
+
                     else:
                         unc_management.interp_2_col(ds, x_new)
                     ds.columnsToDataset()
@@ -157,6 +157,8 @@ class unc_management:
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(node.getGroup(grp_name).getDataset(sensor).data).columns, dtype=float)
             # RADCAL data does not need interpolation, just removing the first line
+            # BUG: RADCAL_CAL is 255 or 256 long by definition, but the instrument may be reporting fewer pixels,
+            #   ergo, truncate the results to the reported bands only
             ds = grp.getDataset(f"{sensor}_RADCAL_CAL")
             ds.datasetToColumns()
             for indx in range(len(ds.columns)):
@@ -167,9 +169,20 @@ class unc_management:
                         ds.columns[indx_name] = y
                     elif len(y)==256:  # drop 1st line from TARTU file if required
                         ds.columns[indx_name] = y[1:]
+            # Now drop uncalibrated "0" bands, if any
+            # NOTE: Tartu is not consistent regarding the use of "0" to denote uncalibrated wavebands,
+            #  So, match to the x_new from the raw radiometry group
+            start = int(np.where(ds.columns['1'] == x_new[0])[0])
+            stop = len(x_new)
+            for indx in range(len(ds.columns)):
+                indx_name = str(indx)
+                if indx_name != '':
+                    ds.columns[indx_name] = np.array(ds.columns[indx_name])[start:stop]
             ds.columnsToDataset()
 
             for dtype in [
+                # "_RADCAL_CAL",
+                "_STRAYDATA_CAL",
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
                 ]:
@@ -181,8 +194,12 @@ class unc_management:
                 else:  # if we find a dataset with the given name then interpolate class based uncertainties
                     if "RADCAL" in dtype:
                         unc_management.interp_radcal(ds, x_new)
+                    # elif 'RADCAL_CAL' in dtype:
+                    #     unc_management.interp_radcal(ds, x_new, '1', 2)
                     elif 'TEMPDATA' in dtype:
                         unc_management.interp_radcal(ds, x_new, '1', 2)
+                    elif 'STRAYDATA' in dtype:
+                        unc_management.interp_2_col(ds, range(len(x_new)))
                     else:
                         unc_management.interp_2_col(ds, x_new)
                     ds.columnsToDataset()
@@ -198,9 +215,9 @@ class unc_management:
         ds.columns['1'] = y_new
 
     @staticmethod
-    def interp_radcal(ds, x_new, col='0', idx=1):
-        x = ds.columns[col]
-        for indx in range(idx,len(ds.columns)):
+    def interp_radcal(ds, x_new, wvCol='0', colStart=1):
+        x = ds.columns[wvCol]
+        for indx in range(colStart,len(ds.columns)):
             y = ds.columns[str(indx)]
             y_new = np.interp(x_new, x, y)
             ds.columns[str(indx)] = y_new

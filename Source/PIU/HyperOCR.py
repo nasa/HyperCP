@@ -187,6 +187,7 @@ class HyperOCR(BaseInstrument):
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
             sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
             no_lin_corr_indx = DATA['cb_alpha'] == 0
+            # BUG: sample_alpha and sample_alpha_CB are no longer same-sized...
             sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
             # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
 
