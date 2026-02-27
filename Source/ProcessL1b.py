@@ -49,35 +49,7 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
             filing.read_char(f, gp)
 
-        # NOTE: Unclear why this would be trying to access FidRadDB sensor-specific files for a factory regime run.
-        #   CalibrationDate is now provided in calibrationMap for seabird, and from L1A up in group attributes.
-
-        # if ConfigFile.settings['SensorType'] .lower() == 'seabird':
-        #     esDatetime = root.getGroup('ES_LIGHT').datasets['DATETIME'].data[0]
-        # else:
-        #     esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
-
-        # acq_time_seconds = esDatetime.timestamp()
-        # sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
-        #     else ConfigFile.settings['SensorType']
-        # fidRadPath= os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
-
-        # for sensorType, needed_cal_chars_fullFRM in ConfigFile.settings['neededCalCharsFRM'].items():
-        #     for serialNumber_calCharType in needed_cal_chars_fullFRM:
-        #         available_files = np.array(glob.glob(os.path.join(CODE_HOME,fidRadPath,'CP_%s_*' % serialNumber_calCharType)))
-        #         available_files_calTime0 = [os.path.basename(f).split('_')[-1].split('.')[0] for f in available_files]
-        #         available_files_calTime_seconds  = np.array([datetime.strptime(t, '%Y%m%d%H%M%S').timestamp() for t in available_files_calTime0])
-
-        #         chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
-        #             acq_time_seconds,
-        #             available_files_calTime_seconds,
-        #             available_files,
-        #             rule='most_recent'
-        #         )
-        #         if ConfigFile.settings["SensorType"].lower() == 'seabird':
-        #             root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
-        #         else:
-        #             root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+        # NOTE: CalibrationDate is now provided in calibrationMap for seabird, and from L1A up in group attributes.
 
         # Unc dataset renaming
         um.RenameUncertainties_Class(root)
@@ -154,15 +126,15 @@ class ProcessL1b:
             # Filter by only those cal./chars. whose timestamps is previous to measurement acquisition
             prior2acq = available_files_calTime_seconds <= acq_time_seconds
 
-            # If found, chose the most recent prior to acquisition, otherwise simply choose the closest to acquisition
+            # If found, chose the most recent prior to acquisition, otherwise set to None
             if np.any(prior2acq):
                 # Selection of the closest char data file PRE-EXISTING to the measuring date
                 chosen_file_idx = np.argmax(available_files_calTime_seconds[prior2acq])
                 chosen_file = available_files[prior2acq][chosen_file_idx]
             else:
-                # Selection of the closest char data file to the measuring date
-                chosen_file_idx = np.argmin(np.abs(available_files_calTime_seconds - acq_time_seconds))
-                chosen_file = available_files[chosen_file_idx]
+                # No file found before acquisition. Set to None.
+                chosen_file = None
+                chosen_file_idx = None
         elif rule == 'most_recent':
 
             # Choose the most recent (applicable to sensor-specific characterisations)
@@ -198,7 +170,8 @@ class ProcessL1b:
             esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
         acq_time_seconds = esDatetime.timestamp()
 
-        # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
+        # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char  
+        # regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
         # ... then filter to RADCAL if cal'char regime = class, i.e. ConfigFile.settings["fL1bCal"] == 2
         for sensorType, needed_cal_chars_fullFRM in ConfigFile.settings['neededCalCharsFRM'].items():
             # Loop over each serialNumber_calCharType tag available in ConfigFile.settings['neededCalCharsFRM']
@@ -240,6 +213,10 @@ class ProcessL1b:
                         # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
                         chosen_file, idx = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition')
+
+                        if (chosen_file is None) and (idx is None):
+                            raise ValueError('No available cal/char files prior to measurement acquisition for serial-number/cal-char type %s: ' % serialNumber_calCharType)
+
                         filing.read_char(chosen_file, gp)
                         if ConfigFile.settings["SensorType"].lower() == 'seabird':
                             root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
