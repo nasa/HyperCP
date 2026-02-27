@@ -420,24 +420,25 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ]
 
         l1aWavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
-        PDSL2 = utils.interp_L1A_L2sub(PDS,l1aWavebands,waveSubset,'pds')
+        # PDSL2 is a simplified structure with only the required elements interpolated to the necessary bands
+        PDSL2 = utils.interp_L1A_L2sub(PDS,l1aWavebands,waveSubset,'pds',regime='class')
 
         lw_uncertainties = [
             np.abs(lt_noise * lt),
             rhoUNC,
             np.abs(li_noise * li),
-            PDSL2['LiCalUnc'] / 200,
-            PDSL2['LtCalUnc'] / 200,
-            PDSL2['LiStabUnc'],
-            PDSL2['LtStabUnc'],
-            PDSL2['LiNLinUnc'],
-            PDSL2['LtNLinUnc'],
-            PDSL2['LiStrayUnc'] / 100,
-            PDSL2['LtStrayUnc'] / 100,
-            PDSL2['LiCtUnc'],
-            PDSL2['LtCtUnc'],
-            PDSL2['LiPolUnc'],
-            PDSL2['LtPolUnc'],
+            PDSL2['LIcalUnc'] / 200,
+            PDSL2['LTcalUnc'] / 200,
+            PDSL2['LIstabUnc'],
+            PDSL2['LTstabUnc'],
+            PDSL2['LInlinUnc'],
+            PDSL2['LTnlinUnc'],
+            PDSL2['LIstrayUnc'] / 100,
+            PDSL2['LTstrayUnc'] / 100,
+            PDSL2['LIctUnc'],
+            PDSL2['LTctUnc'],
+            PDSL2['LIpolUnc'],
+            PDSL2['LTpolUnc'],
         ]
 
         lwAbsUnc = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
@@ -456,26 +457,25 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             rhoUNC,
             np.abs(li_noise * li),
             np.abs(es_noise * es),
-            PDSL2['EsCalUnc'] / 200,
-            PDSL2['LiCalUnc'] / 200,
-            PDSL2['LtCalUnc'] / 200,
-            PDSL2['EsStabUnc'],
-            PDSL2['LiStabUnc'],
-            PDSL2['LtStabUnc'],
-            PDSL2['EsNLinUnc'],
-            PDSL2['LiNLinUnc'],
-            PDSL2['LtNLinUnc'],
-            PDSL2['EsStrayUnc'] / 100,
-            PDSL2['LiStrayUnc'] / 100,
-            PDSL2['LtStrayUnc'] / 100,
-            PDSL2['EsCtUnc'],
-            PDSL2['LiCtUnc'],
-            PDSL2['LtCtUnc'],
-            PDSL2['LiPolUnc'],
-            PDSL2['LtPolUnc'],
-            PDSL2['EsCosUnc'],
+            PDSL2['EScalUnc'] / 200,
+            PDSL2['LIcalUnc'] / 200,
+            PDSL2['LTcalUnc'] / 200,
+            PDSL2['ESstabUnc'],
+            PDSL2['LIstabUnc'],
+            PDSL2['LTstabUnc'],
+            PDSL2['ESnlinUnc'],
+            PDSL2['LInlinUnc'],
+            PDSL2['LTnlinUnc'],
+            PDSL2['ESstrayUnc'] / 100,
+            PDSL2['LIstrayUnc'] / 100,
+            PDSL2['LTstrayUnc'] / 100,
+            PDSL2['ESctUnc'],
+            PDSL2['LIctUnc'],
+            PDSL2['LTctUnc'],
+            PDSL2['LIpolUnc'],
+            PDSL2['LTpolUnc'],
+            PDSL2['EScosUnc'],
         ]
-
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
@@ -485,13 +485,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # Stats are still in raw wavebands, like PDS
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
-
+        # Stats2 is a simplified structure with only the required elements interpolated to the necessary bands
         StatsL2 = utils.interp_L1A_L2sub(stats,l1aWavebands,waveSubset,'stats')
 
         pert_uncs[0:3] = [
-            np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(StatsL2['LT']['Signal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             zeroes,
-            np.abs(StatsL2['LiStd']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(StatsL2['LI']['Signal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
         ]
 
         BD_UNCS['Lw']['pert'] = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
@@ -499,10 +499,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
         pert_uncs[0:4] = [
-            np.abs(StatsL2['LtStd']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(StatsL2['LT']['Signal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             np.zeros_like(ones),
-            np.abs(StatsL2['LiStd']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
-            np.abs(StatsL2['EsStd']) * np.abs(es),
+            np.abs(StatsL2['LI']['Signal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(StatsL2['ES']['Signal_std']) * np.abs(es),
         ]
 
         BD_UNCS['Rrs']['pert'] = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
@@ -638,15 +638,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         from Source.PIU.Breakdown_FRM import SolveLPU
         LPU = SolveLPU()
 
-        BD_UNCS_common_wb = {'ES': {}, 'LI': {}, 'LT': {}}
-        for s in BD_UNCS.keys():  # Breakdown uncs must be interpolated to common wavebands to apply to Lw and Rrs
-            for k in BD_UNCS[s].keys():  # use interp method from PIUDataStore - method is static so no instance required
-                BD_UNCS_common_wb[s][k] = pds.interp_common_wvls(
-                    BD_UNCS[s][k],
-                    PDS.coeff[s]["radcal_wvl"],
-                    np.array(waveSubset),
-                    return_as_dict=False  # return as numpy array
-                )
+        # BUG: Now BD_UNC is already at common wavebands. Try copying it for propagation below
+        BD_UNCS_common_wb = BD_UNCS
+        # BD_UNCS_common_wb = {'ES': {}, 'LI': {}, 'LT': {}}
+        # for s in BD_UNCS.keys():  # Breakdown uncs must be interpolated to common wavebands to apply to Lw and Rrs
+        #     for k in BD_UNCS[s].keys():  # use interp method from PIUDataStore - method is static so no instance required
+        #         BD_UNCS_common_wb[s][k] = pds.interp_common_wvls(
+        #             BD_UNCS[s][k],
+        #             PDS.coeff[s]["radcal_wvl"],
+        #             np.array(waveSubset),
+        #             return_as_dict=False  # return as numpy array
+        #         )
 
         BD_UNCS.update({k: {} for k in ['nLw', 'Lw', 'Rrs', 'rho']})
 
@@ -697,8 +699,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         LPU.waterLeaving(BD_UNCS_common_wb, BD_UNCS, np.mean(sample_LI, axis=0), rho)
         LPU.reflectance(
-            BD_UNCS_common_wb, 
-            BD_UNCS, 
+            BD_UNCS_common_wb,
+            BD_UNCS,
             np.mean(sample_ES, axis=0),
             np.mean(sample_LI, axis=0),
             np.mean(sample_LT, axis=0),
@@ -706,7 +708,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         )
         LPU.normalised_waterLeaving(BD_UNCS, np.mean(sample_Rrs, axis=0), f0, f0_unc)
 
-        del BD_UNCS_common_wb  # no longer needed
+        # BUG: may need to change this
+        # del BD_UNCS_common_wb  # no longer needed
 
         UNCS = {}  # output uncertainties
 

@@ -73,7 +73,7 @@ class unc_management:
                         unc_group.removeDataset(ds.id)  # remove dataset
 
         return True
-    
+
     @staticmethod
     def interpUncertainties_Factory(node):
 
@@ -294,9 +294,9 @@ class unc_management:
                         ds.columns[str(indx)] = y_new
                     ds.columns['0'] = x_new
                     ds.columnsToDataset()
-        
+
         return True
-    
+
     @staticmethod
     def get_sensor_dict(node):
         sensorID = {}

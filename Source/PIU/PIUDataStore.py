@@ -152,6 +152,8 @@ class PIUDataStore:
         # define input data
         self.coeff[s_type]['n_iter'] = 5
         self.coeff[s_type]['radcal_cal'] = radcal_raw[ind_raw_wvl]
+        self.ind_rad_wvl[s_type] = ind_raw_wvl
+        self.rad_wvl[s_type] = radcal_wvl
 
         S1 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '6', return_df=True)  # needs to be pandas dataframes
         S2 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '8', return_df=True)
@@ -352,7 +354,7 @@ class PIUDataStore:
 
         # self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
         # self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
-        # NOTE: Retain all 255 RADCAL_CAL bands here
+        # NOTE: Retain all L1A/255 RADCAL_CAL bands here
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2'])) / corr_factor
         self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))
 
