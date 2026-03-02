@@ -65,22 +65,29 @@ class ProcessL1b_FactoryCal:
     @staticmethod
     def processOPTIC3(ds, cd, immersed, inttime):
         # a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        cint = float(cd.coefficients[3])
-        #print(inttime.data.shape[0], self.data.shape[0])
-        k = cd.id
-        #print(cint, aint)
-        #print(cd.id)
-        for x in range(ds.data.shape[0]):
-            aint = inttime.data[cd.type][x]
-            # ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
-            ##############################################################
-            #   When applying calibration to the dark current corrected
-            #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
-            #   presuming light and dark factory cals are equivalent (which they are).
-            ##############################################################
-            ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
+        if cd.dummy == 0:
+            # Reported datasets with no calibrations are left unchanged
+            a1 = float(cd.coefficients[1])
+            im = float(cd.coefficients[2]) if immersed else 1.0
+            cint = float(cd.coefficients[3])
+            #print(inttime.data.shape[0], self.data.shape[0])
+            k = cd.id
+            #print(cint, aint)
+            #print(cd.id)
+            for x in range(ds.data.shape[0]):
+                aint = inttime.data[cd.type][x]
+                # ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+                ##############################################################
+                #   When applying calibration to the dark current corrected
+                #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
+                #   presuming light and dark factory cals are equivalent (which they are).
+                ##############################################################
+                ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
+        else:
+            # Set uncalibrated pixels to 0
+            k = cd.id
+            for x in range(ds.data.shape[0]):
+                ds.data[k][x] = 0
 
     @staticmethod
     def processOPTIC4(ds, cd, immersed):
@@ -155,28 +162,25 @@ class ProcessL1b_FactoryCal:
         """
         function to recover effective calibration start and stop pixel from cal files.
         """
-        cal_name_pattern = re.compile("HS.", re.IGNORECASE)  # patter for selecting shutterlight data
-        coefs = {}
-        indx = {}
+        dummy = {}
+        start = {}
+        stop = {}
         for k, var in calibrationMap.items():
             # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
-            if re.search(cal_name_pattern, k) and k.endswith('.cal'):  # any(['HSE' in k, 'HSL' in k]):
-            # var.frameType == "shutterlight":  # ideal solution for this section, but frameType not populated in cal data
-                coefs[k] = []
-                for d in var.data:
-                    if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
-                        coefs[k].append(d.fitType)
-
-                indx[k] = []
-                for i, c in enumerate(coefs[k]):
-                    if c == 'OPTIC3':
-                        indx[k].append(i)
-
-        # TODO: this assumes all three sensors have the same start/stop pixels
-        start = max(ind[0] for ind in indx.values())  # -1 to cover the first pixel which has no coef but is valid
-        stop = min(ind[-1] for ind in indx.values())
-        if start < 0: #  cannot be less than 0
-            start = 0
+            if calibrationMap[k].frameType.lower() == "shutterlight":
+                dummy[k] = []
+                # fitType[k] = []
+                # sensorType[k] = []
+                for cd in var.data:
+                    if cd.type == 'ES' or cd.type == 'LI' or cd.type == 'LT':
+                        dummy[k].append(cd.dummy)
+                        # fitType[k].append(cd.fitType)
+                        # sensorType[k] = cd.type
+                indexes = dummy[k]
+                start[k] = indexes.index(0)
+                reversed_index = indexes[::-1].index(0)
+                # Calculate the index in the original list
+                stop[k] = len(indexes) - 1 - reversed_index
         return start, stop
 
     @staticmethod
@@ -190,14 +194,10 @@ class ProcessL1b_FactoryCal:
         ltUnits = None
         pyrUnits = None
 
-        now = dt.datetime.now()
-        # get effective calibration and save to node attributes
-        start, end = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
-        node.attributes['CAL_START'] = str(start)
-        node.attributes['CAL_STOP'] = str(end)
-        # node.attributes['CAL_LINES'] = lines
+        now = dt.datetime.now()             
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
+        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)   
         logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
 
         logging.writeLogFileAndPrint("Applying factory calibrations.")
@@ -214,6 +214,9 @@ class ProcessL1b_FactoryCal:
                         logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
+                        if gp.id in ['ES','LI','LT']:
+                            gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+                            gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
 
                         if esUnits is None:
                             esUnits = cf.getUnits("ES")

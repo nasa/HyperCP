@@ -1036,7 +1036,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
                             # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            plotting.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            if ConfigFile.settings["bL1aqcPlotDeglitch"]:
+                                plotting.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
                 print('Complete')

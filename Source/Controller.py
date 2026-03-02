@@ -50,7 +50,7 @@ class Controller:
             root = HDFRoot.readHDF5(outFilePath)
             fail = 0
             root.attributes['Fail'] = 0
-        except Exception:
+        except FileNotFoundError:
             fail =1
             # Processing failed at this level. Open the level below it
             #   This won't work for ProcessL1A looking back for RAW...
@@ -59,7 +59,7 @@ class Controller:
                     # Processing successful at the next lower level
                     # Shift from the output to the input directory
                     root = HDFRoot.readHDF5(inFilePath)
-                except Exception:
+                except FileNotFoundError:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
                     if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                         logging.errorWindow("File Error", msg)
@@ -350,7 +350,7 @@ class Controller:
         print("ProcessL1aqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Unable to open file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
@@ -391,7 +391,7 @@ class Controller:
         logging.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
@@ -404,7 +404,7 @@ class Controller:
             # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bDALEC.processL1b(root, outFilePath)
         else:
-            root = ProcessL1b.processL1b(root, outFilePath)
+            root = ProcessL1b.processL1bSeaBird(root, outFilePath)
 
         # Write output file
         if root is not None:
@@ -436,7 +436,7 @@ class Controller:
         print("ProcessL1bqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Unable to open file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
@@ -683,7 +683,7 @@ class Controller:
                 root = HDFRoot.readHDF5(inFilePath)
                 root.attributes['L1BQC_FILE_NAME'] = inFileName
                 del root.attributes["In_Filepath"]
-            except Exception:
+            except FileNotFoundError:
                 msg = "Unable to open file. May be open in another application."
                 logging.errorWindow("File Error", msg)
                 logging.writeLogFileAndPrint(msg)

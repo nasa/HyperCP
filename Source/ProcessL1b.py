@@ -722,7 +722,7 @@ class ProcessL1b:
         return True
 
     @staticmethod
-    def processL1b(node, outFilePath):
+    def processL1bSeaBird(node, outFilePath):
         '''
         Non-TriOS path. ProcessL1b_Interp.processL1b_Interp will be common to both platforms
         Apply dark shutter correction to light data. Then apply either default factory cals

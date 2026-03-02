@@ -73,12 +73,13 @@ class unc_management:
                         unc_group.removeDataset(ds.id)  # remove dataset
 
         return True
-    
+
     @staticmethod
     def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensor_list = []
+        # Only add sensors we have in case of ES-ONLY
         for grp in node.groups:
             for s in ['ES', 'LI', 'LT']:
                 if s in grp.id and not s in sensor_list:
@@ -105,6 +106,7 @@ class unc_management:
                 ds.columns['wvl'] = x_new
                 ds.columnsToDataset()
 
+            # Currently STRAYDATA is cropped at L2
             for dtype in [
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"

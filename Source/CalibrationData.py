@@ -17,6 +17,8 @@ class CalibrationData:
         self.calLines = 0
         self.fitType = ""
         self.coefficients = []
+        self.dummy = 0
+        self.frameType = ""
 
     def printd(self):
         print("%s %s \'%s\' %d %s %d %s" % (self.type, self.id, self.units,
@@ -40,6 +42,13 @@ class CalibrationData:
             self.type = 'POINTING'
             self.id = 'ROTATOR'
 
+        # In case on an empty calibration radiometric paragraph (ES,LI,LT), assume
+        #   this sensor reports that data but it is not calibrated.
+        if self.type in ['ES','LI','LT']:
+            if self.calLines == 0:
+                self.calLines = 1
+                self.fitType = 'OPTIC3'
+                self.dummy = 1
 
     # Reads a coefficients line in the cal file
     # Notes: Does not support for OPTIC1, which uses 1-4 calibration lines
@@ -88,8 +97,8 @@ class CalibrationData:
                 v = int.from_bytes(b, byteorder='little', signed=True)
             #print("bsle", v)
         elif dataType == "BF":
-            
-            ''' BUG: This is the PYROMETER, and it is not properly interpreted...'''
+
+            # BUG: This is the PYROMETER, and it is not properly interpreted...
 
             v = struct.unpack("f", b)[0]
             #print("bf", v)
@@ -125,4 +134,3 @@ class CalibrationData:
             v = -1
             print("dataType unknown: ", dataType)
         return v
-
