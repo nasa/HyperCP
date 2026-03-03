@@ -48,11 +48,12 @@ class HyperOCR(BaseInstrument):
         darkGrp = grp['DARK']
         darkSlice = deepcopy(XSlice['DARK'])
 
+        darkData, lightData = None,None
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
-            darkData = darkSlice['data'] 
+            darkData = darkSlice['data']
         if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
             lightData = lightSlice['data']
-        
+
         # check valid data for retireving stats
         if darkGrp is None or lightGrp is None:
             msg = f'No radiometry found for {sensortype}'
@@ -98,16 +99,16 @@ class HyperOCR(BaseInstrument):
                 except IndexError as err:
                     writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
                     return False
-            
+
 
             signalAve = np.average(lightData[k])  # at this point in the code lightdata is light-dark see line 95
 
             if signalAve:
                 signal_noise[wvl] = pow((pow(std_light[i], 2) + pow(std_dark[i], 2))/pow(signalAve, 2), 0.5)
-                # this should be divided by 
+                # this should be divided by
             else:
                 signal_noise[wvl] = 0.0
-            
+
             std_signal.append(np.std(lightData[k])/signalAve)  # as % of Dark corrected signal
 
         return dict(

@@ -12,6 +12,7 @@ from datetime import datetime as dt
 from Source import PATH_TO_CONFIG
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
+from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.HDFDataset import HDFDataset
@@ -41,7 +42,11 @@ class PIUDataStore:
         self.cal_start: int = None
         self.cal_stop:  int = None
 
+        # Masks length of all reported bands to all calibrated bands
         self.ind_rad_wvl: dict = {s: {} for s in self.sensors}
+        self.wvl:         dict = {s: {} for s in self.sensors}
+        self.l1ACommonCalPix: bool
+        self.l1ACommonCalPix255: bool
         self.nan_mask:    np.array = None
 
         ancGroup = root.getGroup("ANCILLARY")
@@ -52,7 +57,7 @@ class PIUDataStore:
             self.station = ancGroup.getDataset("STATION").columns["STATION"][0]
         except (AttributeError, KeyError):
             self.station = None
-            
+
         try:
             acqTime = dt.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             self.cast = f"{self.get_regime_Name()}_{acqTime.strftime('%Y%m%d%H%M%S')}"
@@ -68,13 +73,33 @@ class PIUDataStore:
                     [self.readCalClassBased(inpt, sensor) for sensor in self.sensors]
                 elif ConfigFile.settings['SensorType'].lower() == 'seabird':
                     [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
+                    # NOTE: If any sensors have a different number of calibrated bands (e.g., pySAS sample), we need to interp to set of pixels in order to math them together
+                    #   Take the pixels of the sensor with the fewest pixels. This does NOT change the sensor-specific wavebands themselves.
+                    l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
+                    fewestBands = l1APixels.index(min(l1APixels))
+                    # Length is L1A reported pixels masked for L1B calibration bands (not necessarily L1B interpolated bands)                    
+                    if fewestBands==0:
+                        l1ACommonCalPix = self.ind_rad_wvl['ES']
+                    elif fewestBands==1:
+                        l1ACommonCalPix = self.ind_rad_wvl['LI']
+                    else:
+                        l1ACommonCalPix = self.ind_rad_wvl['LT']
+                    # Make sure they are not only pixels in common, but commonly TRUE in those bands...
+                    if any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['ES'][l1ACommonCalPix]) or\
+                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LI'][l1ACommonCalPix]) or\
+                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
+                        writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
+                    self.l1ACommonCalPix = l1ACommonCalPix.tolist()
+                    # Length is 255 pixels (redundant for sensors reporting 255 bands)
+                    self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
+                    self.l1ACommonCalPix255[0:len(self.l1ACommonCalPix)] = [test for test in self.l1ACommonCalPix]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
-                
+
                 # finally
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
-    
+
     def get_inttime(self, root: HDFRoot):
         for s in ["ES", "LI", "LT"]:
             if ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -310,8 +335,8 @@ class PIUDataStore:
     #### Class-Based ####
     def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
-        ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
-        
+        ind_rad_wvl = np.array(radcal.columns['1']) # > 0 Beware inconsistent use by Tartu of zeroed wavelengths
+
         corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
 
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
@@ -321,13 +346,20 @@ class PIUDataStore:
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
-        ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
+        ind_rad_wvl = np.array(radcal.columns['wvl']) > 0
         # read cal start and cal stop for shaping stray-light class based uncertainties
-        self.cal_start = int(node.attributes['CAL_START'])
-        self.cal_stop = int(node.attributes['CAL_STOP'])
+        # self.cal_start = int(node.attributes['CAL_START'])
+        # self.cal_stop = int(node.attributes['CAL_STOP'])
+        # What we need here are the L1A pixel numbers rather than L1b interpolated pixels
+        self.cal_start = int(node.attributes[f'{s}_LIGHT_L1AQC_START_PIXEL'])
+        self.cal_stop = int(node.attributes[f'{s}_LIGHT_L1AQC_STOP_PIXEL'])
+
+        ind_rad_wvl[0:self.cal_start] = False
+        ind_rad_wvl[self.cal_stop+1:] = False
 
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
         self.ind_rad_wvl[s] = ind_rad_wvl
+        self.wvl[s] = np.array(radcal.columns['wvl'])
 
     def read_uncertainties(self, root, inpt: HDFGroup, s: str) -> None:
         instrument = ConfigFile.settings['SensorType'].lower()
@@ -344,11 +376,11 @@ class PIUDataStore:
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
-        # TODO need to retrieve indexes: np.ones_like(self.coeff[s_type]['ind_nocal']) *   (Ashley?)
         self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
-        self.clipSL(s)
+        # BUG: clipSL breaks the PIU mean_val to uncertainty comparison in MCP
+        # self.clipSL(s)
 
         self.uncs[s]['nlin'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_NLDATA_CAL", col_name='1')
         self.uncs[s]['ct'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_TEMPDATA_CAL", col_name=f'{s}_TEMPERATURE_UNCERTAINTIES')
@@ -362,7 +394,7 @@ class PIUDataStore:
                     _, sza_range = k.split('RANGE')
                     lw, up = sza_range.split('-')
                     break
-            
+
             if sza_range is not None:
                 if float(lw) > self.sza:
                     self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR", col_name='1')
@@ -375,7 +407,7 @@ class PIUDataStore:
                 self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_CAL", col_name='1')
         else:
             self.uncs[s]['pol'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_POLDATA_CAL", col_name='1')
-        
+
         # self.nan_mask = np.where(any([(u[s] <= 0) for u in self.uncs]))  # not implemented
 
     #### General Read Methods ####
@@ -442,7 +474,7 @@ class PIUDataStore:
         except AttributeError:
             data = np.asarray(data)
         return data
-    
+
     def clipSL(self, s: str) -> None:
         start = self.cal_start
         stop = self.cal_stop
@@ -466,23 +498,19 @@ class PIUDataStore:
         :param cCal: dict for storing calibration
         :param cCoef: dict for storing calibration coeficients 
         """
-        from os import path
-        from Source import PATH_TO_CONFIG
-        from Source.CalibrationFileReader import CalibrationFileReader
-        from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
         cal = np.asarray(list(radcal.columns['unc']))
-        calFolder = path.splitext(ConfigFile.filename)[0] + "_Calibration"
-        calPath = path.join(PATH_TO_CONFIG, calFolder)
+        calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         calibrationMap = CalibrationFileReader.read(calPath)
 
         if ConfigFile.settings['SensorType'].lower() == "dalec":
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
-        else:    
+        else:
             _, coef = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
         return cal, coef
-    
+
     @staticmethod
     def extract_unc_from_grp(grp: HDFGroup, name: str, col_name: Optional[str] = None) -> Union[np.array, HDFDataset]:
         """

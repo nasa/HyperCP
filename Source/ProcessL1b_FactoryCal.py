@@ -1,5 +1,4 @@
 ''' Process L1AQC to L1B for SeaBird in Factory or Class regime '''
-import re
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -64,14 +63,15 @@ class ProcessL1b_FactoryCal:
 
     @staticmethod
     def processOPTIC3(ds, cd, immersed, inttime):
-        # a0 = float(cd.coefficients[0])
+        ''' This should only return calibrated bands in the datasets. '''
+        k = cd.id
         if cd.dummy == 0:
             # Reported datasets with no calibrations are left unchanged
             a1 = float(cd.coefficients[1])
             im = float(cd.coefficients[2]) if immersed else 1.0
             cint = float(cd.coefficients[3])
             #print(inttime.data.shape[0], self.data.shape[0])
-            k = cd.id
+
             #print(cint, aint)
             #print(cd.id)
             for x in range(ds.data.shape[0]):
@@ -85,9 +85,12 @@ class ProcessL1b_FactoryCal:
                 ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
         else:
             # Set uncalibrated pixels to 0
-            k = cd.id
-            for x in range(ds.data.shape[0]):
-                ds.data[k][x] = 0
+            # for x in range(ds.data.shape[0]):
+            # ds.data[k][x] = 0
+            # Drop uncalibrated data
+            ds.datasetToColumns()
+            del ds.columns[k]
+            ds.columnsToDataset()
 
     @staticmethod
     def processOPTIC4(ds, cd, immersed):
@@ -143,7 +146,7 @@ class ProcessL1b_FactoryCal:
 
         inttime = None
         for cd in cf.data: # cd is the name of the cal file data
-            # Process slightly differently for INTTIME
+            # Process slightly differently for INTTIME and save for second loop
             if cd.type == "INTTIME":
                 #print("Process INTTIME")
                 ds = gp.getDataset("INTTIME")
@@ -167,7 +170,7 @@ class ProcessL1b_FactoryCal:
         stop = {}
         for k, var in calibrationMap.items():
             # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
-            if calibrationMap[k].frameType.lower() == "shutterlight":
+            if calibrationMap[k].frameType.lower() == "shutterlight" or calibrationMap[k].frameType.lower() == "shutterdark":
                 dummy[k] = []
                 # fitType[k] = []
                 # sensorType[k] = []
@@ -197,14 +200,16 @@ class ProcessL1b_FactoryCal:
         now = dt.datetime.now()             
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)   
+        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
         logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
-
         logging.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
+            if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
+                gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+                gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
             if 'L1AQC' not in gp.id:
                 logging.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
@@ -214,9 +219,9 @@ class ProcessL1b_FactoryCal:
                         logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
-                        if gp.id in ['ES','LI','LT']:
-                            gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
-                            gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
+                        # if gp.id in ['ES','LI','LT']:
+                        #     gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+                        #     gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
 
                         if esUnits is None:
                             esUnits = cf.getUnits("ES")
@@ -259,7 +264,9 @@ class ProcessL1b_FactoryCal:
 
         ds = sixS_grp.addDataset("sixS_irradiance")
 
-        irr_grp = node.getGroup('ES_LIGHT_L1AQC')
+        # BUG: For non-L2, 6S should be at the L1B, uninterpolated bands, not all reported bands
+        # irr_grp = node.getGroup('ES_LIGHT_L1AQC')
+        irr_grp = node.getGroup('ES')
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
         rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
@@ -300,8 +307,11 @@ class ProcessL1b_FactoryCal:
 
                 for cd in cf.data:
                     # Process only OPTIC3
-                    if cd.fitType == "OPTIC3":
+                    if cd.fitType == "OPTIC3" and not cd.dummy:
                         coeff.append(float(cd.coefficients[1]))
+                        wvl.append(float(cd.id))
+                    elif cd.fitType == "OPTIC3" and cd.dummy:
+                        coeff.append(0)
                         wvl.append(float(cd.id))
         return np.array(wvl), np.array(coeff)
 

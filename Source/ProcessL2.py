@@ -1409,6 +1409,7 @@ class ProcessL2:
             satellite_bands_subset[sat] = b[(350 <= b) & (b <= 1000)].tolist()
 
         # %% Format data and Propagate Uncertainties
+        # ** unpacks the values from dictionaries 
         x_slice = {
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},
@@ -1423,7 +1424,7 @@ class ProcessL2:
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
-            l1b_unc, x_breakdown_unc = sensor.ClassBased(node, uncGroup, stats)
+            l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(node, uncGroup, stats)
             if l1b_unc:
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
@@ -1433,10 +1434,10 @@ class ProcessL2:
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
                     # x_breakdown_unc[k.upper()] = {
-                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in 
+                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in
                     #     zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
                     # }  # TODO figure out why this doesn't work - Ashley
-                
+
                 x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
                 x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
                 x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
@@ -1447,7 +1448,7 @@ class ProcessL2:
                 else:
                     from Source.PIU.PIUDataStore import PIUDataStore
                     pds = PIUDataStore(node, uncGroup)
-                    
+
                     x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)
                 x_breakdown_unc.update(l2_bd)
             elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
@@ -1921,12 +1922,22 @@ class ProcessL2:
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
+                # Move root dataset start/stop pixel to node level attributes for retrieval later
+                if grp.id == 'IRRADIANCE' or grp.id == 'RADIANCE':
+                    for sensorType in ['ES','LI','LT']:
+                        if grp.datasets[ds].id == sensorType:
+                            # These are the interpolated pixels L1B, not raw
+                            node.attributes[f'{sensorType}_START_PIXEL'] = grp.datasets[ds].attributes['CAL_START']
+                            node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']
+
             # Carry over L1AQC data for use in uncertainty budgets
             if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
                     newGrp.datasets[ds].datasetToColumns()
+                    node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
+                    node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

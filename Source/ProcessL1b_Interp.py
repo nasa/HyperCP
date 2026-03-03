@@ -778,7 +778,7 @@ class ProcessL1b_Interp:
                 ltDarkGroup.copy(ltL1AQCDark)
                 ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
                 ltLightGroup.copy(ltL1AQCLight)
-       
+
         if satmsgGroup is not None:
             # First make sure it's not empty
             satMSG = satmsgGroup.getDataset("MESSAGE")
