@@ -264,11 +264,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # NOTE: Uncertainties should all be masked to calibrated, **non-interpolated** L1B wavebands
         rad_cal_str_es = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
+        # The difference between factory approach and class-based:
         cal_col_str_es = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
+        pds_cal_set = PDS.l1ACommonCalPix255 if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else PDS.l1ACommonCalPix255
         out = dict(
             esUnc=utils.interp_common_wvls(ES_unc,
                                            np.array(uncGrp.getDataset(rad_cal_str_es).columns[cal_col_str_es],
-                                                       dtype=float)[PDS.l1ACommonCalPix],
+                                                       dtype=float)[pds_cal_set],
                                            l2_wvl,
                                            return_as_dict=True
             )
@@ -278,7 +280,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             cal_col_str_li = "1" if "LI_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
             out['liUnc']=utils.interp_common_wvls(LI_unc,
                                                   np.array(uncGrp.getDataset(rad_cal_str_li).columns[cal_col_str_li],
-                                                           dtype=float)[PDS.l1ACommonCalPix],
+                                                           dtype=float)[pds_cal_set],
                                                   l2_wvl,
                                                   return_as_dict=True
             )
@@ -287,7 +289,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             cal_col_str_lt = "1" if "LT_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
             out['ltUnc']=utils.interp_common_wvls(LT_unc,
                                                   np.array(uncGrp.getDataset(rad_cal_str_lt).columns[cal_col_str_lt],
-                                                           dtype=float)[PDS.l1ACommonCalPix],
+                                                           dtype=float)[pds_cal_set],
                                                   l2_wvl,
                                                   return_as_dict=True
             )
@@ -300,7 +302,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             k: utils.interp_common_wvls(
                 v,
                 np.array(uncGrp.getDataset(rad_cal_str_es).columns[cal_col_str_es],
-                dtype=float)[PDS.l1ACommonCalPix],
+                dtype=float)[pds_cal_set],
                 l2_wvl,
                 return_as_dict=False
             ) for k,v in BD_UNCS['ES'].items()
@@ -309,7 +311,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             k: utils.interp_common_wvls(
                 v,
                 np.array(uncGrp.getDataset(rad_cal_str_li).columns[cal_col_str_li],
-                dtype=float)[PDS.l1ACommonCalPix],
+                dtype=float)[pds_cal_set],
                 l2_wvl,
                 return_as_dict=False
             ) for k,v in BD_UNCS['LI'].items()
@@ -318,7 +320,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             k: utils.interp_common_wvls(
                 v,
                 np.array(uncGrp.getDataset(rad_cal_str_lt).columns[cal_col_str_lt],
-                dtype=float)[PDS.l1ACommonCalPix],
+                dtype=float)[pds_cal_set],
                 l2_wvl,
                 return_as_dict=False
             ) for k,v in BD_UNCS['LT'].items()
@@ -332,11 +334,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         :param node: HDFRoot which stores L1BQC data
         :param uncGrp: HDFGroup storing the uncertainty budget
+        :param PDS: PIUDataStore object containing all reported sensor bands for coef and unc, except stray and stab which are 255
+        :param stats: dict containing all reported bands except Signal_std_Interpolated
         :param rhoScalar: rho input if Mobley99 or threeC rho is used
         :param rhoVec: rho input if Zhang17 rho is used
         :param rhoDelta: uncertainties associated with rho
         :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
         :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+            wavebands in xSlice are all L2 except those keyed "xxSTD_RAW"
 
         :return: dictionary of output uncertainties that are generated
         """
@@ -350,76 +355,90 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # TODO: shift to using common pixels for all
         l2Wavelength = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
-        # if rhoScalar is not None:  # make rho a constant array if scalar
-        #     rho = np.ones(len(l2Wavelengths)) * rhoScalar
-        # else:
-        #     rho = rhoVec
-        # rhoUNC = np.array(rhoDelta, dtype=float)
-        # es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
-        # li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
-        # lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
-        # f0 = np.asarray(list(f0.values()), dtype=float).flatten()
-        # f0_unc = np.asarray(list(f0_unc.values()), dtype=float).flatten()
 
-        waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
-        radcalwvls = list(xSlice['esSTD_RAW'].keys())
+        # Try again to use L2 wavelengths and interp stats and pds rather than masking them
+        if rhoScalar is not None:  # make rho a constant array if scalar
+            rho = np.ones(len(l2Wavelength)) * rhoScalar
+        else:
+            # rho = rhoVec
+            rho = np.asarray(list(rhoVec.values()), dtype=float)
+        rhoUNC = np.array(rhoDelta, dtype=float)
 
-        # stdevs taken at instrument wavebands (not common wavebands) so we can use them to get the radcal keys
-        # interpolate L1B interpolated bands in xSlice to the common set of calibrated pixels - check string for radcal group based on factory or class-based processing
-        rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
-        cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
-        common_pixels_es_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[PDS.l1ACommonCalPix]
-        rad_cal_str = "LI_RADCAL_CAL" if "LI_RADCAL_CAL" in uncGrp.datasets.keys() else "LI_RADCAL_UNC"
-        cal_col_str = "1" if "LI_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
-        common_pixels_li_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[PDS.l1ACommonCalPix]
-        rad_cal_str = "LT_RADCAL_CAL" if "LT_RADCAL_CAL" in uncGrp.datasets.keys() else "LT_RADCAL_UNC"
-        cal_col_str = "1" if "LT_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
-        common_pixels_lt_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[PDS.l1ACommonCalPix]
-        
-        # Unlike interpolation of L2 es, li, and lt, interpolation of rho is arbitrarily to es common bands
-        if rhoScalar is not None:  # make rho a vector constant array if scalar
-            rho = np.ones(len(common_pixels_es_wavebands)) * rhoScalar
-            rhoUNC = utils.interp_common_wvls(np.array(rhoDelta, dtype=float),
-                                             l2Wavelength,
-                                             common_pixels_es_wavebands,
-                                             return_as_dict=False)
-        else:  # zhang rho needs to be interpolated to common bands
-            rho = utils.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
-                                          l2Wavelength,
-                                          common_pixels_es_wavebands,
-                                          return_as_dict=False)
-            rhoUNC = utils.interp_common_wvls(rhoDelta,
-                                             l2Wavelength,
-                                             common_pixels_es_wavebands,
-                                             return_as_dict=False)
+        es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
+        li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
+        lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
+        f0 = np.asarray(list(f0.values()), dtype=float).flatten()
+        f0_unc = np.asarray(list(f0_unc.values()), dtype=float).flatten()
+        if ConfigFile.settings['bL2Z17Rho']:
+            # May need to truncate to Z17 rho wavebands, depending on how comprehensive the calibration was spectrally
+            # L2 data are already at common, interpolated bands, so use Es keys
+            fullL2bands = np.array(list(xSlice['es'].keys()),dtype=float)
+            es = es[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            li = li[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            lt = lt[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            # f0 = f0[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            # f0_unc = f0_unc[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
 
-        # Data from xSlice cannot be subset using the masks in PDS since they were interpolated in L1BInterp. Therefore, 
-        #   must be interpolated back to their original pixels based on a common set of pixels across all instruments. 
-        #   Wavelengths from these pixels for Es are used here, but irrelevant as long as they are in common and match pixels
-        #   in PDS and stats.
-        es = utils.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
-                                     np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
-                                     common_pixels_es_wavebands,
-                                     return_as_dict=False)
-        li = utils.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
-                                     np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
-                                     common_pixels_es_wavebands,
-                                     return_as_dict=False)
-        lt = utils.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
-                                     np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
-                                     common_pixels_es_wavebands,
-                                     return_as_dict=False)
-        f0 = utils.interp_common_wvls(np.asarray(list(f0.values()), dtype=float).flatten(),
-                                     np.asarray(list(f0.keys()), dtype=float).flatten(),
-                                     common_pixels_es_wavebands,
-                                     return_as_dict=False)
-        f0_unc = utils.interp_common_wvls(np.asarray(list(f0_unc.values()), dtype=float).flatten(),
-                                     np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
-                                     common_pixels_es_wavebands,
-                                     return_as_dict=False)
+
+
+        # waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
+        # radcalwvls = list(xSlice['esSTD_RAW'].keys())
+
+        # # stdevs taken at instrument wavebands (not common wavebands) so we can use them to get the radcal keys
+        # # interpolate L1B interpolated bands in xSlice to the common set of calibrated pixels - check string for radcal group based on factory or class-based processing
+        # rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
+        # cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
+        # common_pixels_es_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+        #                                       dtype=float)[PDS.l1ACommonCalPix]
+        # rad_cal_str = "LI_RADCAL_CAL" if "LI_RADCAL_CAL" in uncGrp.datasets.keys() else "LI_RADCAL_UNC"
+        # cal_col_str = "1" if "LI_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
+        # common_pixels_li_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+        #                                       dtype=float)[PDS.l1ACommonCalPix]
+        # rad_cal_str = "LT_RADCAL_CAL" if "LT_RADCAL_CAL" in uncGrp.datasets.keys() else "LT_RADCAL_UNC"
+        # cal_col_str = "1" if "LT_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
+        # common_pixels_lt_wavebands = np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
+        #                                       dtype=float)[PDS.l1ACommonCalPix]
+        # # Unlike interpolation of L2 es, li, and lt, interpolation of rho is arbitrarily to es common bands
+        # if rhoScalar is not None:  # make rho a vector constant array if scalar
+        #     rho = np.ones(len(common_pixels_es_wavebands)) * rhoScalar
+        #     rhoUNC = utils.interp_common_wvls(np.array(rhoDelta, dtype=float),
+        #                                      l2Wavelength,
+        #                                      common_pixels_es_wavebands,
+        #                                      return_as_dict=False)
+        # else:  # zhang rho needs to be interpolated to common bands
+        #     rho = utils.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
+        #                                   l2Wavelength,
+        #                                   common_pixels_es_wavebands,
+        #                                   return_as_dict=False)
+        #     rhoUNC = utils.interp_common_wvls(rhoDelta,
+        #                                      l2Wavelength,
+        #                                      common_pixels_es_wavebands,
+        #                                      return_as_dict=False)
+
+        # # Data from xSlice cannot be subset using the masks in PDS since they were interpolated in L1BInterp. Therefore,
+        # #   must be interpolated back to their original pixels based on a common set of pixels across all instruments.
+        # #   Wavelengths from these pixels for Es are used here, but irrelevant as long as they are in common and match pixels
+        # #   in PDS and stats.
+        # es = utils.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
+        #                              np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
+        #                              common_pixels_es_wavebands,
+        #                              return_as_dict=False)
+        # li = utils.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
+        #                              np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
+        #                              common_pixels_es_wavebands,
+        #                              return_as_dict=False)
+        # lt = utils.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
+        #                              np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
+        #                              common_pixels_es_wavebands,
+        #                              return_as_dict=False)
+        # f0 = utils.interp_common_wvls(np.asarray(list(f0.values()), dtype=float).flatten(),
+        #                              np.asarray(list(f0.keys()), dtype=float).flatten(),
+        #                              common_pixels_es_wavebands,
+        #                              return_as_dict=False)
+        # f0_unc = utils.interp_common_wvls(np.asarray(list(f0_unc.values()), dtype=float).flatten(),
+        #                              np.asarray(list(f0_unc.keys()), dtype=float).flatten(),
+        #                              common_pixels_es_wavebands,
+        #                              return_as_dict=False)
         # if rhoScalar is not None:  # make rho a vector constant array if scalar
         #     rho = np.ones(len(radcalwvls)) * rhoScalar
         #     rhoUNC = utils.interp_common_wvls(np.array(rhoDelta, dtype=float),
@@ -475,23 +494,95 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     ones, ones
                     ]
 
+        # # Some PDS elements are at the reported/output bands, some at the full 255 pixels. Use masks accordingly.
+        # #   These are all at common pixels, regardless of the wavelength.
+        # lw_uncertainties = [ np.abs(np.array(list(stats['LT']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * lt),
+        #                     rhoUNC,
+        #                     np.abs(np.array(list(stats['LI']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * li),
+        #                     PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200,
+        #                     PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200,
+        #                     PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255],
+        #                     PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255],
+        #                     PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix],
+        #                     PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix],
+        #                     PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
+        #                     PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
+        #                     PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
+        #                     PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
+        #                     PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix],
+        #                     PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix]
+        #                     ]
+
+        # TODO: try interpolating the necesary PDS and stats elements to L2 bands rather than changing PDS
+
+        statsL2 = {}
+        sensors = ['ES','LI','LT']
+        for sensor in sensors:
+            params = ['Signal_noise','Signal_std']
+            for param in params:
+                key = f'{sensor}{param}'
+                if param == 'Signal_noise':
+                # Signal_noise is the only dict with wave keys
+                    statsL2[key] = utils.interp_common_wvls( np.array(list(stats[sensor][param].values())).flatten(),
+                                        np.asarray(list(stats[sensor]['Signal_noise'].keys()), dtype=float).flatten(),
+                                        l2Wavelength,
+                                        return_as_dict=False)
+                else:
+                    statsL2[key] = utils.interp_common_wvls(stats[sensor][param],
+                                        np.asarray(list(stats[sensor]['Signal_noise'].keys()), dtype=float).flatten(),
+                                        l2Wavelength,
+                                        return_as_dict=False)
+
+        # esNoise = utils.interp_common_wvls( np.array(list(stats['ES']['Signal_noise'].values())).flatten(),
+        #                              np.asarray(list(stats['ES']['Signal_noise'].keys()), dtype=float).flatten(),
+        #                              l2Wavelength,
+        #                              return_as_dict=False)
+        # ltNoise = utils.interp_common_wvls( np.array(list(stats['LT']['Signal_noise'].values())).flatten(),
+        #                              np.asarray(list(stats['LT']['Signal_noise'].keys()), dtype=float).flatten(),
+        #                              l2Wavelength,
+        #                              return_as_dict=False)
+        # liNoise = utils.interp_common_wvls( np.array(list(stats['LI']['Signal_noise'].values())).flatten(),
+        #                              np.asarray(list(stats['LI']['Signal_noise'].keys()), dtype=float).flatten(),
+        #                              l2Wavelength,
+        #                              return_as_dict=False)
+        PDSL2 = {}
+        for sensor in sensors:
+            params = ['cal','nlin','ct']
+            if sensor in ['LI','LT']:
+                params.append('pol')
+            if sensor == 'ES':
+                params.append('cos')
+            for param in params:
+                key = f'{sensor}{param}'
+                PDSL2[key] = utils.interp_common_wvls( PDS.uncs[sensor][param],
+                                        PDS.wvl[sensor],
+                                        l2Wavelength,
+                                        return_as_dict=False)
+            params = ['stray','stab'] # Contain 255 pixels. PDS.wvl only has recorded bands, but the mask is otherwise the same.
+            for param in params:
+                key = f'{sensor}{param}'
+                PDSL2[key] = utils.interp_common_wvls( PDS.uncs[sensor][param][PDS.l1ACommonCalPix255],
+                                         PDS.wvl[sensor][PDS.l1ACommonCalPix],
+                                         l2Wavelength,
+                                         return_as_dict=False)
+
         # Some PDS elements are at the reported/output bands, some at the full 255 pixels. Use masks accordingly.
         #   These are all at common pixels, regardless of the wavelength.
-        lw_uncertainties = [ np.abs(np.array(list(stats['LT']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * lt),
+        lw_uncertainties = [ np.abs(statsL2['LTSignal_noise'] * lt),
                             rhoUNC,
-                            np.abs(np.array(list(stats['LI']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * li),
-                            PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200,
-                            PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200,
-                            PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255],
-                            PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255],
-                            PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix],
-                            PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix],
-                            PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
-                            PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
-                            PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
-                            PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
-                            PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix],
-                            PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix]
+                            np.abs(statsL2['LISignal_noise'] * li),
+                            PDSL2['LIcal'] / 200,
+                            PDSL2['LTcal'] / 200,
+                            PDSL2['LIstab'],
+                            PDSL2['LTstab'],
+                            PDSL2['LInlin'],
+                            PDSL2['LTnlin'],
+                            PDSL2['LIstray'] / 100,
+                            PDSL2['LIstray'] / 100,
+                            PDSL2['LIct'],
+                            PDSL2['LIct'],
+                            PDSL2['LIpol'],
+                            PDSL2['LIpol']
                             ]
 
         lwAbsUnc = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
@@ -505,53 +596,86 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                      ones, ones, ones
                      ]
 
-        rrs_uncertainties = [np.abs(np.array(list(stats['LT']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * lt),
+        # rrs_uncertainties = [np.abs(np.array(list(stats['LT']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * lt),
+        #                      rhoUNC,
+        #                      np.abs(np.array(list(stats['LI']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * li),
+        #                      np.abs(np.array(list(stats['ES']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * es),
+        #                      PDS.uncs['ES']['cal'][PDS.l1ACommonCalPix] / 200,
+        #                      PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200,
+        #                      PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200,
+        #                      PDS.uncs['ES']['stab'][PDS.l1ACommonCalPix255],
+        #                      PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255],
+        #                      PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255],
+        #                      PDS.uncs['ES']['nlin'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['ES']['stray'][PDS.l1ACommonCalPix255] / 100,
+        #                      PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
+        #                      PDS.uncs['LT']['stray'][PDS.l1ACommonCalPix255] / 100,
+        #                      PDS.uncs['ES']['ct'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LT']['ct'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['LT']['pol'][PDS.l1ACommonCalPix],
+        #                      PDS.uncs['ES']['cos'][PDS.l1ACommonCalPix]
+        #                      ]
+        rrs_uncertainties = [np.abs(statsL2['LTSignal_noise'] * lt),
                              rhoUNC,
-                             np.abs(np.array(list(stats['LI']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * li),
-                             np.abs(np.array(list(stats['ES']['Signal_noise'].values())).flatten()[PDS.l1ACommonCalPix] * es),
-                             PDS.uncs['ES']['cal'][PDS.l1ACommonCalPix] / 200,
-                             PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200,
-                             PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200,
-                             PDS.uncs['ES']['stab'][PDS.l1ACommonCalPix255],
-                             PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255],
-                             PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255],
-                             PDS.uncs['ES']['nlin'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix],
-                             PDS.uncs['ES']['stray'][PDS.l1ACommonCalPix255] / 100,
-                             PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255] / 100,
-                             PDS.uncs['LT']['stray'][PDS.l1ACommonCalPix255] / 100,
-                             PDS.uncs['ES']['ct'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LT']['ct'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix],
-                             PDS.uncs['LT']['pol'][PDS.l1ACommonCalPix],
-                             PDS.uncs['ES']['cos'][PDS.l1ACommonCalPix]
+                             np.abs(statsL2['LISignal_noise'] * li),
+                             np.abs(statsL2['ESSignal_noise'] * es),
+                             PDSL2['EScal'] / 200,
+                             PDSL2['LIcal'] / 200,
+                             PDSL2['LTcal'] / 200,
+                             PDSL2['ESstab'],
+                             PDSL2['LIstab'],
+                             PDSL2['LTstab'],
+                             PDSL2['ESnlin'],
+                             PDSL2['LInlin'],
+                             PDSL2['LTnlin'],
+                             PDSL2['ESstray'] / 100,
+                             PDSL2['LIstray'] / 100,
+                             PDSL2['LTstray'] / 100,
+                             PDSL2['ESct'],
+                             PDSL2['LIct'],
+                             PDSL2['LTct'],
+                             PDSL2['LIpol'],
+                             PDSL2['LTpol'],
+                             PDSL2['EScos']
                              ]
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
-        from Source.PIU.Breakdown_CB import PlotMaths
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
 
         # then propagate perturbation uncertainty
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
+        # pert_uncs[0:3] = [
+        #     np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+        #     zeroes,
+        #     np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+        # ]
         pert_uncs[0:3] = [
-            np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(statsL2['LTSignal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             zeroes,
-            np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(statsL2['LISignal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
         ]
 
         BD_UNCS['Lw']['pert'] = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
         lw = UNC_obj_CB.Lw(*lw_means)
 
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
+        # pert_uncs[0:4] = [
+        #     np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+        #     np.zeros_like(ones),
+        #     np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+        #     np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(es),
+        # ]
         pert_uncs[0:4] = [
-            np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+            np.abs(statsL2['LTSignal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
             np.zeros_like(ones),
-            np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
-            np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix]) * np.abs(es),
+            np.abs(statsL2['LISignal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            np.abs(statsL2['ESSignal_std']) * np.abs(es),
         ]
 
         BD_UNCS['Rrs']['pert'] = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
@@ -629,11 +753,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             UNC.update(
                 self.get_band_outputs(
                     s_key, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
-                    esUNC_band, liUNC_band, ltUNC_band, rhoUNC, l2Wavelengths, xSlice
+                    esUNC_band, liUNC_band, ltUNC_band, rhoUNC, l2Wavelength, xSlice
                 )
             )
         UNC.update(
-            {"rhoUNC_HYPER": {str(k): val for k, val in zip(l2Wavelengths, rhoUNC)},
+            {"rhoUNC_HYPER": {str(k): val for k, val in zip(l2Wavelength, rhoUNC)},
             "lwUNC": lwAbsUnc,
              "rrsUNC": rrsAbsUnc,
              "nlwUNC": nlwAbsUnc}

@@ -239,10 +239,15 @@ class ProcessL1bTriOS:
             # exit()
             return False
 
-        # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
+        ## sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0        
         ind_zero = raw_cal==0
         ind_nan  = np.isnan(raw_cal)
         ind_nocal = ind_nan | ind_zero
+        
+        # This was an unreliable tracer of calibrated bands if factory and FidRadDB were at odds. Confirm in with CAL_START CAL_STOP
+        ind_nocal[0:int(grp.attributes['CAL_START'])] = True
+        ind_nocal[int(grp.attributes['CAL_STOP'])+1:] = True
+        
         raw_cal[ind_nocal] = 1          # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
@@ -387,6 +392,14 @@ class ProcessL1bTriOS:
             else ConfigFile.settings['SensorType']
         radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
 
+        # Identify calibrated bands
+        for gp in node.groups:
+            if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT' or '_L1AQC' in gp.id:
+                calData = gp.datasets[f'CAL_{gp.id[0:2]}'].data
+                whrTrue = np.where(calData)[0]
+                gp.attributes['CAL_START'] = str(min(whrTrue))
+                gp.attributes['CAL_STOP'] = str(max(whrTrue))
+
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['fL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
@@ -397,6 +410,21 @@ class ProcessL1bTriOS:
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
+
+            # Check that the FidRadDB file agrees on which bands are calibrated.
+            # TODO: Port this test over to SeaBird, DALEC, etc.
+            uncGroup = node.getGroup('RAW_UNCERTAINTIES')
+            for sensor in ['ES','LI','LT']:
+                ds = uncGroup.datasets[f'{sensor}_RADCAL_CAL']
+                whrTrue = np.where(ds.columns['2'] > 0)[0]
+                if node.getGroup(sensor).attributes['CAL_START'] != str(min(whrTrue)) or \
+                        node.getGroup(sensor).attributes['CAL_STOP'] != str(max(whrTrue)):
+
+                    node.getGroup(sensor).attributes['CAL_START'] = str(min(whrTrue))
+                    node.getGroup(sensor).attributes['CAL_STOP'] = str(max(whrTrue))
+                    node.getGroup(f'{sensor}_L1AQC').attributes['CAL_START'] = str(min(whrTrue))
+                    node.getGroup(f'{sensor}_L1AQC').attributes['CAL_STOP'] = str(max(whrTrue))
+
             if node is None:
                 logging.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None

@@ -1577,7 +1577,7 @@ class ProcessL2:
             for k, limit in [('AOD', 0.2), ('WINDSPEED', 15), ('SZA', 60)]:
                 if anc_slice[k] > limit:
                     logging.writeLogFileAndPrint(
-                        f'{k} = {anc_slice[k]:.3f}. Maximum {k}. Setting to {limit}. Expect larger, uncaptured errors.')
+                        f'{k} = {anc_slice[k]:.3f}. Maximum {k}. Setting to {limit}. ***EXPECT LARGER UNCAPTURED UNCERTAINTY***')
                     anc_slice[k] = limit
             if min(wavelengths) < 350 or max(wavelengths) > 1000:
                 logging.writeLogFileAndPrint('Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.')

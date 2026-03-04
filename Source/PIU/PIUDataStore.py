@@ -39,8 +39,8 @@ class PIUDataStore:
         self.coeff:     dict = {s: {} for s in self.sensors}
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
 
-        self.cal_start: int = None
-        self.cal_stop:  int = None
+        self.cal_start: dict = {s: {} for s in self.sensors}
+        self.cal_stop:  dict = {s: {} for s in self.sensors}
 
         # Masks length of all reported bands to all calibrated bands
         self.ind_rad_wvl: dict = {s: {} for s in self.sensors}
@@ -70,32 +70,34 @@ class PIUDataStore:
             else:
                 self.get_inttime(root)
                 if self.cal_level == 2:
-                    [self.readCalClassBased(inpt, sensor) for sensor in self.sensors]
+                    [self.readCalClassBased(root,inpt, sensor) for sensor in self.sensors]
                 elif ConfigFile.settings['SensorType'].lower() == 'seabird':
                     [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
-                    # NOTE: If any sensors have a different number of calibrated bands (e.g., pySAS sample), we need to interp to set of pixels in order to math them together
-                    #   Take the pixels of the sensor with the fewest pixels. This does NOT change the sensor-specific wavebands themselves.
-                    l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
-                    fewestBands = l1APixels.index(min(l1APixels))
-                    # Length is L1A reported pixels masked for L1B calibration bands (not necessarily L1B interpolated bands)                    
-                    if fewestBands==0:
-                        l1ACommonCalPix = self.ind_rad_wvl['ES']
-                    elif fewestBands==1:
-                        l1ACommonCalPix = self.ind_rad_wvl['LI']
-                    else:
-                        l1ACommonCalPix = self.ind_rad_wvl['LT']
-                    # Make sure they are not only pixels in common, but commonly TRUE in those bands...
-                    if any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['ES'][l1ACommonCalPix]) or\
-                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LI'][l1ACommonCalPix]) or\
-                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
-                        writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
-                    self.l1ACommonCalPix = l1ACommonCalPix.tolist()
-                    # Length is 255 pixels (redundant for sensors reporting 255 bands)
-                    self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
-                    self.l1ACommonCalPix255[0:len(self.l1ACommonCalPix)] = [test for test in self.l1ACommonCalPix]
                 else:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
+
+                # NOTE: If (rare case) any sensors have a different number of calibrated bands (e.g., pySAS sample), 
+                #   we need to crop to set of pixels in order to math them together.
+                #   Take the pixels of the sensor with the fewest pixels. This does NOT change the sensor-specific wavebands themselves.
+                l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
+                fewestBands = l1APixels.index(min(l1APixels))
+                # L1A reported pixels masked for calibration bands (NOT necessarily L1B interpolated bands)
+                if fewestBands==0:
+                    l1ACommonCalPix = self.ind_rad_wvl['ES']
+                elif fewestBands==1:
+                    l1ACommonCalPix = self.ind_rad_wvl['LI']
+                else:
+                    l1ACommonCalPix = self.ind_rad_wvl['LT']
+                # Make sure they are not only pixels in common, but commonly TRUE in those bands...
+                if any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['ES'][l1ACommonCalPix]) or\
+                    any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LI'][l1ACommonCalPix]) or\
+                    any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
+                    writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
+                self.l1ACommonCalPix = l1ACommonCalPix.tolist()
+                # Length is 255 pixels (redundant for sensors reporting 255 bands)
+                self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
+                self.l1ACommonCalPix255[0:len(self.l1ACommonCalPix)] = [test for test in self.l1ACommonCalPix]
 
                 # finally
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
@@ -127,11 +129,11 @@ class PIUDataStore:
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
         # read data
         grp = raw_grps[s_type]
-        
+
         radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
         self.coeff[s_type]['radcal_wvl'] = radcal_wvl
         ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
-        
+
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":
             radcal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
@@ -142,13 +144,13 @@ class PIUDataStore:
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"
         else:
-            writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
+            writeLogFileAndPrint(f"{instrument} not yet implemented")
             raise NotImplementedError
 
         # define input data
         self.coeff[s_type]['n_iter'] = 5
         self.coeff[s_type]['radcal_cal'] = radcal_raw[ind_raw_wvl]
-        
+
         S1 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '6', return_df=True)  # needs to be pandas dataframes
         S2 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '8', return_df=True)
 
@@ -156,7 +158,7 @@ class PIUDataStore:
         S1 = S1.drop(S1.index[0])
         self.coeff[s_type]['t2'] = S2.iloc[0]
         S2 = S2.drop(S2.index[0])
-        
+
         S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
         S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
 
@@ -190,9 +192,9 @@ class PIUDataStore:
         ind_zero = radcal_raw[ind_raw_wvl] <= 0
         ind_nan = np.isnan(radcal_raw[ind_raw_wvl])
         self.coeff[s_type]['ind_nocal'] = ind_nan | ind_zero
-        
+
         self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_nocal'] == False], dtype=float)
-        
+
         # non-lin CB correction currently implemented the same for all sensor
         self.coeff[s_type]['cb_alpha'] = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '2')[1:]
         self.uncs[s_type]['cb_alpha']  = self.read_cal(uncGrp, Nlin_CB_string, "_LINDATA_CAL", '3')[1:]
@@ -204,7 +206,7 @@ class PIUDataStore:
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
         self.uncs[s_type]['stab'] = np.ones_like(self.coeff[s_type]['ind_nocal']) * stab_unc # 1% stability uncertainty estimate for class based
-        
+
         if s_type.upper() == "ES":
             raw_zen = uncGrp.getDataset(s_type + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
             zenith_ang = np.asarray([float(x) for x in raw_zen])
@@ -333,31 +335,63 @@ class PIUDataStore:
         return radcal_raw
 
     #### Class-Based ####
-    def readCalClassBased(self, inpt: HDFGroup, s: str) -> None:
-        radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
-        ind_rad_wvl = np.array(radcal.columns['1']) # > 0 Beware inconsistent use by Tartu of zeroed wavelengths
+    def readCalClassBased(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
+        # 255 bands from FidRadDB. Zeroed bands should be for unreported bands.
+        radcal255 = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
+        # Zeroes appear to refer to unreported bands rather than uncalibrated bands.
+        ind_rad_wvl255 = np.array(radcal255.columns['1']) > 0
+
+        # Strip off unreported bands
+        radcal = HDFDataset()
+        # radcal.datasetToColumns()
+        for col in radcal255.columns:
+            radcal.columns[col] = np.array(radcal255.columns[col])[ind_rad_wvl255].tolist()
+        radcal.columnsToDataset()
+        ind_rad_wvl = ind_rad_wvl255[ind_rad_wvl255]
+
+
+        # What we need here are the L1A pixel numbers rather than L1b interpolated pixels
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            self.cal_start[s] = int(node.attributes[f'{s}_LIGHT_L1AQC_START_PIXEL'])
+            self.cal_stop[s] = int(node.attributes[f'{s}_LIGHT_L1AQC_STOP_PIXEL'])
+        else:
+            self.cal_start[s] = int(node.attributes[f'{s}_L1AQC_START_PIXEL'])
+            self.cal_stop[s] = int(node.attributes[f'{s}_L1AQC_STOP_PIXEL'])
 
         corr_factor = 10 if ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"] else 1  # Convert TriOS mW/m2/nm to uW/cm^2/nm
 
+        # All reported bands
         self.coeff[s]['cal'] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / corr_factor
         self.uncs[s]['cal'] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
+        # Mask of all reported bands for calibrated bands
+        ind_rad_wvl[0:self.cal_start[s]] = False
+        ind_rad_wvl[self.cal_stop[s]+1:] = False
         self.ind_rad_wvl[s] = ind_rad_wvl
+        self.wvl[s] = np.array(radcal.columns['1'])
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
+        # For SeaBird Factory, these are interpolated from Sirrex-7 to 
+        #   reported bands, not from FidRadDB files
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_UNC")
+        # Reported bands masked for calibrated bands
         ind_rad_wvl = np.array(radcal.columns['wvl']) > 0
-        # read cal start and cal stop for shaping stray-light class based uncertainties
-        # self.cal_start = int(node.attributes['CAL_START'])
-        # self.cal_stop = int(node.attributes['CAL_STOP'])
+
         # What we need here are the L1A pixel numbers rather than L1b interpolated pixels
-        self.cal_start = int(node.attributes[f'{s}_LIGHT_L1AQC_START_PIXEL'])
-        self.cal_stop = int(node.attributes[f'{s}_LIGHT_L1AQC_STOP_PIXEL'])
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            self.cal_start[s] = int(node.attributes[f'{s}_LIGHT_L1AQC_START_PIXEL'])
+            self.cal_stop[s] = int(node.attributes[f'{s}_LIGHT_L1AQC_STOP_PIXEL'])
+        else:
+            self.cal_start[s] = int(node.attributes[f'{s}_L1AQC_START_PIXEL'])
+            self.cal_stop[s] = int(node.attributes[f'{s}_L1AQC_STOP_PIXEL'])
 
-        ind_rad_wvl[0:self.cal_start] = False
-        ind_rad_wvl[self.cal_stop+1:] = False
-
+        # All reported bands. Uncs from radcal passed in here. Coeffs read from factory file.
         self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
+
+        # Mask of all reported bands for calibrated bands
+        ind_rad_wvl[0:self.cal_start[s]] = False
+        ind_rad_wvl[self.cal_stop[s]+1:] = False
+
         self.ind_rad_wvl[s] = ind_rad_wvl
         self.wvl[s] = np.array(radcal.columns['wvl'])
 

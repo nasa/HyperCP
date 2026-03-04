@@ -197,7 +197,7 @@ class ProcessL1b_FactoryCal:
         ltUnits = None
         pyrUnits = None
 
-        now = dt.datetime.now()             
+        now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
@@ -219,9 +219,6 @@ class ProcessL1b_FactoryCal:
                         logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
-                        # if gp.id in ['ES','LI','LT']:
-                        #     gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
-                        #     gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
 
                         if esUnits is None:
                             esUnits = cf.getUnits("ES")

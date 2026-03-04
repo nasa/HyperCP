@@ -505,6 +505,8 @@ class Propagate:
     @staticmethod
     def Lw(lt, rhoVec, li, c_li, c_lt, cstab_li, cstab_lt, clin_li, clin_lt, cstray_li, cstray_lt, cT_li, cT_lt, cpol_li, cpol_lt):
         """ Lw Class based branch measurment function """
+
+        # BUG: Where do the inputs for this method come from???
         li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
         lt_signal = lt * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
