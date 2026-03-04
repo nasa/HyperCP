@@ -107,8 +107,8 @@ class Propagate:
     def __init__(self, M: int = 100, cores: int = 1):
         self._platform: str = ''  # internally used variable to store platform string to use in L2 conv products
         self._wavebands: np.array = None  # stores wavebands for convolution
-        self.cal_int: dict  = None
-        self.int_time: dict = None
+        self.cal_int: dict = {s: {} for s in ['ES','LI','LT']}
+        self.int_time: dict = {s: {} for s in ['ES','LI','LT']}
         
         if isinstance(cores, int):
             self.MCP = punpy.MCPropagation(M, parallel_cores=cores)
@@ -431,9 +431,14 @@ class Propagate:
         liSignal = np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol)
         ltSignal = np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
         # add integration time adjustment to measurement function
+        if (liSignal == 0).all():
+            self.cal_int['LI'] = 0
+            self.int_time['LI'] = 1
+            self.cal_int['LT'] = 0
+            self.int_time['LT'] = 1
 
         return (
-            esSignal * (self.cal_int["ES"]/self.int_time["ES"]), 
+            esSignal * (self.cal_int["ES"]/self.int_time["ES"]),
             liSignal * (self.cal_int["LI"]/self.int_time["LI"]),
             ltSignal * (self.cal_int["LT"]/self.int_time["LT"])
         )

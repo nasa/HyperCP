@@ -307,24 +307,25 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 return_as_dict=False
             ) for k,v in BD_UNCS['ES'].items()
         }
-        BD_UNCS['LI'] = {
-            k: utils.interp_common_wvls(
-                v,
-                np.array(uncGrp.getDataset(rad_cal_str_li).columns[cal_col_str_li],
-                dtype=float)[pds_cal_set],
-                l2_wvl,
-                return_as_dict=False
-            ) for k,v in BD_UNCS['LI'].items()
-        }
-        BD_UNCS['LT'] = {
-            k: utils.interp_common_wvls(
-                v,
-                np.array(uncGrp.getDataset(rad_cal_str_lt).columns[cal_col_str_lt],
-                dtype=float)[pds_cal_set],
-                l2_wvl,
-                return_as_dict=False
-            ) for k,v in BD_UNCS['LT'].items()
-        }
+        if ConfigFile.settings['SensorType'].lower() != "trios es only":
+            BD_UNCS['LI'] = {
+                k: utils.interp_common_wvls(
+                    v,
+                    np.array(uncGrp.getDataset(rad_cal_str_li).columns[cal_col_str_li],
+                    dtype=float)[pds_cal_set],
+                    l2_wvl,
+                    return_as_dict=False
+                ) for k,v in BD_UNCS['LI'].items()
+            }
+            BD_UNCS['LT'] = {
+                k: utils.interp_common_wvls(
+                    v,
+                    np.array(uncGrp.getDataset(rad_cal_str_lt).columns[cal_col_str_lt],
+                    dtype=float)[pds_cal_set],
+                    l2_wvl,
+                    return_as_dict=False
+                ) for k,v in BD_UNCS['LT'].items()
+            }
 
         return out, BD_UNCS
 

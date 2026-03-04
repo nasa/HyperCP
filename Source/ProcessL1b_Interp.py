@@ -754,6 +754,12 @@ class ProcessL1b_Interp:
         if ConfigFile.settings["SensorType"].lower() == "trios es only":
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
+
+            # Unclear why es only did not get datasets folded into columns yet
+            for dsName in esL1AQCGroup.datasets:
+                if dsName != 'DATETIME':
+                    esL1AQCGroup.datasets[dsName].datasetToColumns()
+
         else:
             ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
             ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
@@ -863,32 +869,6 @@ class ProcessL1b_Interp:
                 return None
             if not ProcessL1b_Interp.interpTimestamps(ltData, interpData, "LT", fileName):
                 return None
-
-        # NOTE: already interpolated in ancGroup
-        # if robotGroup is not None:
-        #     # Because of the fact that geometries have already been flipped into Ancillary and
-        #     # interpolated prior to applying cal/corrections, some of this is redundant
-        #     # Required:
-        #     if not ProcessL1b_Interp.interpTimestamps(relAzData, interpData, "REL_AZ", fileName):
-        #         return None
-        #     if not ProcessL1b_Interp.interpTimestamps(szaData, interpData, "SZA", fileName, latData, lonData):
-        #         return None
-        #     # Optional, but should all be there with the SOLAR TRACKER or pySAS
-        #     ProcessL1b_Interp.interpTimestamps(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
-        #     if robotGroup.id != "SunTracker_sorad":
-        #         ProcessL1b_Interp.interpTimestamps(pointingData, interpData, "POINTING", fileName)
-
-        #     # Optional
-        #     if "HUMIDITY" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(humidityData, interpData, "HUMIDITY", fileName)
-        #     if "PITCH" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(pitchData, interpData, "PITCH", fileName)
-        #     if "ROLL" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(rollData, interpData, "ROLL", fileName)
-        #     if "HEADING" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(headingData, interpData, "HEADING", fileName)
-        #     if "TILT" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(tiltData, interpData, "TILT", fileName)
 
         if pyrGroup is not None:
             # Optional:

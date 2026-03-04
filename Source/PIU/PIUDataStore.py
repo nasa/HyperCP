@@ -77,23 +77,27 @@ class PIUDataStore:
                     writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                     raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
 
-                # NOTE: If (rare case) any sensors have a different number of calibrated bands (e.g., pySAS sample), 
+                # NOTE: If (rare case) any sensors have a different number of calibrated bands (e.g., pySAS sample),
                 #   we need to crop to set of pixels in order to math them together.
                 #   Take the pixels of the sensor with the fewest pixels. This does NOT change the sensor-specific wavebands themselves.
-                l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
-                fewestBands = l1APixels.index(min(l1APixels))
-                # L1A reported pixels masked for calibration bands (NOT necessarily L1B interpolated bands)
-                if fewestBands==0:
+                if ConfigFile.settings['SensorType'].lower() == "trios es only":
                     l1ACommonCalPix = self.ind_rad_wvl['ES']
-                elif fewestBands==1:
-                    l1ACommonCalPix = self.ind_rad_wvl['LI']
                 else:
-                    l1ACommonCalPix = self.ind_rad_wvl['LT']
-                # Make sure they are not only pixels in common, but commonly TRUE in those bands...
-                if any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['ES'][l1ACommonCalPix]) or\
-                    any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LI'][l1ACommonCalPix]) or\
-                    any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
-                    writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
+                    l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
+                    fewestBands = l1APixels.index(min(l1APixels))
+                    # L1A reported pixels masked for calibration bands (NOT necessarily L1B interpolated bands)
+                    if fewestBands==0:
+                        l1ACommonCalPix = self.ind_rad_wvl['ES']
+                    elif fewestBands==1:
+                        l1ACommonCalPix = self.ind_rad_wvl['LI']
+                    else:
+                        l1ACommonCalPix = self.ind_rad_wvl['LT']
+                    # Make sure they are not only pixels in common, but commonly TRUE in those bands...
+                    if any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['ES'][l1ACommonCalPix]) or\
+                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LI'][l1ACommonCalPix]) or\
+                        any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
+                        writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
+
                 self.l1ACommonCalPix = l1ACommonCalPix.tolist()
                 # Length is 255 pixels (redundant for sensors reporting 255 bands)
                 self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
@@ -103,7 +107,11 @@ class PIUDataStore:
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
 
     def get_inttime(self, root: HDFRoot):
-        for s in ["ES", "LI", "LT"]:
+        if ConfigFile.settings['SensorType'].lower() == "trios es only":
+            sensors = ["ES"]
+        else:
+            sensors = ["ES", "LI", "LT"]
+        for s in sensors:
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 gp = root.getGroup(f"{s}_LIGHT_L1AQC")
 

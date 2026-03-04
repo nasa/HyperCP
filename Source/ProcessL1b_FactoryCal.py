@@ -249,8 +249,6 @@ class ProcessL1b_FactoryCal:
         #  don't have values from Tartu for full FRM. Here, use all the Es bands.
         direct_ratio = res_sixS['direct_ratio']
         diffuse_ratio = res_sixS['diffuse_ratio']
-        # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
-        # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
         model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
 
         sixS_grp = node.addGroup("SIXS_MODEL")

@@ -414,7 +414,11 @@ class ProcessL1bTriOS:
             # Check that the FidRadDB file agrees on which bands are calibrated.
             # TODO: Port this test over to SeaBird, DALEC, etc.
             uncGroup = node.getGroup('RAW_UNCERTAINTIES')
-            for sensor in ['ES','LI','LT']:
+            if ConfigFile.settings['SensorType'].lower() == "trios es only":
+                sensors = ["ES"]
+            else:
+                sensors = ["ES", "LI", "LT"]
+            for sensor in sensors:
                 ds = uncGroup.datasets[f'{sensor}_RADCAL_CAL']
                 whrTrue = np.where(ds.columns['2'] > 0)[0]
                 if node.getGroup(sensor).attributes['CAL_START'] != str(min(whrTrue)) or \
