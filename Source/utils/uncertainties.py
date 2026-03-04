@@ -111,6 +111,7 @@ class unc_management:
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
                 ]:
+                # "_STRAYDATA_CAL"
                 try:
                     ds = grp.getDataset(f"{sensor}{dtype}")
                     ds.datasetToColumns()
@@ -138,7 +139,7 @@ class unc_management:
             for s in ['ES', 'LI', 'LT']:
                 if s in grp.id and not s in sensor_list:
                     sensor_list.append(s)#
-                    
+
         for sensor in sensor_list:
             ## retrieve dataset from corresponding instrument
             grp_name = None
@@ -213,7 +214,7 @@ class unc_management:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorId = unc_management.get_sensor_dict(node)
-        grp.datasets
+        # grp.datasets
         sensor_list = []
         for grp in node.groups:
             for s in ['ES', 'LI', 'LT']:
@@ -226,7 +227,7 @@ class unc_management:
             # indx = ds.attributes["INDEX"]
             # pixel = np.array(ds.columns['0'[1:])
             bands = np.array(ds.columns['1'][1:])
-            coeff = np.array(ds.columns['2'][1:])
+            # coeff = np.array(ds.columns['2'][1:])
             valid = bands>0
             # x_new2 = bands[valid]
 
@@ -272,9 +273,9 @@ class unc_management:
                         ds.columns[str(indx)] = y_new
                     ds.columns['0'] = x_new
                     ds.columnsToDataset()
-        
+
         return True
-    
+
     @staticmethod
     def get_sensor_dict(node):
         sensorID = {}

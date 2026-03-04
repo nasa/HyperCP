@@ -2,6 +2,7 @@
 # Packages
 from os import path, makedirs, umask
 from datetime import datetime
+from itertools import cycle
 
 # linting
 from typing import Optional
@@ -125,10 +126,10 @@ class plottingToolsCB:
             plt.close(f"{sensor}_{self.station}")
 
     def plot_bar_classBased(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str : np.array]:
-        if ConfigFile.settings["fL1bCal"] == 1:
-            regime = "Factory"
-        else:
-            regime = "Class"
+        # if ConfigFile.settings["fL1bCal"] == 1:
+        #     regime = "Factory"
+        # else:
+        #     regime = "Class"
 
         labels = dict(
             ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
@@ -136,40 +137,13 @@ class plottingToolsCB:
             LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
         )
 
-        #  # build table of anc data
-        # aod = ancGrp.datasets['AOD'].columns['AOD'][0]
-        # rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
-        # saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
-        # sza = ancGrp.datasets['SZA'].columns['SZA'][0]
-        # ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
-        # sst = ancGrp.datasets['SST'].columns['SST'][0]
-
-        # col_labels = ['value']
-        # row_labels = [
-        #     'Aerosol Optical Depth',
-        #     'Relative Azimuth',
-        #     'Solar Azimuth',
-        #     'Solar Zenith',
-        #     'Wind Speed',
-        #     'Water Temperature'
-        # ]
-        # table_vals = [
-        #     [aod],
-        #     [rel_az],
-        #     [saa],
-        #     [sza],
-        #     [ws],
-        #     [sst]
-        # ]
-
         # ✅ Build global color map OUTSIDE the if/else
-        from itertools import cycle
         all_labels = []
         for group in labels.values():
             all_labels.extend(group)
         all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
 
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        palette = plt.cm.tab20(np.linspace(0, 1, 20)) #pylance linting error?
         color_cycle = cycle(palette)
         LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
 
@@ -185,6 +159,7 @@ class plottingToolsCB:
             ]
             for indx in indexes:
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
+                # fig, ax = plt.subplots()
 
                 # --- Build figure and axis ---
                 fig = plt.figure(s)
@@ -194,29 +169,7 @@ class plottingToolsCB:
                 # --- Data ---
                 vals = [PlotMaths.getpct(BD_UNCS[s][key], BD_VALS[s])[indx] for key in keys]
 
-                # the_table = plt.table(cellText=table_vals,
-                #                       colWidths=[0.1],
-                #                       rowLabels=row_labels,
-                #                       colLabels=col_labels,
-                #                       loc="best",
-                #                       )
-                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
-
-                # ax.pie(
-                #     [
-                #         PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor])[indx]
-                #         for key in component
-                #     ],
-                #     labels=component,
-                #     autopct="%1.1f%%",
-                # )
-                # plt.title(
-                #     f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm"
-                # )
-                # fp = path.join(self.plot_folder, f"pie_chart_CB_{sensor}_{self.station}_{wvl_at_indx}.png")
-                
                 labels_list = labels[s]
-                colors = [LABEL_COLORS[lab] for lab in labels_list]
 
                 # Safety: handle empty or all-zero data
                 if not vals or sum(vals) == 0:
@@ -235,22 +188,38 @@ class plottingToolsCB:
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
                 # --- Add percentage labels to the right of each bar ---
-                
+
                 # Combined uncertainty
                 combined = (sum(v**2 for v in vals)) ** 0.5
-                
+
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
+                ref_at_indx = []
                 for i, v in enumerate(vals_sorted):
                     pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+                    ref_at_indx.append(round(pct,1) + 1)
 
-                # --- Styling ---
+                # --- Styling --- #
                 ax.invert_yaxis()  # largest at top
-                ax.set_xlabel("Uncertainty Contribution")
+                ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
-                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
+
+                # --- Add text explaining calculation of combined uncertainty --- #
+                textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.01,
+                               textstr,
+                               fontsize=14,
+                               color='black',
+                               wrap=True,
+                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                )
 
                 plt.tight_layout()
+                plt.subplots_adjust(bottom=0.16)  # create space for text
+
                 fp = path.join(
                     self.plot_folder,
                     f"{s}_CB_bar_{self.station}_{wvl_at_indx}.png",
@@ -262,11 +231,11 @@ class plottingToolsCB:
 
     def plot_bar_class_l2(
         self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp
-    ) -> dict[str : np.array]:
-        if ConfigFile.settings["fL1bCal"] == 1:
-            regime = "Factory"
-        else:
-            regime = "Class"
+    ) -> Optional[bool]:
+        # if ConfigFile.settings["fL1bCal"] == 1:
+        #     regime = "Factory"
+        # else:
+        #     regime = "Class"
 
         labels = dict(
             # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
@@ -278,7 +247,6 @@ class plottingToolsCB:
             labels["Rrs"].append("BRDF")
 
         # ✅ Build global color map OUTSIDE the if/else
-        from itertools import cycle
         all_labels = []
         for group in labels.values():
             all_labels.extend(group)
@@ -287,7 +255,7 @@ class plottingToolsCB:
         palette = plt.cm.tab20(np.linspace(0, 1, 20))
         color_cycle = cycle(palette)
         LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
-        
+
         for s, keys in labels.items():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
@@ -309,7 +277,7 @@ class plottingToolsCB:
                 vals = [PlotMaths.getpct(BD_UNCS[s][key], BD_VALS[s])[indx] for key in keys]
 
                 labels_list = labels[s]
-                colors = [LABEL_COLORS[lab] for lab in labels_list]
+                # colors = [LABEL_COLORS[lab] for lab in labels_list]
 
                 # Safety: handle empty or all-zero data
                 if not vals or sum(vals) == 0:
@@ -317,40 +285,53 @@ class plottingToolsCB:
                     plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
                     plt.axis('off')
                     plt.tight_layout()
-                    return
+                    return False
 
-                # --- Sort by value descending for readability ---       
+                # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
                 colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
 
-                # --- Plot horizontal bars ---
+                # --- Plot horizontal bars --- #
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
-                # --- Add percentage labels to the right of each bar ---
-                
-                # Combined uncertainty
+                # --- Combined uncertainty --- #
                 combined = (sum(v**2 for v in vals)) ** 0.5
-                
+
+                # --- Add percentage labels to the right of each bar --- #
+                ref_at_indx = []
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
                     pct = (v / combined) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+                    ref_at_indx.append(pct)
 
-                # --- Styling ---
+                # --- Styling --- #
                 ax.invert_yaxis()  # largest at top
-                ax.set_xlabel("Uncertainty Contribution")
+                ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
+                # --- Add text explaining calculation of combined uncertainty --- #
+                textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.01,
+                               textstr,
+                               fontsize=14,
+                               color='black',
+                               wrap=True,
+                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                )
+
                 plt.tight_layout()
+                plt.subplots_adjust(bottom=0.16)  # create space for text
+
                 fp = path.join(
                     self.plot_folder, f"{s}_CB_bar_{cast}_{wvl_at_indx}.png"
                 )
                 self.save_figure(s=s, fp=fp, legend=False, grid=False)
                 plt.close(fig)
-
-        # return BD_UNCS
 
     def plot_sample(
         self,
@@ -375,7 +356,7 @@ class plottingToolsCB:
                 y_mean / cal
             )  # multiply uncertainties by cal to convert into irradiance/radiance
 
-        u_rel = self.getpct(y, y_mean)
+        u_rel = PlotMaths.getpct(y, y_mean)
         try:
             plt.figure(f"{s}_{self.station}")
         except AttributeError:
@@ -424,6 +405,7 @@ class plottingToolsCB:
                 umask(orig_umask)
 
         plt.savefig(fp)
+        plt.close()
 
 
 class PlotMaths:
@@ -446,6 +428,7 @@ class PlotMaths:
             *vals
         )  # get values to make uncs relative
 
+        # Add uncertainty elements incrementally. Indexes refer to elements listed in keys above, as they appear in vals and uncs
         for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
             if indx == 0:
                 p_uncs[0:6] = uncs[0:6]
@@ -504,8 +487,6 @@ class PlotMaths:
             try:
                 UNCS["Lw"][keys_lw[indx]] = prop.Propagate_Lw_HYPER(lw_vals, uLw)
             except ValueError as err:
-                from Source.utils.loggingHCP import writeLogFileAndPrint  # why is linter requiring this and also scolding about it?
-
                 writeLogFileAndPrint(
                     f"Error in Class Based Breakdown - {keys_lw[indx]}: {err}"
                 )
@@ -545,8 +526,6 @@ class PlotMaths:
             try:
                 UNCS["Rrs"][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(rrs_vals, uRrs)
             except ValueError as err:
-                from Source.utils.loggingHCP import writeLogFileAndPrint
-
                 writeLogFileAndPrint(f"Error in Class Based Breakdown - {keys_rrs[indx]}: {err}")
                 UNCS["Rrs"][keys_rrs[indx]] = prop.Propagate_RRS_HYPER(
                     rrs_vals, uRrs, corr_between=False

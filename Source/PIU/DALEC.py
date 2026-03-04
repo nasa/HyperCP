@@ -7,12 +7,12 @@ import numpy as np
 
 # Packages
 import warnings
-from copy import deepcopy
 
 from Source.HDFGroup import HDFGroup
 
 # PIU
 from Source.PIU.BaseInstrument import BaseInstrument
+from Source.PIU.PIUDataStore import PIUDataStore as pds
 
 # Utilities
 from Source.utils.loggingHCP import writeLogFileAndPrint
@@ -24,8 +24,7 @@ class Dalec(BaseInstrument):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
 
-    # def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
-    def lightDarkStats(self, grp: dict[str: HDFGroup], XSlice: dict[str: OrderedDict], sensortype: str) -> dict[str: Union[np.array, dict]]:
+    def lightDarkStats(self, grp: dict[str, HDFGroup], XSlice: dict[str, OrderedDict], sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
         ''' Unsliced L1AQC grp is no longer needed here '''
         # Dalec
         lightData = XSlice['LIGHT']  # lightGrp.getDataset(sensortype)
@@ -87,7 +86,7 @@ class Dalec(BaseInstrument):
             Signal_noise=signal_noise,
             )  # output as dictionary for use in ProcessL2/PIU
 
-    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+    def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
         output = {}
         return output

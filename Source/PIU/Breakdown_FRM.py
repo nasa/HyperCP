@@ -1,13 +1,11 @@
 ''' Generate and plot spectral and pie breakdowns for sensor-based FRM uncertainties'''
 from os import path, makedirs, umask
 from typing import Optional, Union, Any
-import math
+from itertools import cycle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
-# from itertools import cycle
-
+# from matplotlib import cm # Thought this was related to "matplotlib.cm has no tab20 member" errors below.... It's also comet_maths
 import comet_maths as cm
 
 # Source
@@ -18,7 +16,6 @@ from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
 from Source.PIU.PIUDataStore import PIUDataStore
 
 
-
 class plottingToolsFRM:
     '''Class for sensor-based uncertainty plotting tools'''
     def __init__(self, sza, station):
@@ -27,10 +24,10 @@ class plottingToolsFRM:
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
     def plotL1B(self, wvls, BD_UNCS, signal):
-        from itertools import cycle
 
         for s_type in ['ES', 'LI', 'LT']:
             palette = plt.cm.tab20(np.linspace(0, 1, 20))
+            # palette = mplcm.tab20(np.linspace(0, 1, 20))
             color_cycle = cycle(palette)
 
             ## DO PLOTS ##
@@ -56,7 +53,6 @@ class plottingToolsFRM:
             self.plot_bar_FRM(s_type, wvls, BD_UNCS[s_type], signal[s_type])
 
     def plotL2(self, waveSubset, BD_UNCS, signal):
-        from itertools import cycle
         ylim = [0, 5]
 
         for meas in ['nLw', 'Rrs']:
@@ -88,17 +84,18 @@ class plottingToolsFRM:
                     self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
 
             self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            
+
             self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
-        
+
             # self.plot_pie_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
             self.plot_bar_FRM(meas, wvls, BD_UNCS[meas], signal[meas], 'L2')
 
 
     def plot_spectral_FRM(
             self, s, x: np.array, y: np.array, name: str, colour: Any,
-            rel_to: Optional[np.array]=None, unit: Optional[str]="", 
-            ylim: Optional[list]=None) -> None:  # TODO: change docs to show tableau colours or str as input
+            rel_to: Optional[np.array]=None, unit: Optional[str]="",
+            ylim: Optional[list]=None) -> None:  
+            # TODO: change docs to show tableau colours or str as input
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)
 
@@ -133,7 +130,7 @@ class plottingToolsFRM:
 
         plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
 
-    def plot_bar_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str: np.array], signal: np.array, level: str='L1B') -> None:
+    def plot_bar_FRM(self, s: str, wavelengths: np.array, BD_UNCS: dict[str, np.array], signal: np.array, level: str='L1B') -> None:
         """
         plots a pie chart for the sensor-specific regime
 
@@ -173,9 +170,8 @@ class plottingToolsFRM:
                 labels['nLw'].append("brdf correction")
                 keys['Rrs'].append("BRDF")
                 labels['Rrs'].append("brdf correction")
-        
+
         # ✅ Build global color map OUTSIDE the if/else
-        from itertools import cycle
         all_labels = []
         for group in labels.values():
             all_labels.extend(group)
@@ -203,31 +199,8 @@ class plottingToolsFRM:
 
             # --- Data ---
             vals = [self.getpct(BD_UNCS[key], signal)[indx] for key in keys[s]]
-            # combined = np.sqrt(np.sum([v**2 for v in vals]))  # combined uncertainty (for estimate at wvl)
 
-            # l = ax.pie(
-            #     vals,
-            #     # labels=labels[s],
-            #     autopct='%1.1f%%',
-            #     pctdistance=1.1,
-            #     labeldistance=1.2,
-            # )
-
-            # plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)  # y=-0.01
-
-            # # set up the lables so they aren't occluded in small slices - TODO: improve this for better clarity
-            # for label, t in zip(labels[s], l[1]):
-            #     x, y = t.get_position()
-            #     angle = int(math.degrees(math.atan2(y, x)))
-            #     ha = "left"
-
-            #     if x<0:
-            #         angle -= 180
-            #         ha = "right"
-
-            #     plt.annotate(label, xy=(x,y), rotation=angle, ha=ha, va="center", rotation_mode="anchor", size=8)
             labels_list = labels[s]
-            colors = [LABEL_COLORS[lab] for lab in labels_list]
 
             # Safety: handle empty or all-zero data
             if not vals or sum(vals) == 0:
@@ -240,29 +213,45 @@ class plottingToolsFRM:
             # Combined uncertainty
             combined = (sum(v**2 for v in vals)) ** 0.5
 
-            # --- Sort by value descending for readability ---       
+            # --- Sort by value descending for readability --- #
             sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
             vals_sorted, labels_sorted = zip(*sorted_data)
             colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
 
-            # --- Plot horizontal bars ---
+            # --- Plot horizontal bars --- #
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
 
-            # --- Add percentage labels to the right of each bar ---
+            # --- Add percentage labels to the right of each bar --- #
+            ref_at_indx = []
             x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
             for i, v in enumerate(vals_sorted):
                 pct = (v / combined) * 100
                 ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
+                ref_at_indx.append(round(pct,1))
 
-            # --- Styling ---
+            # --- Styling --- #
             ax.invert_yaxis()  # largest at top
-            ax.set_xlabel("Uncertainty Contribution")
+            ax.set_xlabel(f"Uncertainty relative to {s} (%)")
             ax.set_ylabel("Contributors")
             plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
+            # --- Add text explaining calculation of combined uncertainty --- #
+            textstr = f"Bars represent uncertainty relative to total {s} signal." \
+                       f"The percentages displayed per bar represents the component uncertainty as a percentage of the total uncertainty at {wvl_at_indx} nm." \
+                       r"Total uncertainty is calculated by adding all contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+            plt.gcf().text(0.02, 0.01,
+                            textstr,
+                            fontsize=14,
+                            color='black',
+                            wrap=True,
+                            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+            )
+
             plt.tight_layout()
+            plt.subplots_adjust(bottom=0.16)  # create space for text
+
             fp = path.join(self.plot_folder, f"{s}_SB_bar_{self.station}_{wvl_at_indx}.png")
-            self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level) 
+            self.save_figure(s=s, fp=fp, legend=False, grid=False, measurement=level)
 
     def get_figure(self, s: str) -> plt.figure:
         """
@@ -279,7 +268,7 @@ class plottingToolsFRM:
                 fig = plt.figure(s)
 
         return fig
-    
+
     def save_figure(self, s: Optional[str]=None, fp: Optional[str]=None, legend: bool=True, grid: bool=True, measurement='L1B') -> None:
         """
         Helper function to save spectral and pie figures based on cast/station information
@@ -302,7 +291,7 @@ class plottingToolsFRM:
         if fp is None:
             # Case for spectral plots
             try:
-                
+
                 # Sensor_plot-type_regime_datetime.png
                 fp = path.join(self.plot_folder, f"{s}_{measurement}_SB_{self.station}.png")
             except (AttributeError, ValueError):
@@ -320,7 +309,7 @@ class plottingToolsFRM:
         plt.close()
 
     @staticmethod
-    def getpct(v1: Union[float, np.array], v2: Union[float, np.array]) -> np.array:
+    def getpct(v1: Union[list, np.array], v2: Union[list, np.array]) -> np.array:
         """
         gets the percentage of v1 out of v2: (v1/v2) * 100%
         
@@ -329,7 +318,7 @@ class plottingToolsFRM:
         
         """
         pct = []
-        for i,v1i in enumerate(v1):
+        for i, v1i in enumerate(v1):
             if v2[i] != 0:  # ignore wavelengths where we do not have an output
                 pct.append(v1i/v2[i])
             else:
@@ -348,7 +337,7 @@ class SolveLPU:
             self.prop = prop
 
     @staticmethod
-    def S12_alpha(PDS: PIUDataStore, s: str) -> dict[str: np.array]:
+    def S12_alpha(PDS: PIUDataStore, s: str) -> dict[str, np.array]:
         """
         calculates breakdown uncertainties for S12 and alpha
 
@@ -375,7 +364,7 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def updatedGains(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, sample_S12_sl_corr) -> dict[str: np.array]:
+    def updatedGains(self, LPU_UNCS: dict[str, np.array], PDS: PIUDataStore, s: str, sample_S12_sl_corr) -> dict[str, np.array]:
         """
         calculate breakdown uncertaintiesd for the updated radiometric gains
 
@@ -412,7 +401,7 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def nonLinearity(self, LPU_UNCS: dict[str: np.array], alpha: np.array, sample_signal: np.ndarray) -> dict[str: np.array]:
+    def nonLinearity(self, LPU_UNCS: dict[str, np.array], alpha: np.array, sample_signal: np.ndarray) -> dict[str, np.array]:
         """
         returns a dictionary with uncertainties in S12, alpha, instrument noise, non-linearity correction
 
@@ -435,7 +424,7 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def strayLight(self, LPU_UNCS: dict[str: np.array], nlin_signal: np.array, sample_C_zong: np.ndarray) -> dict[str: np.array]:
+    def strayLight(self, LPU_UNCS: dict[str, np.array], nlin_signal: np.array, sample_C_zong: np.ndarray) -> dict[str, np.array]:
         """
         uses Monte Carlo to isolate uncertainty in signal which is due to straylight. 
         In addition passed other uncertainty contributions through measurement function in lieu of sensitivity coefficents
@@ -464,7 +453,7 @@ class SolveLPU:
         sample_out = self.prop.run_samples(mf.Zong_SL_correction, [sample_signal, sample_zong])
         return self.prop.process_samples(None, sample_out)
 
-    def calibration(self, LPU_UNCS: dict[str: np.array], updated_gain: np.array, signal: np.ndarray) -> dict[str: np.array]:
+    def calibration(self, LPU_UNCS: dict[str, np.array], updated_gain: np.array, signal: np.ndarray) -> dict[str, np.array]:
         """
         :param LPU_UNCS: breakdown uncertainties generated from LPU
         :param updated_gain: magnitude of recalculated gains - for generating sensitivity coefficients
@@ -498,7 +487,7 @@ class SolveLPU:
         else:  # Radiance
             return (LAMP_mag * np.mean(sample_PANEL, axis=0)) / (np.pi*S1*10)
 
-    def temperature(self, LPU_UNCS: dict[str: np.array], PDS: PIUDataStore, s: str, radcal_signal) -> dict[str: np.array]:
+    def temperature(self, LPU_UNCS: dict[str, np.array], PDS: PIUDataStore, s: str, radcal_signal) -> dict[str, np.array]:
         """
         uses LPU to calculate temperature uncertainty as well as propagate uncertainties through the temperature correction
         
@@ -520,7 +509,7 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def cosine(self, LPU_UNCS: dict[str: np.array], sample_ct_corr, dir_ratio, sample_cos_corr, sample_fhemi)-> dict[str: np.array]:
+    def cosine(self, LPU_UNCS: dict[str, np.array], sample_ct_corr, dir_ratio, sample_cos_corr, sample_fhemi)-> dict[str, np.array]:
         """
         uses LPU to calculate cosine uncertainty as well as propagate uncertainties through the cosine correction. This method uses Monte Carlo instead 
         of the LPU due to complicated sensitivity coefficents
@@ -558,7 +547,7 @@ class SolveLPU:
 
         return LPU_UNCS
 
-    def environmental_perturbations(self, LPU_UNCS: dict[str: np.array], signal: np.ndarray, pert: np.array) -> dict[str: np.array]:
+    def environmental_perturbations(self, LPU_UNCS: dict[str, np.array], signal: np.ndarray, pert: np.array) -> dict[str, np.array]:
         """
         get estimate of perterbations caused by environmental effects. Measured as instability (stdev) in the corrected signal 
 
@@ -573,8 +562,10 @@ class SolveLPU:
         # environmental perturbations is caluclated relative to DN, multiply by corrected signal to recover abs units
         LPU_UNCS['pert'] = pert * signal  # signal standard deviation.
 
+        return LPU_UNCS
+
     ## L2 ##
-    def waterLeaving(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Li: np.array, rho: np.array) -> dict[str: np.array]:
+    def waterLeaving(self, LPU_common_wb: dict[str, np.array], LPU_UNCS: dict[str, np.array], Li: np.array, rho: np.array) -> dict[str, np.array]:
         """
         Method to propagate L1B uncertainties to water leaving radiance
 
@@ -598,7 +589,9 @@ class SolveLPU:
 
         LPU_UNCS['Lw']['rho'] = np.sqrt(sc_2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def reflectance(self, LPU_common_wb: dict[str: np.array], LPU_UNCS: dict[str: np.array], Es: np.array, Li: np.array, Lt: np.array, rho: np.array) -> dict[str: np.array]:
+        return LPU_UNCS
+
+    def reflectance(self, LPU_common_wb: dict[str, np.array], LPU_UNCS: dict[str, np.array], Es: np.array, Li: np.array, Lt: np.array, rho: np.array) -> dict[str, np.array]:
         """
         Method to propagate L1B uncertainties to remote sensing reflectance
 
@@ -639,7 +632,9 @@ class SolveLPU:
 
         LPU_UNCS['Rrs']['rho'] = np.sqrt(sc_3**2 * LPU_UNCS['rho']['rho_unc']**2)
 
-    def normalised_waterLeaving(self, LPU_UNCS: dict[str: np.array], rrs, f0, f0_unc: np.array) -> dict[str: np.array]:
+        return LPU_UNCS
+
+    def normalised_waterLeaving(self, LPU_UNCS: dict[str, np.array], rrs, f0, f0_unc: np.array) -> dict[str, np.array]:
         """
         Method to propagate L1B uncertainties to normalised water leaving radiance
 
@@ -654,3 +649,5 @@ class SolveLPU:
             )  # add in quadrature for NLw
 
         LPU_UNCS['nLw']["f0"] = np.sqrt(rrs**2 * f0_unc**2)
+
+        return LPU_UNCS
