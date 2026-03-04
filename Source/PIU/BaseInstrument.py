@@ -181,9 +181,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return False
 
     def ClassBasedL1A(self,
-                   node: HDFRoot, 
-                   uncGrp: HDFGroup, 
-                   stats: dict[str, np.array], 
+                   node: HDFRoot,
+                   uncGrp: HDFGroup,
+                   stats: dict[str, np.array],
                    xslice: dict[str, dict[str, np.array]],
                    ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
         """
