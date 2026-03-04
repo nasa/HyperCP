@@ -1,7 +1,10 @@
+'''Base class for instrument uncertainty analysis.'''
 # linting
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Any
+from typing import Union, OrderedDict, Any, Tuple
 import warnings
+import copy
+import time
 
 # maths
 import numpy as np
@@ -23,6 +26,8 @@ from Source.PIU.Breakdown_CB import PlotMaths
 
 # UTILITIES
 from Source.utils.loggingHCP import writeLogFileAndPrint
+from Source.utils.interpolating import interp
+import Source.utils.interpolating as interpolating
 
 
 class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators which exist to give warnings to coders.
@@ -53,10 +58,34 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     ## Regime Agnostic Methods ##
 
     @abstractmethod
-    def lightDarkStats(self, grp: Union[HDFGroup, dict[str: HDFGroup]], XSlice: dict, sensortype: str) -> dict[str: np.array]:
+    def lightDarkStats(self, grp: Union[HDFGroup, dict[str, HDFGroup]], XSlice: dict, sensortype: str) -> dict[str, np.array]:
         pass
 
-    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array) -> dict[str: np.array]:
+    @staticmethod
+    def get_interp_data(
+            es_slice_dtimes, 
+            li_slice_dtimes, 
+            lt_slice_dtimes,
+        ) -> np.array:
+        # Interpolate all datasets to the SLOWEST radiometric sampling rate
+        esLength = len(es_slice_dtimes)
+        liLength = len(li_slice_dtimes)
+        ltLength = len(lt_slice_dtimes)
+
+        interpData = None; s = None  # always interpolate to the slowest intrument to reduce error
+        if esLength < liLength and esLength < ltLength:
+            writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+            interpData = es_slice_dtimes
+        elif liLength < ltLength:
+            writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+            interpData = li_slice_dtimes
+        else:
+            writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+            interpData = lt_slice_dtimes
+
+        return interpData
+
+    def generateSensorStats(self, i_type: str, rawData: dict, rawSlice: dict, newWaveBands: np.array, y: Optional[list]=None) -> Union[dict[str, np.array], bool]:
         """
         Generate Sensor Stats calls lightDarkStats for a given instrument. Once sensor statistics are known, they are 
         interpolated to common wavebands to match the other L1B sensor inputs Es, Li, & Lt.
@@ -69,40 +98,68 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         stats = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         for s_type in self.sensors:
             # filter nans
-            from Source.PIU.utils import utils
-
+            rawGrp = None
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
+                # what about trios es only branch?
+                # where are the trios timestamps?
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['datetime'],
+                    rawSlice['LI']['datetime'],
+                    rawSlice['LT']['datetime'],
+                )
                 # L1AQC unsliced data group is passed and used for calibration data contained therein.
                 utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
-                args = [copy.deepcopy(rawData[s_type]),
-                        copy.deepcopy(rawSlice[s_type]),
-                        s_type]
-                    # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                rawGrp     = rawData[s_type]
+                lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['data'])
+                darkData   = None  # trios stores dark data in standard sequence - no shutter
             elif i_type.lower() == "dalec":
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['light']['datetime'],
+                    rawSlice['LI']['light']['datetime'],
+                    rawSlice['LT']['light']['datetime'],
+                )
                 # NOTE: Under development
                 # L1AQC unsliced data group is passed, but not used.
                 utils.apply_NaN_Mask(rawSlice[s_type]['light'])
                 utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
-                args = [
-                    {'L1AQC': copy.deepcopy(rawData[s_type].datasets[s_type]), 'DARK': copy.deepcopy(rawData[s_type].datasets['DARK_CNT'])},
-                    {'LIGHT': copy.deepcopy(rawSlice[s_type]['light']), 'DARK': copy.deepcopy(rawSlice[s_type]['dark'])},
-                    s_type
-                ]
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                lightTimer = copy.deepcopy(rawSlice[s_type]['light']['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['light']['data'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['dark']['data'])
             elif i_type.lower() == "seabird":
+                interpData = self.get_interp_data(
+                    rawSlice['ES']['LIGHT']['datetime'],
+                    rawSlice['LI']['LIGHT']['datetime'],
+                    rawSlice['LT']['LIGHT']['datetime'],
+                )
                 # L1AQC unsliced data group is passed, but only used for reference.
                 utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
                 utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
-                args =[
-                    {'LIGHT': rawData[s_type]['LIGHT'], 'DARK': rawData[s_type]['DARK']},
-                    {'LIGHT': rawSlice[s_type]['LIGHT'], 'DARK': rawSlice[s_type]['DARK']},
-                    s_type
-                    ]
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+                lightTimer = copy.deepcopy(rawSlice[s_type]['LIGHT']['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['LIGHT']['data'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['DARK']['data'])
             else:
                 writeLogFileAndPrint("WARNING sensor not recognised")
-                args = None
+                return False  # makes annoyting pylance squiggles go away
 
             try:
-                stats[s_type] = self.lightDarkStats(*args)
+                if not self.interp_and_slice_raw_data(lightData, lightTimer, interpData):
+                    writeLogFileAndPrint("unable to interpolate light signal (DN) to common timestamps")
+                    raise(ValueError)
+                if i_type.lower() not in ["sorad", "trios", "trios es only"]:
+                    if not self.interp_and_slice_raw_data(darkData, lightTimer, interpData):
+                        writeLogFileAndPrint("unable to interpolate dark signal (DN) to common timestamps")
+                        raise(ValueError)
+                args = [
+                    rawGrp if rawGrp is not None else None,
+                    {k: [lightData[k][i] for i in y] for k in lightData} if y is not None else lightData,
+                    {k: [darkData[k][i] for i in y] for k in darkData} if (y is not None) and (darkData is not None) else darkData,
+                    s_type,
+                ]
+                stats[s_type] = self.lightDarkStats(*[a for a in args if a is not None])
             except (ValueError, IndexError, KeyError):
                 writeLogFileAndPrint("Could not generate statistics for the ensemble")
                 return False
@@ -123,7 +180,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
-    def ClassBasedL1A(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
+    def ClassBased(self,
+                   node: HDFRoot, 
+                   uncGrp: HDFGroup, 
+                   stats: dict[str, np.array], 
+                   xslice: dict[str, dict[str, np.array]],
+                   ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.
@@ -140,6 +202,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # create object for running uncertainty propagation, M means number of monte carlo draws
             mDraws = 100
             UNC_obj_CB = Propagate(M=mDraws, cores=0)
+            # PDS has all reported bands, cal'd and not cal'd, at L1A waveband centers IN FACTORY MODE
+
             PDS = pds(node, uncGrp)
         except NotImplementedError:
             print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
@@ -229,14 +293,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ES_unc = es_unc / np.abs(es)
             LI_unc = li_unc / np.abs(li)
             LT_unc = lt_unc / np.abs(lt)
-
-            # quad_es = np.sqrt(np.sum([BD_UNCS['ES'][k]**2 for k in BD_UNCS['ES']], axis=0))
-            # quad_li = np.sqrt(np.sum([BD_UNCS['LI'][k]**2 for k in BD_UNCS['LI']], axis=0))
-            # quad_lt = np.sqrt(np.sum([BD_UNCS['LT'][k]**2 for k in BD_UNCS['LT']], axis=0))
-
-            # pct_diff_es = ((quad_es - es_unc)/es)*100
-            # pct_diff_li = ((quad_li - li_unc)/li)*100
-            # pct_diff_lt = ((quad_lt - lt_unc)/lt)*100
 
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))
@@ -329,7 +385,19 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         return out, BD_UNCS
 
-    def ClassBasedL2(self, node, uncGrp, PDS, stats, rhoScalar, rhoVec, rhoDelta, f0, f0_unc, waveSubset, xSlice) -> dict:
+    def ClassBasedL2(self, 
+                     node: HDFRoot, 
+                     uncGrp: HDFGroup, 
+                     PDS: pds, 
+                     stats: dict[str, Union[np.array, dict]], 
+                     rhoScalar: Union[float, np.array], 
+                     rhoVec: np.array,
+                     rhoDelta: np.array, 
+                     f0: np.array, 
+                     f0_unc: np.array,
+                     waveSubset: np.array, 
+                     xSlice: dict[str, dict[str, np.array]]
+                     ) -> Union[dict[str, bool], bool]:
         """
         Propagates class based uncertainties for all Lw and Rrs. See D-10 section 5.3.1.
 

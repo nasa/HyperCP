@@ -200,16 +200,16 @@ class ProcessL1b_FactoryCal:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
+        # start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
         logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
         logging.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
-            if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
-                gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
-                gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
+            # if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
+            #     gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+            #     gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
             if 'L1AQC' not in gp.id:
                 logging.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:

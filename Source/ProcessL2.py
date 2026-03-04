@@ -20,6 +20,7 @@ from Source.ProcessL2BRDF import ProcessL2BRDF
 
 # PIU
 from Source.PIU.Uncertainty_Analysis import Propagate
+from Source.PIU.PIUDataStore import PIUDataStore
 from Source.PIU.HyperOCR import HyperOCR, HyperOCRUtils
 from Source.PIU.TriOS import TriOS
 from Source.PIU.DALEC import Dalec
@@ -1447,7 +1448,7 @@ class ProcessL2:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
                 else:
-                    from Source.PIU.PIUDataStore import PIUDataStore
+                    # from Source.PIU.PIUDataStore import PIUDataStore
                     pds = PIUDataStore(node, uncGroup)
 
                     x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)
@@ -1456,9 +1457,9 @@ class ProcessL2:
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")
                 return False
         elif ConfigFile.settings["fL1bCal"] == 3:  # FRM-Sensor Specific
-            from Source.PIU.PIUDataStore import PIUDataStore
+
             pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
-            
+
             l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
             x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc

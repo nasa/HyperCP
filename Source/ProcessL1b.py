@@ -871,18 +871,26 @@ class ProcessL1b:
                 gp = dating.groupAddDateTime(gp)
 
         # Calibration
-        # Depending on the Configuration, process either the factory
-        # calibration, class-based characterization, or the complete
-        # instrument characterizations
+        #   Depending on the Configuration, process either the factory calibration, class-based characterization,
+        #   or the complete instrument characterizations
+        calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+        print("Read CalibrationFile ", calPath)
+        calibrationMap = CalibrationFileReader.read(calPath)
+        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
+        for gp in node.groups:
+            if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
+                gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+                gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
         if ConfigFile.settings['fL1bCal'] == 1 or ConfigFile.settings['fL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
-            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-            print("Read CalibrationFile ", calPath)
-            calibrationMap = CalibrationFileReader.read(calPath)
+            # calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+            # calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+            # print("Read CalibrationFile ", calPath)
+            # calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['fL1bCal'] == 3:
