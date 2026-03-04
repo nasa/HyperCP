@@ -121,7 +121,7 @@ class PIUDataStore:
             else:
                 gp = root.getGroup(f"{s}_L1AQC")
                 int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
-            
+
             self.coeff[s]['cal_int']  = int_time
             self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
 
@@ -132,7 +132,7 @@ class PIUDataStore:
 
         radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
         self.coeff[s_type]['radcal_wvl'] = radcal_wvl
-        ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
+        ind_raw_wvl = radcal_wvl > 0  # remove any index for which we do not have radcal wvls available
 
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":

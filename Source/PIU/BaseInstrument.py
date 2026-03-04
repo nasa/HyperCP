@@ -266,7 +266,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str_es = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         # The difference between factory approach and class-based:
         cal_col_str_es = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
-        pds_cal_set = PDS.l1ACommonCalPix255 if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else PDS.l1ACommonCalPix255
+        pds_cal_set = PDS.l1ACommonCalPix255 if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else PDS.l1ACommonCalPix
         out = dict(
             esUnc=utils.interp_common_wvls(ES_unc,
                                            np.array(uncGrp.getDataset(rad_cal_str_es).columns[cal_col_str_es],
