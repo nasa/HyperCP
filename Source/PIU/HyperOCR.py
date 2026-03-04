@@ -17,6 +17,7 @@ from Source.HDFGroup import HDFGroup
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
 from Source.PIU.PIUDataStore import PIUDataStore as pds
+from Source.PIU.utils import utils
 
 # Utilities
 from Source.utils.comparing import isIncreasing, hasNan
@@ -111,7 +112,15 @@ class HyperOCR(BaseInstrument):
         :param newWaveBands: common wavebands for interpolation of output
         """
 
+        # PDS is a mix of L1A/255 and L2 bands
+        # stats appears to be L1A/255
         output_UNC = {}
+        # L2 subset wavebands:
+        l1aWavebands = {x : np.asarray(PDS.rad_wvl[x],dtype=float) for x in PDS.rad_wvl.keys()}
+        # PDSL2 is PDS-like with uncs and coeffs interpolated for L2
+        PDSL2 = utils.interp_L1A_L2sub(PDS,l1aWavebands,newWaveBands,'pds',regime='sensor')
+        statsL2 = utils.interp_L1A_L2sub(stats,l1aWavebands,newWaveBands,'stats',regime='sensor')
+
         output_BD_UNCS = {k: {} for k in self.sensors}  # breakdown uncertainties
         output_BD_CORR = {k: {} for k in self.sensors}  # breakdown correction magnitudes
 
@@ -127,8 +136,10 @@ class HyperOCR(BaseInstrument):
 
             from Source.PIU.Breakdown_FRM import SolveLPU
             LPU = SolveLPU(prop)
-            DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
-            UNC = PDS.uncs[s_type]
+            # DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
+            DATA = PDSL2.coeff[s_type]  # retrieve dictionaries for speed
+            # UNC = PDS.uncs[s_type]
+            UNC = PDSL2.uncs[s_type]
             BD_UNCS = output_BD_UNCS[s_type]  # breakdown uncertainties
             BD_CORR = output_BD_CORR[s_type]  # breakdown correction magnitudes
 
@@ -154,7 +165,8 @@ class HyperOCR(BaseInstrument):
             BD_CORR['S1']  = np.mean(sample_S1, axis=0)
             BD_CORR['S2']  = np.mean(sample_S2, axis=0)
             BD_CORR['S12'] = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
-            BD_UNCS.update(LPU.S12_alpha(PDS, s_type))
+            # BD_UNCS.update(LPU.S12_alpha(PDS, s_type))
+            BD_UNCS.update(LPU.S12_alpha(PDSL2, s_type))
 
             # samples for Straylight correction
             if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
@@ -173,6 +185,7 @@ class HyperOCR(BaseInstrument):
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
             sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
             no_lin_corr_indx = DATA['cb_alpha'] == 0
+
             sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
             # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
 
@@ -196,7 +209,8 @@ class HyperOCR(BaseInstrument):
                                                                sample_cal_int,
                                                                sample_t1])
 
-            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_S12_sl_corr))
+            # BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDS, s_type, sample_S12_sl_corr))
+            BD_UNCS.update(LPU.updatedGains(BD_UNCS, PDSL2, s_type, sample_S12_sl_corr))
 
             ind_nocal = DATA['ind_nocal']
             sample_updated_radcal_gain[:, ind_nocal] = 1
@@ -206,13 +220,14 @@ class HyperOCR(BaseInstrument):
 
             # NOTE: This is okay as long as it is only for UNC stats and does not change the L2 reflectance product
             data = np.mean(DATA['light'], axis=0)
+            # BUG: At this point in SB, ind_nocal should all be false, but it is only 165 long and data has not been interpolated
             data[ind_nocal] = 0  # 0 out data outside of cal so it doesn't affect statistics
             dark = np.mean(DATA['dark'], axis=0)
             dark[ind_nocal] = 0
 
             # signal uncertainties
-            std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
-            std_dark = stats[s_type]['std_Dark']
+            std_light = statsL2[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
+            std_dark = statsL2[s_type]['std_Dark']
             sample_light = cm.generate_sample(100, data, std_light, "rand")
             sample_dark  = cm.generate_sample(100, dark, std_dark,  "rand")
 
@@ -256,7 +271,8 @@ class HyperOCR(BaseInstrument):
 
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
-            BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
+            # BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
+            BD_UNCS.update(LPU.temperature(BD_UNCS, PDSL2, s_type, cal_corr_signal))
             BD_CORR['ct'] = np.mean(sample_ct_corr, axis=0) - cal_corr_signal
 
             if s_type == "ES":
@@ -297,26 +313,27 @@ class HyperOCR(BaseInstrument):
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
 
-            LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
+            # LPU.environmental_perturbations(BD_UNCS, sample, stats[s_type]["Signal_std"])
+            LPU.environmental_perturbations(BD_UNCS, sample, statsL2[s_type]["Signal_std"])
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[~ind_nocal]  # relative uncertainty
             output_UNC[f"{s_type.lower()}Sample"] = sample[:, ~ind_nocal]  # keep samples raw
 
-            # sort the outputs ready for processing
-            # get sensor specific wavebands to be keys for uncs, then remove from output
-            wvls = DATA['wvls']
-            output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
-                output_UNC[f"{s_type.lower()}Unc"],
-                wvls, 
-                newWaveBands, 
-                return_as_dict=True
-                )
-            output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(
-                output_UNC[f"{s_type.lower()}Sample"],
-                wvls,
-                newWaveBands
-                )
+            # # sort the outputs ready for processing
+            # # get sensor specific wavebands to be keys for uncs, then remove from output
+            # wvls = DATA['wvls']
+            # output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
+            #     output_UNC[f"{s_type.lower()}Unc"],
+            #     wvls,
+            #     newWaveBands,
+            #     return_as_dict=True
+            #     )
+            # output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(
+            #     output_UNC[f"{s_type.lower()}Sample"],
+            #     wvls,
+            #     newWaveBands
+            #     )
 
         return output_UNC, output_BD_CORR, output_BD_UNCS
 

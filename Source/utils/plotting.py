@@ -652,7 +652,6 @@ def plotUncertainties(root, filename):
             cols.pop("Datetag")
             cols.pop("Timetag2")
 
-    # TODO: add BRDF UNC to BD_UNCS if available
     bd_grp = root.getGroup("BREAKDOWN")
     waveSubset = np.array(list(es_cols.keys()), float)
     waveKeys   = np.array(list(es_cols.keys()))

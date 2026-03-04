@@ -96,7 +96,7 @@ def interpSpline(x, y, new_x):
 
 
 def interpFill(x, y, newXList, fillValue=np.nan):
-    ''' Used where fill is needed instead of interpolation, e.g., STATIONS in L1B.'''
+    ''' Used where nearest-neighbor fill is needed instead of interpolation, e.g., STATIONS in L1B.'''
     y = np.array(y)
     x = np.array(x)
     whrNan = np.where(np.isnan(y))[0]

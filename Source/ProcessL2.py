@@ -24,6 +24,7 @@ from Source.PIU.HyperOCR import HyperOCR, HyperOCRUtils
 from Source.PIU.TriOS import TriOS
 from Source.PIU.DALEC import Dalec
 from Source.PIU.PIUDataStore import PIUDataStore
+from Source.PIU.utils import utils
 
 #Utilities
 from Source.utils import loggingHCP as logging
@@ -1155,6 +1156,8 @@ class ProcessL2:
             del data_slice[k]['Datetime']
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
+
+        # All calibrated wavelengths
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
 
         # else:
@@ -1326,11 +1329,12 @@ class ProcessL2:
         if es_only:
             rho_scalar, rho_vec, rho_unc = None, None, None
         else:
+            # Wavelengths returned may be a subset for Z17 (350-1000 nm). Same for rho_vec, rho_unc
             rho_scalar, rho_vec, rho_unc, wavelengths = ProcessL2.calculate_rho_sky_for_ensemble(wavelengths.tolist(), slice_mean, anc_slice)
 
         # %% Get TSIS-1 and convolve to satellite bands
         # NOTE: TSIS uncertainties reported as 1-sigma
-        F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = F0ing.TSIS_1(timestamp_dict['dateTag'], wavelengths.tolist())
+        F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw_F0 = F0ing.TSIS_1(timestamp_dict['dateTag'], wavelengths.tolist())
 
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
         if F0_hyper is None:
@@ -1341,7 +1345,7 @@ class ProcessL2:
         satellite_bands_subset = {}
         for sat, bands in satellite_bands.items():
             # Convolve TSIS-1 F0 to satellite bands
-            satellite_f0[sat], satellite_f0_unc[sat] = F0ing.TSIS_1(timestamp_dict['dateTag'], bands, F0_raw, F0_unc_raw, wv_raw)[0:2]
+            satellite_f0[sat], satellite_f0_unc[sat] = F0ing.TSIS_1(timestamp_dict['dateTag'], bands, F0_raw, F0_unc_raw, wv_raw_F0)[0:2]
             # Get bands for Zhang models
             b = np.array(bands)
             satellite_bands_subset[sat] = b[(350 <= b) & (b <= 1000)].tolist()
@@ -1361,6 +1365,21 @@ class ProcessL2:
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
+
+            # BUG: For the case where HOCR is not reporting all pixels, stats may be shorter than 255.
+            #   These need to be buffered to 255 in stats FOR THE CLASS CASE, because RADCAL_CAL has 255 bands.
+            if ConfigFile.settings["fL1bCal"] == 2 and (
+                len(stats['ES']['ave_Light']) < 255 or
+                len(stats['LI']['ave_Light']) < 255 or
+                len(stats['LT']['ave_Light']) < 255):
+
+                # Take the 255 bands from the ES RADCAL_CAL to pad pixels in the NIR for all instruments
+                waveFidRadDB_ES = np.vstack(uncGroup.datasets['ES_RADCAL_CAL'].data.tolist())[:,1]
+
+                # Pad the stats to 255 pixels. (Should this be done sooner? Based on the nature of x_slice, I think not.)
+                # Need to make a different interpolation/padding tool that uses L1A bands, but pads to 255 pixels
+                utils.pad_wavebands_L1A(stats, waveFidRadDB_ES)
+
             l1b_unc, x_breakdown_unc = sensor.ClassBased(node, uncGroup, stats, x_slice)
             if l1b_unc:
                 x_slice.update(l1b_unc)
@@ -1371,7 +1390,7 @@ class ProcessL2:
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
                     # x_breakdown_unc[k.upper()] = {
-                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in 
+                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in
                     #     zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
                     # }  # TODO figure out why this doesn't work - Ashley
 
@@ -1383,6 +1402,7 @@ class ProcessL2:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                     l2_bd = {}
                 else:
+                    # Returned for all reported wavebands
                     pds = PIUDataStore(node, uncGroup)
 
                     x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)

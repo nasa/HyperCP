@@ -429,6 +429,7 @@ class PlotMaths:
             *vals
         )  # get values to make uncs relative
 
+        # Add uncertainty elements incrementally. Indexes refer to elements listed in keys above, as they appear in vals and uncs
         for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
             if indx == 0:
                 p_uncs[0:6] = uncs[0:6]
