@@ -707,7 +707,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             for k in BD_UNCS[s].keys():  # use interp method from PIUDataStore - method is static so no instance required
                 BD_UNCS_common_wb[s][k] = pds.interp_common_wvls(
                     BD_UNCS[s][k],
-                    PDS.coeff[s]["radcal_wvl"],
+                    PDS.coeff[s]["radcal_wvl"][PDS.l1AReportedPix255],
                     np.array(waveSubset),
                     return_as_dict=False  # return as numpy array
                 )

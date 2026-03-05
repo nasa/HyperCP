@@ -236,7 +236,7 @@ class plottingToolsCB:
         #     regime = "Factory"
         # else:
         #     regime = "Class"
-
+        print('Plotting uncertainty breakdown')
         labels = dict(
             # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
             Rrs=["noise","pert","Cal","Stab","Lin","cT","Stray","pol","cosine","rho",],

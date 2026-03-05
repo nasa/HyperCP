@@ -141,7 +141,7 @@ class plottingToolsFRM:
         :param level: string to delinate between L1B: ES, LI, LT and L2: Lw, NLw, Rrs plotting
 
         """
-
+        print('Plotting uncertainty breakdown')
         # select appropriate keys and lable names for given level (based on how BD_UNCS is filled in BaseInstrument, HyperOCR and TriOS classes.
         if level.upper() == 'L1B':
             keys = dict(

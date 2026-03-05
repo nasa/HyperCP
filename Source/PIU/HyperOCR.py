@@ -173,8 +173,8 @@ class HyperOCR(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
-            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
-            no_lin_corr_indx = DATA['cb_alpha'] == 0
+            sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'][PDS.l1AReportedPix255], UNC['cb_alpha'][PDS.l1AReportedPix255], "syst")
+            no_lin_corr_indx = (DATA['cb_alpha'] == 0)[PDS.l1AReportedPix255]
             sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
             # validated by processing the sample and verifying that uncertainty in no_lin_corr_indx(s) are 1.077e-7
 
@@ -189,8 +189,8 @@ class HyperOCR(BaseInstrument):
                                                               )
 
                 sample_zen_ang = cm.generate_sample(mDraws, DATA['zenith_ang'], None, None)
-                sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'], UNC['zenith_ang'], "syst")
-                sample_fhemi_coserr = cm.generate_sample(mDraws, DATA['fhemi'], UNC['fhemi'], "syst")
+                sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'][PDS.l1AReportedPix255], UNC['zenith_ang'][PDS.l1AReportedPix255], "syst")
+                sample_fhemi_coserr = cm.generate_sample(mDraws, DATA['fhemi'][PDS.l1AReportedPix255], UNC['fhemi'][PDS.l1AReportedPix255], "syst")
             else:
                 sample_PANEL = cm.generate_sample(mDraws, DATA['PANEL'], UNC['PANEL'], "syst")
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_rad,
