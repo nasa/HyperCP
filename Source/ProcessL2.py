@@ -1223,29 +1223,42 @@ class ProcessL2:
         # first_band = next(iter(ltSlice))
         # first_band_values = ltSlice[first_band]
         # y=list(range(0,len(first_band_values)))
-        #
-        if enable_percent_lt:
-            # Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
-            # X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
-            # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
-            # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
-            # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
-            nSpecEnd = round(nSpecStart * percent_lt / 100)
-            # There are sometimes only a small number of spectra in the slice,
-            #  so the percent Lt estimation becomes highly questionable and is overridden here.
-            if nSpecStart <= 5 or nSpecEnd == 0:
-                nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
-            if nSpecEnd > 1:
-                lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
-                index = np.argsort(lt780)
-                y = index[:nSpecEnd]
-                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
+        
+        stats = False
+        while percent_lt <= 50:
+            if enable_percent_lt:
+                # Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
+                # X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
+                # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
+                # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
+                # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
+                nSpecEnd = round(nSpecStart * percent_lt / 100)
+                # There are sometimes only a small number of spectra in the slice,
+                #  so the percent Lt estimation becomes highly questionable and is overridden here.
+                if nSpecStart <= 5 or nSpecEnd == 0:
+                    nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
+                if nSpecEnd > 1:
+                    lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
+                    index = np.argsort(lt780)
+                    y = index[:nSpecEnd]
+                    logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
+                else:
+                    logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
+                    return False
             else:
-                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
-                return False
-        else:
-            nSpecEnd = nSpecStart
+                nSpecEnd = nSpecStart
 
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+            if isinstance(stats, bool): 
+                logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
+                percent_lt += 10
+            else:
+                break
+        
+        if not stats:  # check if stats was generated and return False if not
+            logging.writeLogFileAndPrint("statistics not generated")
+            return False
+        
         # %% Append Ensemble Size
         for grp in node.groups:
             if grp.id not in ['REFLECTANCE', 'IRRADIANCE', 'RADIANCE']:
@@ -1257,7 +1270,7 @@ class ProcessL2:
                 grp.datasets['Ensemble_N'].columns['N'] = []
             grp.datasets['Ensemble_N'].columns['N'].append(nSpecEnd)
             grp.datasets['Ensemble_N'].columnsToDataset()
-
+        
         # %% Slice averaging and sensor statistics
         slice_mean, slice_median, slice_remaining = {}, {}, {}
         for k, sliceData in data_slice.items():
@@ -1266,20 +1279,12 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                 return False
             
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
-        if isinstance(stats, bool): 
-            logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal")
-            return False
         
         slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
         satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
                                 for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}  # why is this done before glitter removal? - Ashley
-        
-        if not stats:
-            logging.writeLogFileAndPrint("statistics not generated")
-            return False
 
         # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
         # which is inconsistent with other places in the code.
