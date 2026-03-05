@@ -190,7 +190,8 @@ class ProcessL2:
                     x.append(float(k))
                     ρ870.append(ρSlice[k][-1])
             if not ρ870:
-                logging.writeLogFileAndPrint('No data found at 870 nm')
+                logging.writeLogFileAndPrint('No data found at 870 nm. Unable to use SimSpec fallback mode.')
+                logging.writeLogFileAndPrint('  Recommend switching to flat NIR residual correction.')
                 ρ3 = None
                 F03 = None
             else:
@@ -200,13 +201,12 @@ class ProcessL2:
             # Reverts to primary mode even on threshold trip in cases where no 870nm available
             if ρ1 < threshold or not ρ870:
                 ε = (α1*ρ2 - ρ1)/(α1-1)
-                εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1)
-                logging.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
+                εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1)    
             else:
                 logging.writeLogFileAndPrint("SimSpec threshold tripped. Using 780/870 instead.")
                 ε = (α2*ρ3 - ρ2)/(α2-1)
                 εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1)
-                logging.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
+            logging.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
 
             rrsNIRCorr = ε/np.pi
             nLwNIRCorr = εnLw/np.pi
@@ -1213,7 +1213,8 @@ class ProcessL2:
                                 for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}
 
-        # %% Get index of N lowest Lt frames => selection
+        # %% Get indexes (y) of N darkest Lt frames
+        # Default to all indexes if no LT data or percent_lt is not enabled
         if enable_percent_lt and es_only:
             logging.writeLogFileAndPrint("Percent LT is not supported for Trios ES only. Disabled feature.")
             enable_percent_lt = False
@@ -1221,40 +1222,68 @@ class ProcessL2:
             logging.writeLogFileAndPrint("Percent LT is not available. No LT data found.")
             enable_percent_lt = False
 
+        if 'PERCENT_LT_GLITTER_CORRECTION' not in node.attributes:
+            # Initialize only on the first ensemble of the file
+            node.attributes.update(PERCENT_LT_GLITTER_CORRECTION='ON')
+            node.attributes.update(PERCENT_LT=str(int(ConfigFile.settings['fL2PercentLt'])))
+            # In case it needs to change:
+            percentLtattr = []
+        else:
+            percentLtattr = node.attributes['PERCENT_LT'].split(',')
+        percentLtattr.append(str(int(ConfigFile.settings['fL2PercentLt'])))
+        attrEnsInd = len(percentLtattr)
+
         if 'LT' in data_slice:
             nSpecStart = len(data_slice['LT'][list(data_slice['LT'].keys())[0]])
         else:
             nSpecStart = len(timestamps)
-        y = np.arange(nSpecStart) # Default to all indexes, if no LT data or percent_lt is not enabled
+        y = np.arange(nSpecStart)
+
         # TODO NH merge Replace y assignment above by strategy below
         # # If Percent Lt is turned off, this will average the whole slice, and if
         # # ensemble is off (set to 0), just the one spectrum will be used.
         # first_band = next(iter(ltSlice))
         # first_band_values = ltSlice[first_band]
         # y=list(range(0,len(first_band_values)))
-        #
-        if enable_percent_lt:
-            # Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
-            # X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
-            # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
-            # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
-            # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
-            nSpecEnd = round(nSpecStart * percent_lt / 100)
-            # There are sometimes only a small number of spectra in the slice,
-            #  so the percent Lt estimation becomes highly questionable and is overridden here.
-            if nSpecStart <= 5 or nSpecEnd == 0:
-                nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
-            if nSpecEnd > 1:
-                lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
-                index = np.argsort(lt780)
-                y = index[:nSpecEnd]
-                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
-            else:
-                logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
-                return False
-        else:
-            nSpecEnd = nSpecStart
+        stats = False
+        while percent_lt <= 50:
+            percentLtattr[attrEnsInd-1] = str(int(ConfigFile.settings['fL2PercentLt']))
 
+            if enable_percent_lt:
+                # Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
+                # X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
+                # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
+                # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
+                # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
+                nSpecEnd = round(nSpecStart * percent_lt / 100)
+                # There are sometimes only a small number of spectra in the slice,
+                #  so the percent Lt estimation becomes highly questionable and is overridden here.
+                if nSpecStart <= 5 or nSpecEnd == 0:
+                    nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
+                if nSpecEnd > 1:
+                    lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
+                    index = np.argsort(lt780)
+                    y = index[:nSpecEnd]
+                    logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining in slice to average after filtering to lowest {percent_lt}%.")
+                else:
+                    logging.writeLogFileAndPrint(f"{nSpecEnd} spectra remaining after filtering to lowest {percent_lt}%. ABORT ENSEMBLE.")
+                    return False
+            else:
+                nSpecEnd = nSpecStart
+
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+            if isinstance(stats, bool):
+                logging.writeLogFileAndPrint("***Warning***")
+                logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
+                percent_lt += 10
+            else:
+                break
+
+        if not stats:  # check if stats was generated and return False if not
+            logging.writeLogFileAndPrint("statistics not generated")
+            return False
+
+        node.attributes['PERCENT_LT'] = ",".join(percentLtattr)
         # %% Append Ensemble Size
         for grp in node.groups:
             if grp.id not in ['REFLECTANCE', 'IRRADIANCE', 'RADIANCE']:
@@ -1267,13 +1296,16 @@ class ProcessL2:
             grp.datasets['Ensemble_N'].columns['N'].append(nSpecEnd)
             grp.datasets['Ensemble_N'].columnsToDataset()
 
-        # %% Slice averaging
+        # %% Slice averaging and sensor statistics
         slice_mean, slice_median, slice_remaining = {}, {}, {}
         for k, sliceData in data_slice.items():
             has_nan, slice_mean[k], slice_median[k], slice_remaining[k] = ProcessL2.sliceAveHyper(y, sliceData)
             if has_nan:
                 logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                 return False
+
+        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
+                    for k, sliceData in data_slice.items()}  # standard deviation is relative to signal - i.e. in %
 
         # %% Convolution of slice averages to satellite bands
         satellite_slice_mean, satellite_slice_median, satellite_slice_remaining = {}, {}, {}
@@ -1285,6 +1317,10 @@ class ProcessL2:
                 if has_nan:
                     logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Slice X% average error: Dataset all NaNs.")
                     return False
+
+        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
+                                for k, sliceData in slice_std.items()}
+                                for satellite in convolve_to_satellite}
 
         # %% Ancillary slice averaging
         ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
@@ -1634,8 +1670,8 @@ class ProcessL2:
             rootCopy.addGroup("RAW_UNCERTAINTIES")
             rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
             uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")
-        # Only Factory-Trios has no unc
         else:
+            # Only Factory-Trios and DALEC have no unc
             uncGroup = None
 
         dating.rawDataAddDateTime(rootCopy) # For L1AQC data carried forward

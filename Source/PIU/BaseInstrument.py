@@ -96,12 +96,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
         """
         stats = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
+        writeLogFileAndPrint("Interpolating raw data to common timestamps for uncertainty propagation.")
         for s_type in self.sensors:
             # filter nans
             rawGrp = None
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
-                # what about trios es only branch?
-                # where are the trios timestamps?
+                # TODO: Account for Es-Only path
                 interpData = self.get_interp_data(
                     rawSlice['ES']['datetime'],
                     rawSlice['LI']['datetime'],
