@@ -1105,8 +1105,6 @@ class ProcessL2:
             logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance ensemble is less than 1 minute. Skipping.")
             return False
 
-        # TODO Check why SIXS code used to be here but data manipulation is not used later on, hence dropped
-
         # %% Get active raw groups (based on data available in groups, required to get std)
         # NOTE: "raw" here refers to pre-calibration L1AQC datasets
         map_raw_groups = {'ES': esRawGroup, 'LI': liRawGroup, 'LT': ltRawGroup}
@@ -1115,11 +1113,11 @@ class ProcessL2:
             raw_slices = {k: {t: {'datetime': grp[t].datasets['DATETIME'].data[start:end],
                                   'data': ProcessL2.columnToSlice(grp[t].datasets[k].columns, start, end)}
                               for t in ['LIGHT', 'DARK']} for k, grp in raw_groups.items()}
-        elif ConfigFile.settings['SensorType'].lower() == "dalec":
-            raw_groups = {k: map_raw_groups[k] for k in groups}
-            raw_slices = {k: {'light': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end),
-                              'dark': ProcessL2.columnToSlice(grp.datasets['DARK_CNT'].columns, start, end)}
-                            for k, grp in raw_groups.items()}
+        # elif ConfigFile.settings['SensorType'].lower() == "dalec":
+        #     raw_groups = {k: map_raw_groups[k] for k in groups}
+        #     raw_slices = {k: {'light': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end),
+        #                       'dark': ProcessL2.columnToSlice(grp.datasets['DARK_CNT'].columns, start, end)}
+        #                     for k, grp in raw_groups.items()}
         else:
             raw_groups = {k: map_raw_groups[k] for k in groups}
             raw_slices = {k: {'datetime': grp.datasets['DATETIME'].data[start:end],
@@ -1139,7 +1137,6 @@ class ProcessL2:
             sensor, sensor_type = HyperOCR(), 'SeaBird'
         else:
             raise ValueError('Sensor type not supported.')
-        # TODO check why Delete Datetime, Datetag, and Timetag2 from slices
 
         # %% Compute mean datetime of slice
         # Based on Es timestamp only
@@ -1160,31 +1157,13 @@ class ProcessL2:
             del data_slice[k]['Datetag']
             del data_slice[k]['Timetag2']
         wavelengths = np.asarray(list(data_slice['ES'].keys()), dtype=float)
-        # if ConfigFile.settings["SensorType"].lower() != "dalec":
-        stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths)
-        # else:
-        #     # NOTE: Temporary placeholder for DALEC stats.
-        #     stats1,stats = {},{}
-        #     for group in raw_groups:
-        #         bandN = len(raw_groups[group].datasets[group].columns)
-        #         reject = ['Datetime','Datetag','Timetag2']
-        #         bands = [key for key in groups[group].datasets[group].columns if key not in reject]
-        #         for dataset in ['ave_Light','ave_Dark','std_Light','std_Dark','Signal_std','perturbations']:
-        #             stats1[dataset] = np.ones(bandN)*np.nan
-        #         for dataset in ['Signal_std_Interpolated']:
-        #             stats1[dataset] = {str(wl): np.ones(bandN)*np.nan for wl in bands}
-        #         stats[group] = stats1
-        if ConfigFile.settings["SensorType"].lower() == "seabird":
-            raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
-            for key, group in raw_groups.items():
-                group.id = f'{key}_L1AQC'
-        if not stats:
-            logging.writeLogFileAndPrint("statistics not generated")
-            return False
-        slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
-                     for k, sliceData in data_slice.items()}  # standard deviation is relatvie to signal - i.e. in %
-        # Use wavelengths rather than keys from stats as stats is rounding wavelength to one decimal
-        # which is inconsistent with other places in the code.
+
+        # if ConfigFile.settings["SensorType"].lower() == "seabird":
+        #     raw_groups = {k: d['LIGHT'] for k, d in raw_groups.items()}
+        #     for key, group in raw_groups.items():
+        #         group.id = f'{key}_L1AQC'
+        # # elif ConfigFile.settings["SensorType"].lower() != "dalec":
+        # #     # NOTE: Temporary placeholder for DALEC stats.
 
         # %% Convolve to satellite bands
         convolve_to_satellite, satellite_bands = {}, {}
@@ -1208,9 +1187,6 @@ class ProcessL2:
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
         satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
-                                for satellite in convolve_to_satellite}
-        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
-                                for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}
 
         # %% Get indexes (y) of N darkest Lt frames
@@ -1271,6 +1247,13 @@ class ProcessL2:
             else:
                 nSpecEnd = nSpecStart
 
+            if sensor_type.lower() == 'dalec':
+                # Flip the cal coefficents into the rawGroups
+                for s in ['ES','LI','LT']:
+                    group = raw_groups[s]
+                    s.datasets[f'CAL_{s}'] = node.getGroup('CAL_COEF')
+
+
             stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
@@ -1306,6 +1289,9 @@ class ProcessL2:
 
         slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
                     for k, sliceData in data_slice.items()}  # standard deviation is relative to signal - i.e. in %
+        satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
+                                for k, sliceData in slice_std.items()}
+                                for satellite in convolve_to_satellite}
 
         # %% Convolution of slice averages to satellite bands
         satellite_slice_mean, satellite_slice_median, satellite_slice_remaining = {}, {}, {}

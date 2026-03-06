@@ -172,13 +172,9 @@ class ProcessL1b_FactoryCal:
             # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
             if calibrationMap[k].frameType.lower() == "shutterlight" or calibrationMap[k].frameType.lower() == "shutterdark":
                 dummy[k] = []
-                # fitType[k] = []
-                # sensorType[k] = []
                 for cd in var.data:
                     if cd.type == 'ES' or cd.type == 'LI' or cd.type == 'LT':
                         dummy[k].append(cd.dummy)
-                        # fitType[k].append(cd.fitType)
-                        # sensorType[k] = cd.type
                 indexes = dummy[k]
                 start[k] = indexes.index(0)
                 reversed_index = indexes[::-1].index(0)

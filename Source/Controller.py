@@ -398,10 +398,8 @@ class Controller:
             return None
 
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
-            # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
-            # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bDALEC.processL1b(root, outFilePath)
         else:
             root = ProcessL1b.processL1bSeaBird(root, outFilePath)

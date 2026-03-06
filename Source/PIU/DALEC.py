@@ -5,9 +5,6 @@ from typing import Union
 # Maths
 import numpy as np
 
-# Packages
-import warnings
-
 from Source.HDFGroup import HDFGroup
 
 # PIU
@@ -24,7 +21,22 @@ class Dalec(BaseInstrument):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
 
-    def lightDarkStats(self, grp: dict[str, HDFGroup], XSlice: dict[str, OrderedDict], sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+    def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+        ''' Under development. Was built like HyperOCR, but it's more like Trios. No shutter.'''
+
+        # TODO: Need to carry CAL_COEFF group forward from L1AQC
+        (
+            _,
+            raw_back,
+            raw_data,
+            raw_wvl,
+            int_time,
+            int_time_t0,
+            DarkPixelStart,
+            DarkPixelStop,
+        ) = DALECUtils.readParams(grp, XSlice, sensortype)
+        
+        
         ''' Unsliced L1AQC grp is no longer needed here '''
         # Dalec
         lightData = XSlice['LIGHT']  # lightGrp.getDataset(sensortype)
@@ -90,3 +102,39 @@ class Dalec(BaseInstrument):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
         output = {}
         return output
+
+class DALECUtils():
+
+    @staticmethod
+    def readParams(grp, xSliceData, s):
+
+        # gp=node.getGroup('ES')
+        gpc=node.getGroup('CAL_COEF')
+        delta_t_ed=float(gpc.attributes['Delta_T_Ed'])
+        tref=float(gpc.attributes['Tref'])
+        d0=float(gpc.attributes['d0'])
+        d1=float(gpc.attributes['d1'])
+        ds=gp.datasets['ES']
+        dc=gp.datasets['DARK_CNT'].data['ES'].tolist()
+        inttime=gp.datasets['INTTIME'].data['ES'].tolist()
+        temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
+        cd=gpc.datasets['Cal_ES']
+        a0 = cd.data['a0'].tolist()
+        tempco_ed=cd.data['Tempco_Ed'].tolist()
+
+        # K1=d0*(V-DC)+d1
+        # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
+
+        for i in range(ds.data.shape[0]):
+            c1=inttime[i]+delta_t_ed
+            for j in range(cd.data.shape[0]):
+                ds.data[i][j] = 100.0*a0[j]*((ds.data[i][j]-dc[i])/c1
+                /(d1*(ds.data[i][j]-dc[i])+d0))/(tempco_ed[j]*(temp[i]-tref)+1)
+
+        # As in the calibration step above, this presumes UV bands (initial pixels) are always calibrated and
+        #   any truncation in calibration is on the NIR end
+        gp.attributes['CAL_START'] = str(0)
+        gp.attributes['CAL_STOP'] = str(j)
+        gp = node.getGroup('ES_L1AQC')
+        gp.attributes['CAL_START'] = str(0)
+        gp.attributes['CAL_STOP'] = str(j)
