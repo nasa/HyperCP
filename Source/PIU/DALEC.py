@@ -37,9 +37,6 @@ class Dalec(BaseInstrument):
         tempco,
         cd_shape,
             ) = DALECUtils.readParams(grp, XSlice, sensortype)
-        # raw_data comes only from the XSlice
-        # del grp, XSlice
-
         # %%
         # K1=d0*(V-DC)+d1
         # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
@@ -65,7 +62,14 @@ class Dalec(BaseInstrument):
             return False
 
 
-
+        return dict(
+            ave_Light=np.array(light_avg),
+            ave_Dark=np.array(dark_avg),
+            std_Light=np.array(light_std),
+            std_Dark=np.array(dark_std),
+            Signal_std=np.array(std_signal),
+            Signal_noise=signal_noise,
+        )
 
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
