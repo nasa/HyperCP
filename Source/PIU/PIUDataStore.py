@@ -87,7 +87,12 @@ class PIUDataStore:
     def get_inttime(self, root: HDFRoot):
         # NOTE: Why are we using the MEAN integration time of all the samples?? What does this get used for?
         #   Is ensemble average what we're after?
-        for s in ["ES", "LI", "LT"]:
+        if ConfigFile.settings['SensorType'].lower() != 'trios es only':
+            sensors = ["ES", "LI", "LT"]
+        else:
+            sensors = ['ES']
+
+        for s in sensors:
             if s == 'ES':
                 if ConfigFile.settings['SensorType'].lower() == 'trios es only':
                     gp = root.getGroup(f"{s}_L1AQC")

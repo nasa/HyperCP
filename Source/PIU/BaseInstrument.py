@@ -63,25 +63,29 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
     @staticmethod
     def get_interp_data(
-            es_slice_dtimes,
-            li_slice_dtimes,
-            lt_slice_dtimes,
+            slice_dtimes_dict
+            # es_slice_dtimes,
+            # li_slice_dtimes,
+            # lt_slice_dtimes,
         ) -> np.array:
         # Interpolate all datasets to the SLOWEST radiometric sampling rate
-        esLength = len(es_slice_dtimes)
-        liLength = len(li_slice_dtimes)
-        ltLength = len(lt_slice_dtimes)
-
-        interpData = None # always interpolate to the slowest intrument to reduce error
-        if esLength < liLength and esLength < ltLength:
-            writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
-            interpData = es_slice_dtimes
-        elif liLength < ltLength:
-            writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
-            interpData = li_slice_dtimes
+        esLength = len(slice_dtimes_dict['ES'])
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            interpData = slice_dtimes_dict['ES']
         else:
-            writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
-            interpData = lt_slice_dtimes
+            liLength = len(slice_dtimes_dict['LI'])
+            ltLength = len(slice_dtimes_dict['LT'])
+
+            interpData = None # always interpolate to the slowest intrument to reduce error
+            if esLength < liLength and esLength < ltLength:
+                writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+                interpData = slice_dtimes_dict['ES']
+            elif liLength < ltLength:
+                writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+                interpData = slice_dtimes_dict['LI']
+            else:
+                writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+                interpData = slice_dtimes_dict['LT']
 
         return interpData
 
@@ -100,40 +104,48 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         for s_type in self.sensors:
             # filter nans
             rawGrp = None
+
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
+                # NOTE: trios stores dark data in standard sequence - no shutter
+
                 # TODO: Account for Es-Only path
-                interpData = self.get_interp_data(
-                    rawSlice['ES']['datetime'],
-                    rawSlice['LI']['datetime'],
-                    rawSlice['LT']['datetime'],
-                )
+                if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+                    interpData = self.get_interp_data(
+                        {'ES':rawSlice['ES']['datetime']})
+                else:
+                    interpData = self.get_interp_data(
+                        {'ES':rawSlice['ES']['datetime'],
+                        'LI':rawSlice['LI']['datetime'],
+                        'LT':rawSlice['LT']['datetime']})
                 # L1AQC unsliced data group is passed and used for calibration data contained therein.
                 utils.apply_NaN_Mask(rawSlice[s_type]['data'])  # apply Nan mask
                 # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
                 rawGrp     = rawData[s_type]
                 lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
                 lightData  = copy.deepcopy(rawSlice[s_type]['data'])
-                darkData   = None  # trios stores dark data in standard sequence - no shutter
+                darkData   = None
+
             elif i_type.lower() == "dalec":
-                interpData = self.get_interp_data(
-                    rawSlice['ES']['light']['datetime'],
-                    rawSlice['LI']['light']['datetime'],
-                    rawSlice['LT']['light']['datetime'],
-                )
+                # NOTE: dalec stores dark data in standard sequence - no shutter
                 # NOTE: Under development
+
+                interpData = self.get_interp_data(
+                    {'ES':rawSlice['ES']['light']['datetime'],
+                    'LI':rawSlice['LI']['light']['datetime'],
+                    'LT':rawSlice['LT']['light']['datetime']})
                 # L1AQC unsliced data group is passed, but not used.
                 utils.apply_NaN_Mask(rawSlice[s_type]['light'])
                 utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
                 # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
                 lightTimer = copy.deepcopy(rawSlice[s_type]['light']['datetime'])
                 lightData  = copy.deepcopy(rawSlice[s_type]['light']['data'])
-                darkData   = copy.deepcopy(rawSlice[s_type]['dark']['data'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['dark']['data']) # Check this. No shutter.
+
             elif i_type.lower() == "seabird":
                 interpData = self.get_interp_data(
-                    rawSlice['ES']['LIGHT']['datetime'],
-                    rawSlice['LI']['LIGHT']['datetime'],
-                    rawSlice['LT']['LIGHT']['datetime'],
-                )
+                    {'ES':rawSlice['ES']['LIGHT']['datetime'],
+                    'LI':rawSlice['LI']['LIGHT']['datetime'],
+                    'LT':rawSlice['LT']['LIGHT']['datetime']})
                 # L1AQC unsliced data group is passed, but only used for reference.
                 utils.apply_NaN_Mask(rawSlice[s_type]['LIGHT']['data'])  # how closely should light follow dark, i.e. do we mask light with dark and vice versa - Ashley
                 utils.apply_NaN_Mask(rawSlice[s_type]['DARK']['data'])
@@ -149,7 +161,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 if not self.interp_and_slice_raw_data(lightData, lightTimer, interpData):
                     writeLogFileAndPrint("unable to interpolate light signal (DN) to common timestamps")
                     raise ValueError
-                if i_type.lower() not in ["sorad", "trios", "trios es only"]:
+                if i_type.lower() not in ["sorad", "trios", "trios es only", "dalec"]:
                     if not self.interp_and_slice_raw_data(darkData, lightTimer, interpData):
                         writeLogFileAndPrint("unable to interpolate dark signal (DN) to common timestamps")
                         raise ValueError
@@ -808,7 +820,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     else:
                         xDataNew[k] = interpolating.interp(xTS, y, newXTS, fill_value=np.nan)
         except ValueError:
-            return False            
+            return False
         else:
             xData = xDataNew
             return True
