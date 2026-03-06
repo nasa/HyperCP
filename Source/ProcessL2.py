@@ -1247,13 +1247,6 @@ class ProcessL2:
             else:
                 nSpecEnd = nSpecStart
 
-            if sensor_type.lower() == 'dalec':
-                # Flip the cal coefficents into the rawGroups
-                for s in ['ES','LI','LT']:
-                    group = raw_groups[s]
-                    s.datasets[f'CAL_{s}'] = node.getGroup('CAL_COEF')
-
-
             stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")

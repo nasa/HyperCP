@@ -82,114 +82,23 @@ class ProcessL1bDALEC:
         #   any truncation in calibration is on the NIR end
         gp.attributes['CAL_START'] = str(0)
         gp.attributes['CAL_STOP'] = str(j)
-        gp = node.getGroup(f'{s}_L1AQC')
-        gp.attributes['CAL_START'] = str(0)
-        gp.attributes['CAL_STOP'] = str(j)
-        calDS = gp.addDataset('CAL_COEF')
-        gp.datasets.move_to_end('CAL_COEF',last=False)
+
+        gp_l1aqc = node.getGroup(f'{s}_L1AQC')
+        calDS = gp_l1aqc.addDataset('CAL_COEF')
+        gp_l1aqc.datasets.move_to_end('CAL_COEF',last=False)
         calDS.data = cd.data
         calDS.datasetToColumns()
-    # @staticmethod
-    # def processES(node):
-    #     gp=node.getGroup('ES')
-    #     gpc=node.getGroup('CAL_COEF')
-    #     delta_t_ed=float(gpc.attributes['Delta_T_Ed'])
-    #     tref=float(gpc.attributes['Tref'])
-    #     d0=float(gpc.attributes['d0'])
-    #     d1=float(gpc.attributes['d1'])
-    #     ds=gp.datasets['ES']
-    #     dc=gp.datasets['DARK_CNT'].data['ES'].tolist()
-    #     inttime=gp.datasets['INTTIME'].data['ES'].tolist()
-    #     temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-    #     cd=gpc.datasets['Cal_ES']
-    #     a0 = cd.data['a0'].tolist()
-    #     tempco_ed=cd.data['Tempco_Ed'].tolist()
-
-    #     # K1=d0*(V-DC)+d1
-    #     # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
-
-    #     for i in range(ds.data.shape[0]):
-    #         c1=inttime[i]+delta_t_ed
-    #         for j in range(cd.data.shape[0]):
-    #             ds.data[i][j] = 100.0*a0[j]*((ds.data[i][j]-dc[i])/c1
-    #             /(d1*(ds.data[i][j]-dc[i])+d0))/(tempco_ed[j]*(temp[i]-tref)+1)
-
-    #     # As in the calibration step above, this presumes UV bands (initial pixels) are always calibrated and
-    #     #   any truncation in calibration is on the NIR end
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
-    #     gp = node.getGroup('ES_L1AQC')
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
-    #     calDS = gp.addDataset('CAL_COEF')
-    #     calDS.data = cd.data
-
-
-    # @staticmethod
-    # def processLT(node):
-    #     gp=node.getGroup('LT')
-    #     gpc=node.getGroup('CAL_COEF')
-    #     delta_t_lu=float(gpc.attributes['Delta_T_Lu'])
-    #     tref=float(gpc.attributes['Tref'])
-    #     e0=float(gpc.attributes['e0'])
-    #     e1=float(gpc.attributes['e1'])
-    #     ds=gp.datasets['LT']
-    #     dc=gp.datasets['DARK_CNT'].data['LT'].tolist()
-    #     inttime=gp.datasets['INTTIME'].data['LT'].tolist()
-    #     temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-    #     cd=gpc.datasets['Cal_LT']
-    #     b0 = cd.data['b0'].tolist()
-    #     tempco_lu=cd.data['Tempco_Lu'].tolist()
-
-    #     # K2=e1*(V-DC)+e0
-    #     # Lu=b0*((V-DC)/(Inttime+DeltaT_Lu)/K2)/(Tempco_Lu*(Temp-Tref)+1)
-
-    #     for i in range(ds.data.shape[0]):
-    #         c1=inttime[i]+delta_t_lu
-    #         for j in range(cd.data.shape[0]):
-    #             ds.data[i][j] = 100.0*b0[j]*((ds.data[i][j]-dc[i])/c1
-    #             /(e1*(ds.data[i][j]-dc[i])+e0))/(tempco_lu[j]*(temp[i]-tref)+1)
-
-    #     # As in the calibration step above, this presumes UV bands (initial pixels) are always calibrated and 
-    #     #   any truncation in calibration is on the NIR end
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
-    #     gp = node.getGroup('LT_L1AQC')
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
-
-    # @staticmethod
-    # def processLI(node):
-    #     gp=node.getGroup('LI')
-    #     gpc=node.getGroup('CAL_COEF')
-    #     delta_t_lsky=float(gpc.attributes['Delta_T_Lsky'])
-    #     tref=float(gpc.attributes['Tref'])
-    #     f0=float(gpc.attributes['f0'])
-    #     f1=float(gpc.attributes['f1'])
-    #     ds=gp.datasets['LI']
-    #     dc=gp.datasets['DARK_CNT'].data['LI'].tolist()
-    #     inttime=gp.datasets['INTTIME'].data['LI'].tolist()
-    #     temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-    #     cd=gpc.datasets['Cal_LI']
-    #     c0 = cd.data['c0'].tolist()
-    #     tempco_lsky=cd.data['Tempco_Lsky'].tolist()
-
-    #     # K3=f0*(V-DC)+f1
-    #     # Lsky=c0*((V-DC)/(Inttime+DeltaT_Lsky)/K3)/(Tempco_Lsky*(Temp-Tref)+1)
-
-    #     for i in range(ds.data.shape[0]):
-    #         c1=inttime[i]+delta_t_lsky
-    #         for j in range(cd.data.shape[0]):
-    #             ds.data[i][j] = 100.0*c0[j]*((ds.data[i][j]-dc[i])/c1
-    #             /(f1*(ds.data[i][j]-dc[i])+f0))/(tempco_lsky[j]*(temp[i]-tref)+1)
-
-    #     # As in the calibration step above, this presumes UV bands (initial pixels) are always calibrated and 
-    #     #   any truncation in calibration is on the NIR end
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
-    #     gp = node.getGroup('LI_L1AQC')
-    #     gp.attributes['CAL_START'] = str(0)
-    #     gp.attributes['CAL_STOP'] = str(j)
+        gp_l1aqc.attributes['Tref'] = tref
+        for key, attr in gp.attributes.items():
+            if key in ['CAL_START','CAL_STOP']:
+                gp_l1aqc.attributes[key] = attr
+        for key in specialNames[s]:
+            if key.lower().startswith('d') or key.lower().startswith('e') or key.lower().startswith('f'):
+                gp_l1aqc.attributes[key] = gpc.attributes[key]
+            elif key.startswith('Tempco'):
+                gp_l1aqc.attributes[key] = tempco
+            else:
+                gp_l1aqc.attributes[key] = abc0
 
     @staticmethod
     def processL1b(node, outFilePath):

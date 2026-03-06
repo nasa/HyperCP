@@ -122,23 +122,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
                 lightData  = copy.deepcopy(rawSlice[s_type]['data'])
                 darkData   = None
-
-            # elif i_type.lower() == "dalec":
-            #     # NOTE: dalec stores dark data in standard sequence - no shutter
-            #     # NOTE: Under development
-
-            #     interpData = self.get_interp_data(
-            #         {'ES':rawSlice['ES']['light']['datetime'],
-            #         'LI':rawSlice['LI']['light']['datetime'],
-            #         'LT':rawSlice['LT']['light']['datetime']})
-            #     # L1AQC unsliced data group is passed, but not used.
-            #     utils.apply_NaN_Mask(rawSlice[s_type]['light'])
-            #     utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
-            #     # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
-            #     lightTimer = copy.deepcopy(rawSlice[s_type]['light']['datetime'])
-            #     lightData  = copy.deepcopy(rawSlice[s_type]['light']['data'])
-            #     darkData   = copy.deepcopy(rawSlice[s_type]['dark']['data']) # Check this. No shutter.
-
             elif i_type.lower() == "seabird":
                 interpData = self.get_interp_data(
                     {'ES':rawSlice['ES']['LIGHT']['datetime'],
