@@ -694,18 +694,24 @@ class Controller:
                 return False
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
-            # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
+            # called here
+            if ConfigFile.settings["fL1bCal"] == 3:
+                currentRegime = 'Sensor-specific'
+            elif ConfigFile.settings["fL1bCal"] == 2:
+                currentRegime = 'Class-specific'
+            else:
+                currentRegime = 'Factory'
             if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
 
 
