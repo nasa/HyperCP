@@ -155,8 +155,8 @@ class PIUDataStore:
         self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
         self.l1ACommonCalPix255[0:len(self.l1ACommonCalPix)] = [test for test in self.l1ACommonCalPix]
         # NOTE: Presumes UV pixels are always reported, regardless of calibration
-        self.l1AReportedPix255 = [bool(0) for i in range(len(self.l1ACommonCalPix255))]
-        self.l1AReportedPix255[0:len(self.l1ACommonCalPix)] = [bool(1) for i in range(len(self.l1ACommonCalPix))]
+        self.l1AReportedPix255 = [bool(0) for i in range(len(self.l1ACommonCalPix255)-1)]
+        self.l1AReportedPix255[0:len(self.l1ACommonCalPix)-1] = [bool(1) for i in range(len(self.l1ACommonCalPix)-1)]
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):

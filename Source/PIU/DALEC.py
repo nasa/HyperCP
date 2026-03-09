@@ -48,11 +48,9 @@ class Dalec(BaseInstrument):
         #         raw_data.data[i][j] = 100.0*abc0[j]*((raw_data.data[i][j]-dc[i])/c1
         #         /(def1*(raw_data.data[i][j]-dc[i])+def0))/(tempco[j]*(temp[i]-tref)+1)
         # %%%
-
         # Presumably, dc is like TriOS raw_back
         #   but dc is from grp, so has len of grp raw, not xSlice raw...
         #   and yet this is how PIU.TriOS.TriOSUtils.readParams handles it. How does that work?
-
 
         # check size of data
         nband = len(dc)  # indexes changed for raw_back as is brought to L2
