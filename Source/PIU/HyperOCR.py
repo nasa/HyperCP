@@ -164,7 +164,7 @@ class HyperOCR(BaseInstrument):
                 sample_n_IB = self.gen_n_IB_sample(mDraws)
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
-                # TODO: REPLACED sample_S12 WITH sample_S1
+                # TODO: REPLACE sample_S12 WITH sample_S1
                 sample_S12_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])
             else:  # use slaper correction if selected - only available as a developer option currently
                 sample_S12_sl_corr = self.get_Slaper_Sl_unc(

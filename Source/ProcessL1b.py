@@ -306,7 +306,7 @@ class ProcessL1b:
         # gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Read sensor-specific radiometric calibration
-        root = ProcessL1b.read_FidRadDB_cal_char_files(root)
+        root = ProcessL1b.read_FidRadDB_cal_char_files(root) # <- NOTE: Does not drop 0th pixel of _RADCAL file
         gp = root.getGroup('RAW_UNCERTAINTIES')
 
         # temporarily use class-based polar unc for FRM
@@ -322,8 +322,9 @@ class ProcessL1b:
         # unc dataset renaming
         um.RenameUncertainties_FullChar(root)
 
-        # interpolate LAMP and PANEL to full wavelength range
-        success = um.interpUncertainties_FullChar(root)
+        # interpolate LAMP and PANEL to full reported wavelength range
+        success = um.interpUncertainties_FullChar(root) # <- NOTE: Does not drop 0th pixel of _RADCAL file for RADCAL,
+                                                        #.   but uses only reported bands in the interpolation for other datasets (so, no 0th pixel)
         if not success:
             print('interpUncertainties_FullChar failed.')
             return None
@@ -820,18 +821,21 @@ class ProcessL1b:
         if ConfigFile.settings['fL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
+            # NOTE: This does NOT use the FidRadDB RADCAL file.
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
                 logging.writeLogFileAndPrint('Error running factory uncertainties.')
                 return None
 
         # Add class-based files + RADCAL file
+        # NOTE: This DOES use the FIDRad RADCAL file, so watch out for the 0th pixel
         elif ConfigFile.settings['fL1bCal'] == 2:
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
 
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
+            # RAW_UNCERTAINTIES truncated for 0th RADCAL pixel
             if node is None:
                 logging.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
@@ -841,7 +845,7 @@ class ProcessL1b:
 
             # NOTE: Does this method lead to to corrections being applied in addition to uncertainty estimates?s
             node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
-
+            # RAW_UNCERTAINTIES NOT truncated for 0th pixel!
             if node is None:
                 logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None

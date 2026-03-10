@@ -85,8 +85,8 @@ class PIUDataStore:
                 [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
 
     def get_inttime(self, root: HDFRoot):
-        # NOTE: Why are we using the MEAN integration time of all the samples?? What does this get used for?
-        #   Is ensemble average what we're after?
+        # BUG?: Why are we using the MEAN integration time of all the samples?? What does this get used for?
+        # NOTE: Why is this not called for FRM-SB?
         if ConfigFile.settings['SensorType'].lower() != 'trios es only':
             sensors = ["ES", "LI", "LT"]
         else:
@@ -131,13 +131,13 @@ class PIUDataStore:
     def readCommonPix(self):
         # NOTE: If (rare case) any sensors have a different number of calibrated bands (e.g., pySAS sample),
         #   we need to crop to set of pixels in order to math them together.
-        #   Take the pixels of the sensor with the fewest pixels. This does NOT change the sensor-specific wavebands themselves.
+        #   Take the pixels of the sensor with the fewest calibrated pixels. This does NOT change the sensor-specific wavebands themselves.
         if ConfigFile.settings['SensorType'].lower() == "trios es only":
             l1ACommonCalPix = self.ind_rad_wvl['ES']
         else:
             l1APixels = [sum(self.ind_rad_wvl['ES']), sum(self.ind_rad_wvl['LI']), sum(self.ind_rad_wvl['LT'])]
             fewestBands = l1APixels.index(min(l1APixels))
-            # L1A reported pixels masked for calibration bands (NOT necessarily L1B interpolated bands)
+            # L1A reported pixels masked for calibration bands (NOT L1B interpolated bands)
             if fewestBands==0:
                 l1ACommonCalPix = self.ind_rad_wvl['ES']
             elif fewestBands==1:
@@ -150,36 +150,49 @@ class PIUDataStore:
                 any(l1ACommonCalPix[l1ACommonCalPix] !=  self.ind_rad_wvl['LT'][l1ACommonCalPix]):
                 writeLogFileAndPrint("WARNING: Pixel calibration mismatch across sensors")
 
+        # Length depends on the number of reported pixels, 255 for TriOS/DALEC, 255 or fewer for SeaBird
         self.l1ACommonCalPix = l1ACommonCalPix.tolist()
-        # Length is 255 pixels (redundant for sensors reporting 255 bands)
+        # Length is 255 pixels. NOTE: Presumes UV pixels are always reported, regardless of calibration
         self.l1ACommonCalPix255 = [bool(0) for _ in range(255)]
         self.l1ACommonCalPix255[0:len(self.l1ACommonCalPix)] = [test for test in self.l1ACommonCalPix]
-        # NOTE: Presumes UV pixels are always reported, regardless of calibration
-        self.l1AReportedPix255 = [bool(0) for i in range(len(self.l1ACommonCalPix255)-1)]
-        self.l1AReportedPix255[0:len(self.l1ACommonCalPix)-1] = [bool(1) for i in range(len(self.l1ACommonCalPix)-1)]
+        self.l1AReportedPix255 = [bool(0) for _ in range(255)]
+        # Reported pixels should not depend on calibrated pixels, so take it from the length of any sensor;
+        #   NOTE: assumes all three at least REPORT the same pixels, even if they are not all commonly calibrated
+        if len(self.ind_rad_wvl['ES']) == len(self.ind_rad_wvl['LT']) == len(self.ind_rad_wvl['LI']):
+            nReportedPix = len(self.ind_rad_wvl['ES'])
+        else:
+            writeLogFileAndPrint("WARNING: Pixel reporting mismatch across sensors")
+            nReportedPix = None
+        self.l1AReportedPix255[0:nReportedPix] = [bool(1) for i in range(nReportedPix)] # Disregards calibration bands
+        # self.l1AReportedPix255[0:len(self.l1ACommonCalPix)] = [bool(1) for i in range(len(self.l1ACommonCalPix))]
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
         # read data
         grp = raw_grps[s_type]
 
-        radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
-        self.coeff[s_type]['radcal_wvl'] = radcal_wvl
+        # Crops pixel 0th from the 256 pixels in the FidRadDB RADCAL file
+        radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # <- Controlled for 0th pixel
+        self.coeff[s_type]['radcal_wvl'] = radcal_wvl # This will remain all 255 valid pixels from the FidRadDB RADCAL file
         ind_raw_wvl = radcal_wvl > 0  # remove any index for which we do not have radcal wvls available
 
         ##############
-        # 255 bands from FidRadDB. Zeroed bands should be for unreported bands.
-        radcal255 = self.extract_unc_from_grp(uncGrp, f"{s_type}_RADCAL_CAL")
-        # Zeroes appear to refer to unreported bands rather than uncalibrated bands.
-        ind_rad_wvl255 = np.array(radcal255.columns['1']) > 0
+        # NOTE: 256! bands from FidRadDB, unlike Class RAW_UNCERTAINTIES group. 
+        #   Zeroed bands in RADCAL should be for unreported bands, always including pixel 0.
+        radcal256 = self.extract_unc_from_grp(uncGrp, f"{s_type}_RADCAL_CAL")
+        # NOTE: Zeroes in the RADCAL file appear to refer to *unreported* bands rather than uncalibrated bands.
+        # NOTE: Tartu use of 0 wavelength in the 0th pixel is INCONSISTENT. See TriOS sample RADCAL files
+        ind_rad_wvl256 = np.array(radcal256.columns['1']) > 0
+        # Force 0th pixel to be false
+        ind_rad_wvl256[0] = False
 
         # Strip off unreported bands
         radcal = HDFDataset()
-        # radcal.datasetToColumns()
-        for col in radcal255.columns:
-            radcal.columns[col] = np.array(radcal255.columns[col])[ind_rad_wvl255].tolist()
+        for col in radcal256.columns:
+            # 255 or fewer reported bands:
+            radcal.columns[col] = np.array(radcal256.columns[col])[ind_rad_wvl256].tolist()
         radcal.columnsToDataset()
-        ind_rad_wvl = ind_rad_wvl255[ind_rad_wvl255]
+        ind_rad_wvl = ind_rad_wvl256[ind_rad_wvl256] # 255 or fewer reported bands. 0th pixel removed
 
         # What we need here are the L1A pixel numbers rather than L1b interpolated pixels
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -361,6 +374,8 @@ class PIUDataStore:
             # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary.
 
         # Mask of all reported bands for calibrated bands
+        # 0th pixel already masked above
+        # These will be further masked for COMMON calibrate bands later
         ind_rad_wvl[0:self.cal_start[s_type]] = False
         ind_rad_wvl[self.cal_stop[s_type]+1:] = False
         self.ind_rad_wvl[s_type] = ind_rad_wvl
@@ -370,7 +385,8 @@ class PIUDataStore:
         radcal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
         self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
         self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
-        self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
+        # self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
+        self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp['LIGHT'].getDataset("INTTIME").data.tolist())) # BUG?: This is a mean int_time for the whole series?!?
         self.coeff[s_type]['cal_int'] = radcal_raw.pop(0)
 
         return radcal_raw
@@ -383,8 +399,8 @@ class PIUDataStore:
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
         self.coeff[s_type]['cal_int'] = int(grp.getDataset("BACK_" + s_type).attributes["IntegrationTime"])
 
-        B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:]
-        B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
+        B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:] #<- Oth pixel control
+        B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:] #<- Oth pixel control
         self.coeff[s_type]['nband'] = len(B0)
         grp.attributes["nmes"] = len(raw_data)
 
@@ -399,6 +415,7 @@ class PIUDataStore:
 
     #### Class-Based ####
     def readCalClassBased(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
+        # Class-regime RAW_UNCERTAINTIES remove 0th RADCAL_CAL pixel.
         # 255 bands from FidRadDB. Zeroed bands should be for unreported bands.
         radcal255 = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
         # Zeroes appear to refer to unreported bands rather than uncalibrated bands.

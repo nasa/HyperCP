@@ -224,27 +224,23 @@ class unc_management:
         for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
-            # indx = ds.attributes["INDEX"]
-            # pixel = np.array(ds.columns['0'[1:])
-            bands = np.array(ds.columns['1'][1:])
+            bands = np.array(ds.columns['1'][1:]) # Drop 0th pixel from _RADCAL file of 256 from local variable
             # coeff = np.array(ds.columns['2'][1:])
-            valid = bands>0
-            # x_new2 = bands[valid]
+            valid = bands>0 # Flag unreported bands from _RADCAL file of 255
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
-                # inv_dict = {v: k for k, v in sensorId.items()}
-                # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)
 
+            # Wavelengths of reported sensor data:
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
             # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
-                print("ERROR: band wavelength not found in calibration file")
+                print("ERROR: Reported bands in _RADCAL file do not match sensor data bands")
                 print(len(bands[valid]))
                 print(len(x_new))
                 return False

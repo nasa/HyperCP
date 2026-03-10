@@ -63,7 +63,7 @@ class plottingToolsCB:
                 "nLw": nlw,
                 "Rrs": rrs,
             }
-
+            print('Plotting uncertainty breakdown')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths, level="L2")
             self.plot_bar_class_l2(
                 BD_UNCS,
@@ -236,7 +236,7 @@ class plottingToolsCB:
         #     regime = "Factory"
         # else:
         #     regime = "Class"
-        print('Plotting uncertainty breakdown')
+
         labels = dict(
             # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
             Rrs=["noise","pert","Cal","Stab","Lin","cT","Stray","pol","cosine","rho",],
