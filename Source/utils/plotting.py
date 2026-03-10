@@ -691,6 +691,7 @@ def plotUncertainties(root, filename):
         if ConfigFile.settings['fL1bCal'] <= 2:
             PT = plottingToolsCB(sza, station)
 
+            print(f'Plotting Class-specific uncertainty breakdown for {station}')
             PT.PlotL1B(
                 root,
                 waveSubset,
@@ -710,7 +711,7 @@ def plotUncertainties(root, filename):
         elif ConfigFile.settings['fL1bCal'] == 3:
             PT = plottingToolsFRM(sza, station)
 
-            print(f'Plotting uncertainty breakdown for {station}')
+            print(f'Plotting Sensor-specific uncertainty breakdown for {station}')
             PT.plotL1B(
                 waveSubset,
                 BD_UNCS,

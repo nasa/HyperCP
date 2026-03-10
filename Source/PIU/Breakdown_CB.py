@@ -37,6 +37,7 @@ class plottingToolsCB:
     def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
         try:
             BD_VALS = {"ES": es, "LI": li, "LT": lt}
+            # print('Plotting L1B product uncertainty breakdown')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
             self.plot_bar_classBased(
                 BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY")
@@ -58,7 +59,7 @@ class plottingToolsCB:
                 "nLw": nlw,
                 "Rrs": rrs,
             }
-            print(f'Plotting uncertainty breakdown for {cast}')
+            # print(f'Plotting L2 product uncertainty breakdown for {cast}')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths, level="L2")
             self.plot_bar_class_l2(
                 BD_UNCS,

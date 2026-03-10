@@ -22,7 +22,8 @@ class Dalec(BaseInstrument):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
 
-    def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+    # def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+    def lightDarkStats(self, grp: HDFGroup, lightSlice: OrderedDict, darkSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:    
         ''' Under development. '''
 
         (delta_t,
@@ -36,7 +37,7 @@ class Dalec(BaseInstrument):
         abc0,
         tempco,
         cd_shape,
-            ) = DALECUtils.readParams(grp, XSlice, sensortype)
+            ) = DALECUtils.readParams(grp, lightSlice, darkSlice,sensortype)
         # %%
         # K1=d0*(V-DC)+d1
         # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
@@ -45,19 +46,56 @@ class Dalec(BaseInstrument):
         # for i in range(raw_data.data.shape[0]):
         #     c1=inttime[i]+delta_t
         #     for j in range(cd_shape):
+        #
         #         raw_data.data[i][j] = 100.0*abc0[j]*((raw_data.data[i][j]-dc[i])/c1
         #         /(def1*(raw_data.data[i][j]-dc[i])+def0))/(tempco[j]*(temp[i]-tref)+1)
+        #
+        #
         # %%%
-        # Presumably, dc is like TriOS raw_back
-        #   but dc is from grp, so has len of grp raw, not xSlice raw...
-        #   and yet this is how PIU.TriOS.TriOSUtils.readParams handles it. How does that work?
-
         # check size of data
         nband = len(dc)  # indexes changed for raw_back as is brought to L2
         nmes = len(raw_data)
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixels between dat and back")
             return False
+        
+        # offset = []
+        # for n in range(nmes):
+            # std(back) + std(raw) add in quad  - what about normalise and cal?
+            # No background correction for DALEC cal, just the dark offset, equivalant to dark pixels for Trios
+            # back_mesure[n, :] = raw_back[:, 0] + raw_back[:, 1]*(int_time[n]/int_time_t0)
+            # back_corrected_mesure[n, :] = mesure[n] - back_mesure[n, :]
+
+            # Offset substraction : dark index read from attribute
+            # offset.append(np.mean(dc[n]))
+            # offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset[-1]
+
+        # get light and dark data before correction
+        light_avg = np.mean(raw_data, axis=1)  # [ind_nocal == False]
+        if nmes > 25:
+            light_std = np.std(raw_data, axis=1) / pow(nmes, 0.5)  # [ind_nocal == False]
+        elif nmes > 3:
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(raw_data, axis=1) / np.sqrt(nmes))**2)
+        else:
+            writeLogFileAndPrint("too few scans to make meaningful statistics")
+            return False
+        # ensure all Dalec outputs are length 255 to match SeaBird HyperOCR stats output
+        ones = np.ones(nband)  # to provide array of 1s with the correct shape
+        dark_avg = ones * np.mean(dc)
+        if nmes > 25:
+            dark_std = ones * (np.std(np.mean(dc)) / pow(nmes, 0.5))
+        else:  # already checked for light data so we know nmes > 3
+            dark_std = np.sqrt(((nmes-1)/(nmes-3))*
+            (ones * (np.std(np.mean(dc))/np.sqrt(nmes)**2)))
+            # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
+
+        signal_noise = {}
+        for i, wvl in enumerate(raw_wvl):
+            signal_noise[wvl] = pow(
+                (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
+
+        std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
+
 
 
         return dict(
@@ -77,7 +115,7 @@ class Dalec(BaseInstrument):
 class DALECUtils():
 
     @staticmethod
-    def readParams(grp, xSliceData, s):
+    def readParams(grp, lightSlice, darkSlice, s):
         specialNames = {
             'ES':['Delta_T_Ed','Tempco_Ed','d0','d1','a0'],
             'LT':['Delta_T_Lu','Tempco_Lu','e0','e1','b0'],
@@ -89,9 +127,11 @@ class DALECUtils():
         def1=float(grp.attributes[specialNames[s][3]])
 
         # ds=gp.datasets[s]
-        raw_data = np.asarray(list(xSliceData.values())).transpose() 
+        # raw_data = np.asarray(list(xSliceData.values())).transpose()
+        raw_data = np.asarray(list(lightSlice.values())) #.transpose()
+        dc = np.asarray(list(darkSlice[s])) #.transpose()
 
-        dc=grp.datasets['DARK_CNT'].data[s].tolist()
+        # dc=grp.datasets['DARK_CNT'].data[s].tolist()
         inttime=grp.datasets['INTTIME'].data[s].tolist()
         temp=grp.datasets['SPECTEMP'].data['NONE'].tolist()
         cd=grp.datasets['CAL_COEF']
