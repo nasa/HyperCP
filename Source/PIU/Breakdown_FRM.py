@@ -54,7 +54,6 @@ class plottingToolsFRM:
 
     def plotL2(self, waveSubset, BD_UNCS, signal):
         ylim = [0, 5]
-        print('Plotting uncertainty breakdown')
         for meas in ['nLw', 'Rrs']:
             UNC = BD_UNCS[meas]
 
@@ -94,7 +93,7 @@ class plottingToolsFRM:
     def plot_spectral_FRM(
             self, s, x: np.array, y: np.array, name: str, colour: Any,
             rel_to: Optional[np.array]=None, unit: Optional[str]="",
-            ylim: Optional[list]=None) -> None:  
+            ylim: Optional[list]=None) -> None:
             # TODO: change docs to show tableau colours or str as input
         """
         simple method for plotting uncertainties both in absolute and relative (if rel_to is given)

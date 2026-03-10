@@ -50,12 +50,7 @@ class plottingToolsCB:
         acqTime = datetime.strptime(
             node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y"
         )
-        # cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%dS%H%M%S')}"
-        # TODO: Needs to be updated to accomodate multiple ensembles/stations within a file
-        # station is a string moniker for the ensemble, either a station number or a timestamp
-        # if ConfigFile.settings['bL2Stations']:
-        #     cast = f"Station_{ancGroup.getDataset('STATION').columns['STATION'][t]}"
-        # else:
+
         cast = acqTime.strftime("%Y%m%d_%H%M%S") #
 
         try:
@@ -63,7 +58,7 @@ class plottingToolsCB:
                 "nLw": nlw,
                 "Rrs": rrs,
             }
-            print('Plotting uncertainty breakdown')
+            print(f'Plotting uncertainty breakdown for {cast}')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths, level="L2")
             self.plot_bar_class_l2(
                 BD_UNCS,
@@ -179,7 +174,7 @@ class plottingToolsCB:
                     plt.tight_layout()
                     return
 
-                # --- Sort by value descending for readability ---       
+                # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
                 colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]

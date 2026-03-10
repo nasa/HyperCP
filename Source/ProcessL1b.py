@@ -170,7 +170,7 @@ class ProcessL1b:
             esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
         acq_time_seconds = esDatetime.timestamp()
 
-        # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char  
+        # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char
         # regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
         # ... then filter to RADCAL if cal'char regime = class, i.e. ConfigFile.settings["fL1bCal"] == 2
         for sensorType, needed_cal_chars_fullFRM in ConfigFile.settings['neededCalCharsFRM'].items():
@@ -181,7 +181,7 @@ class ProcessL1b:
                 calCharType = serialNumber_calCharType.split('_')[-1]
 
                 # Find available files in fidRadPath for the given serialNumber_calCharType tag
-                available_files = np.array(glob.glob(os.path.join(CODE_HOME,fidRadPath,'CP_%s_*' % serialNumber_calCharType)))
+                available_files = np.array(glob.glob(os.path.join(CODE_HOME,fidRadPath,f'CP_{serialNumber_calCharType}_*')))
 
                 # get their timestamps anc convert to seconds since UNIX epoch (Jan 1 1970 00:00 UTC)
                 available_files_calTime0 = [os.path.basename(f).split('_')[-1].split('.')[0] for f in available_files]
@@ -190,7 +190,7 @@ class ProcessL1b:
                 # Unless this is a characterisation tag and not calibration tag (i.e. not RADCAL) + class-based regime, raise an error if files are missing...
                 if len(available_files) == 0 and not (calCharType != 'RADCAL' and ConfigFile.settings["fL1bCal"] == 2):
                     raise ValueError(
-                        'Missing FidRadDB file of type CP_%s_yyyymmdd.txt for %s sensor. At least one file with this name format should be stored at %s (see GUI-->Edit-->Cal/Char options).' % (serialNumber_calCharType, sensorType, fidRadPath))
+                        f'Missing FidRadDB file of type CP_{serialNumber_calCharType}_yyyymmdd.txt for {sensorType} sensor. At least one file with this name format should be stored at {fidRadPath} (see GUI-->Edit-->Cal/Char options).')
 
                 if calCharType != 'RADCAL': # Char case
                     if ConfigFile.settings["fL1bCal"] == 2:# class-based
@@ -215,7 +215,7 @@ class ProcessL1b:
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition')
 
                         if (chosen_file is None) and (idx is None):
-                            raise ValueError('No available cal/char files prior to measurement acquisition for serial-number/cal-char type %s: ' % serialNumber_calCharType)
+                            raise ValueError(f'No available cal/char files prior to measurement acquisition for serial-number/cal-char type {serialNumber_calCharType}: ')
 
                         filing.read_char(chosen_file, gp)
                         if ConfigFile.settings["SensorType"].lower() == 'seabird':

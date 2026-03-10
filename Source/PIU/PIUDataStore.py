@@ -158,11 +158,11 @@ class PIUDataStore:
         self.l1AReportedPix255 = [bool(0) for _ in range(255)]
         # Reported pixels should not depend on calibrated pixels, so take it from the length of any sensor;
         #   NOTE: assumes all three at least REPORT the same pixels, even if they are not all commonly calibrated
-        if len(self.ind_rad_wvl['ES']) == len(self.ind_rad_wvl['LT']) == len(self.ind_rad_wvl['LI']):
-            nReportedPix = len(self.ind_rad_wvl['ES'])
-        else:
-            writeLogFileAndPrint("WARNING: Pixel reporting mismatch across sensors")
-            nReportedPix = None
+        nReportedPix = len(self.ind_rad_wvl['ES'])
+        if ConfigFile.settings['SensorType'].lower() != "trios es only":
+            if not (len(self.ind_rad_wvl['ES']) == len(self.ind_rad_wvl['LT']) == len(self.ind_rad_wvl['LI'])):
+                writeLogFileAndPrint("WARNING: Pixel reporting mismatch across sensors")
+                nReportedPix = None
         self.l1AReportedPix255[0:nReportedPix] = [bool(1) for i in range(nReportedPix)] # Disregards calibration bands
         # self.l1AReportedPix255[0:len(self.l1ACommonCalPix)] = [bool(1) for i in range(len(self.l1ACommonCalPix))]
 

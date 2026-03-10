@@ -60,7 +60,6 @@ class HDFGroup:
 
     def getTableHeader(self, name):
         ''' Generates Head attributes'''
-        # ToDo: This should get generated from context file instead
         if name != "None":
             cnt = 1
             ds = self.getDataset(name)

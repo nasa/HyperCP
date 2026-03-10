@@ -680,8 +680,6 @@ class ProcessL2:
                             newRhoHyper.columns[k].append(rhoScalar)
                             if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
                                 try:
-                                    # TODO: explore why rho UNC is 1 index smaller than everything else
-                                    # last wvl is missing
                                     newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
                                 except KeyError:
                                     newRhoUNCHyper.columns[k].append(0)

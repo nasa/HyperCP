@@ -25,7 +25,7 @@ class RhoCorrections:
 
         logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
 
-        theta = 40 # viewing nadir angle of Lt or VZA of Li (TODO: tweak to allow theta=30)
+        theta = 40 # viewing nadir angle of Lt or VZA of Li
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
         phiViews = np.arange(0, 180+1, 15)  # 0:15:180 # phiView is relAz
@@ -123,7 +123,7 @@ class RhoCorrections:
                 # (estimated from Ruddick 2006).
                 rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
         else:
-            # TODO: Check this placeholder for forced 10% Rho uncertainty:
+            # Forced 10% Rho uncertainty:
             rhoDelta = []
             for w in waveBands:
                 rhoDelta.append(0.10 * rhoScalar)
