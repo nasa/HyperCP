@@ -51,25 +51,14 @@ class Dalec(BaseInstrument):
         #         raw_data.data[i][j] = 100.0*abc0[j]*((raw_data.data[i][j]-dc[i])/c1
         #         /(def1*(raw_data.data[i][j]-dc[i])+def0))/(tempco[j]*(temp[i]-tref)+1)
         #
-        #
+        
         # %%%
         # check size of data
-        nband = len(dc)  # indexes changed for raw_back as is brought to L2
-        nmes = len(raw_data)
-        if nband != len(raw_data[0]):
+        nband = len(dc)  # one dark count per sample
+        nmes = len(raw_data) # calibrated bands
+        if nband != len(raw_data[0]): # numbers of dark counts vs. light spectra
             print("ERROR: different number of pixels between dat and back")
             return False
-        
-        # offset = []
-        # for n in range(nmes):
-            # std(back) + std(raw) add in quad  - what about normalise and cal?
-            # No background correction for DALEC cal, just the dark offset, equivalant to dark pixels for Trios
-            # back_mesure[n, :] = raw_back[:, 0] + raw_back[:, 1]*(int_time[n]/int_time_t0)
-            # back_corrected_mesure[n, :] = mesure[n] - back_mesure[n, :]
-
-            # Offset substraction : dark index read from attribute
-            # offset.append(np.mean(dc[n]))
-            # offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset[-1]
 
         # get light and dark data before correction
         light_avg = np.mean(raw_data, axis=1)  # [ind_nocal == False]
@@ -97,8 +86,7 @@ class Dalec(BaseInstrument):
             signal_noise[wvl] = pow(
                 (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
 
-        std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
-
+        std_signal = np.std(offset_corrected_mesure, axis=1) / np.average(offset_corrected_mesure, axis=1)  # this is relative
 
 
         return dict(

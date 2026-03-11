@@ -38,7 +38,7 @@ class utils:
 
         :return: returns the interpolated output as either a numpy array or Ordered-Dictionary
         """
-        saveTimetag2 = None
+        saveDatetag,saveTimetag2 = None,None
         if isinstance(columns, dict):
             if "Datetag" in columns:
                 saveDatetag = columns.pop("Datetag")
@@ -50,6 +50,7 @@ class utils:
         else:
             msg = "columns are unexpected type: ProcessInstrumentUncertainties.py - interp_common_wvls"
             print(msg)
+            y = None
         # Get wavelength values
         x = np.asarray(waves)
 
