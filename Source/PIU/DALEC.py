@@ -51,42 +51,44 @@ class Dalec(BaseInstrument):
         #         raw_data.data[i][j] = 100.0*abc0[j]*((raw_data.data[i][j]-dc[i])/c1
         #         /(def1*(raw_data.data[i][j]-dc[i])+def0))/(tempco[j]*(temp[i]-tref)+1)
         #
-        
+
         # %%%
-        # check size of data
-        nband = len(dc)  # one dark count per sample
+        # # check size of data
+        # nband = len(dc)  # one dark count per sample
         nmes = len(raw_data) # calibrated bands
-        if nband != len(raw_data[0]): # numbers of dark counts vs. light spectra
-            print("ERROR: different number of pixels between dat and back")
-            return False
+        nband = raw_data.shape[1]
+        # if nband != len(raw_data[0]): # numbers of dark counts vs. light spectra
+        #     print("ERROR: different number of pixels between dat and back")
+        #     return False
 
         # get light and dark data before correction
-        light_avg = np.mean(raw_data, axis=1)  # [ind_nocal == False]
+        light_avg = np.mean(raw_data, axis=0)
         if nmes > 25:
-            light_std = np.std(raw_data, axis=1) / pow(nmes, 0.5)  # [ind_nocal == False]
+            light_std = np.std(raw_data, axis=0) / pow(nmes, 0.5)
         elif nmes > 3:
-            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(raw_data, axis=1) / np.sqrt(nmes))**2)
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(raw_data, axis=0) / np.sqrt(nmes))**2)
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
-        # ensure all Dalec outputs are length 255 to match SeaBird HyperOCR stats output
+
+        # TODO: confirm this does NOT need to be 255 bands.
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * np.mean(dc)
         if nmes > 25:
-            dark_std = ones * (np.std(np.mean(dc)) / pow(nmes, 0.5))
+            dark_std = ones * (np.std(dc) / pow(nmes, 0.5))
         else:  # already checked for light data so we know nmes > 3
             dark_std = np.sqrt(((nmes-1)/(nmes-3))*
-            (ones * (np.std(np.mean(dc))/np.sqrt(nmes)**2)))
+            (ones * (np.std(dc)/np.sqrt(nmes)**2)))
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
-        offset_corrected_mesure = raw_data - dc
+        offset_corrected_mesure = raw_data - np.tile(dc,[nband,1]).transpose()
 
         signal_noise = {}
         for i, wvl in enumerate(raw_wvl):
             signal_noise[wvl] = pow(
                 (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
 
-        std_signal = np.std(offset_corrected_mesure, axis=1) / np.average(offset_corrected_mesure, axis=1)  # this is relative
+        std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
 
 
         return dict(
@@ -117,10 +119,8 @@ class DALECUtils():
         def0=float(grp.attributes[specialNames[s][2]])
         def1=float(grp.attributes[specialNames[s][3]])
 
-        # ds=gp.datasets[s]
-        # raw_data = np.asarray(list(xSliceData.values())).transpose()
-        raw_data = np.asarray(list(lightSlice.values())) #.transpose()
-        dc = np.asarray(list(darkSlice[s])) #.transpose()
+        raw_data = np.asarray(list(lightSlice.values())).transpose()
+        dc = np.asarray(list(darkSlice[s])).transpose()
 
         # dc=grp.datasets['DARK_CNT'].data[s].tolist()
         inttime=grp.datasets['INTTIME'].data[s].tolist()
