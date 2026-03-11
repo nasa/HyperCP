@@ -37,6 +37,7 @@ class Dalec(BaseInstrument):
         abc0,
         tempco,
         cd_shape,
+        raw_wvl
             ) = DALECUtils.readParams(grp, lightSlice, darkSlice,sensortype)
         # %%
         # K1=d0*(V-DC)+d1
@@ -89,6 +90,8 @@ class Dalec(BaseInstrument):
             (ones * (np.std(np.mean(dc))/np.sqrt(nmes)**2)))
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
+        offset_corrected_mesure = raw_data - dc
+
         signal_noise = {}
         for i, wvl in enumerate(raw_wvl):
             signal_noise[wvl] = pow(
@@ -139,6 +142,8 @@ class DALECUtils():
         tempco=cd.data[specialNames[s][1]].tolist()
         cd_shape = cd.data.shape[0]
 
+        raw_wl = np.array(list(grp.datasets[s].columns.keys()),dtype=float)
+
         return(
             delta_t,
             tref,
@@ -151,4 +156,5 @@ class DALECUtils():
             abc0,
             tempco,
             cd_shape,
+            raw_wl
         )
