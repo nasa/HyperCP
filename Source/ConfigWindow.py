@@ -1404,7 +1404,8 @@ class ConfigWindow(QtWidgets.QDialog):
             elif ancillarySource == 'ECMWF_ADS':
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
-            self.RhoRadioButton3C.setDisabled(1)
+            # self.RhoRadioButton3C.setDisabled(1)
+            self.RhoRadioButton3C.setDisabled(0)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
