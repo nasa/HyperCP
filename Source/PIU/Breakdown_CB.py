@@ -120,7 +120,7 @@ class plottingToolsCB:
             plt.savefig(fp)
             plt.close(f"{sensor}_{self.station}")
 
-    def plot_bar_classBased(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str : np.array]:
+    def plot_bar_classBased(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str, np.array]:
         # if ConfigFile.settings["fL1bCal"] == 1:
         #     regime = "Factory"
         # else:
@@ -185,12 +185,15 @@ class plottingToolsCB:
                 # --- Add percentage labels to the right of each bar ---
 
                 # Combined uncertainty
-                combined = (sum(v**2 for v in vals)) ** 0.5
+                combined = (np.sum(v**2 for v in vals)) ** 0.5
 
+                # relative uncertainties
+                # unc component / total signal
+                # unc components add in quad / signal
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 ref_at_indx = []
                 for i, v in enumerate(vals_sorted):
-                    pct = (v / combined) * 100
+                    pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(round(pct,1) + 1)
 
@@ -297,7 +300,7 @@ class plottingToolsCB:
                 ref_at_indx = []
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
-                    pct = (v / combined) * 100
+                    pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(pct)
 
