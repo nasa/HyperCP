@@ -191,7 +191,8 @@ class plottingToolsCB:
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 ref_at_indx = []
                 for i, v in enumerate(vals_sorted):
-                    pct = (v / combined) * 100
+                    # pct = (v / combined) * 100
+                    pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(round(pct,1) + 1)
 
@@ -298,7 +299,8 @@ class plottingToolsCB:
                 ref_at_indx = []
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
-                    pct = (v / combined) * 100
+                    # pct = (v / combined) * 100
+                    pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(pct)
 

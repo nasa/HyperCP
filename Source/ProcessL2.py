@@ -1885,6 +1885,8 @@ class ProcessL2:
                     newGrp.datasets[ds].datasetToColumns()
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
+                    node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
+                    node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate']
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
