@@ -451,7 +451,7 @@ class ProcessL2:
         liUNC = {}
         ltUNC = {}
 
-        # Only Factory - Trios has no uncertainty here
+        # Only Factory Trios has no uncertainty here
         if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             #or ConfigFile.settings['SensorType'].lower() == 'dalec':
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
@@ -1182,7 +1182,7 @@ class ProcessL2:
             convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='A')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='B')
+            convolve_to_satellite['Sentinel3B'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='B')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
         satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
@@ -1838,6 +1838,13 @@ class ProcessL2:
                 if sixS_available:
                     filtering.filterDataL2(node.getGroup("SIXS_MODEL"), badTimes)
 
+            # Now address convolutions, if any, but don't remove those spectra (again), just 0 the UV and NIR
+            sensorList = ['bL2WeightMODISA','bL2WeightMODIST','bL2WeightSentinel3A','bL2WeightSentinel3B',
+                          'bL2WeightVIIRSN','bL2WeightVIIRSJ']
+            for satellite in sensorList:
+                if ConfigFile.settings[satellite]:
+                    ProcessL2.negReflectance(newReflectanceGroup,
+                                             'Rrs_'+satellite.split('bL2Weight')[1], VIS = fRange)
         return True
 
     @staticmethod
