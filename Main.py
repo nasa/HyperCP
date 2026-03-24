@@ -28,7 +28,7 @@ from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 # from Source.Utilities import Utilities
 import Source.utils.filing as filing
 
-VERSION = "1.2.15"
+VERSION = "1.2.16"
 
 
 class Window(QtWidgets.QWidget):
