@@ -129,8 +129,10 @@ class ProcessL1b:
             # If found, chose the most recent prior to acquisition, otherwise set to None
             if np.any(prior2acq):
                 # Selection of the closest char data file PRE-EXISTING to the measuring date
-                chosen_file_idx = np.argmax(available_files_calTime_seconds[prior2acq])
-                chosen_file = available_files[prior2acq][chosen_file_idx]
+                # chosen_file_idx = np.argmax(available_files_calTime_seconds[prior2acq])
+                chosen_file_idx = int(np.where(prior2acq)[0])
+                # chosen_file = available_files[prior2acq][chosen_file_idx]
+                chosen_file = available_files[chosen_file_idx]
             else:
                 # No file found before acquisition. Set to None.
                 chosen_file = None

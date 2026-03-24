@@ -105,7 +105,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # filter nans
             rawGrp = None
 
-            if i_type.lower() in ["sorad", "trios", "trios es only","dalec"]:
+            if i_type.lower() in ["sorad", "trios", "trios es only"]:
                 # NOTE: trios stores dark data in standard sequence - no shutter
                 if ConfigFile.settings['SensorType'].lower() == 'trios es only':
                     interpData = self.get_interp_data(
@@ -122,7 +122,25 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
                 lightData  = copy.deepcopy(rawSlice[s_type]['data'])
                 darkData   = None
+            elif i_type.lower() == "dalec":
+                # NOTE: Under development
+                interpData = self.get_interp_data(
+                        {'ES':rawSlice['ES']['datetime'],
+                        'LI':rawSlice['LI']['datetime'],
+                        'LT':rawSlice['LT']['datetime']})
+                utils.apply_NaN_Mask(rawSlice[s_type]['light'])
+                utils.apply_NaN_Mask(rawSlice[s_type]['dark'])
+                rawGrp     = rawData[s_type]
+                lightTimer = copy.deepcopy(rawSlice[s_type]['datetime'])
+                lightData  = copy.deepcopy(rawSlice[s_type]['light'])
+                darkData   = copy.deepcopy(rawSlice[s_type]['dark'])
+                # args = [
+                #     {'L1AQC': copy.deepcopy(rawData[s_type].datasets[s_type]), 'DARK': copy.deepcopy(rawData[s_type].datasets['DARK_CNT'])},
+                #     {'LIGHT': copy.deepcopy(rawSlice[s_type]['light']), 'DARK': copy.deepcopy(rawSlice[s_type]['dark'])},
+                #     s_type
+                # ]
             elif i_type.lower() == "seabird":
+                # NOTE: What is rawGroup for SeaBird?
                 interpData = self.get_interp_data(
                     {'ES':rawSlice['ES']['LIGHT']['datetime'],
                     'LI':rawSlice['LI']['LIGHT']['datetime'],

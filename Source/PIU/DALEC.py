@@ -22,7 +22,8 @@ class Dalec(BaseInstrument):
         super().__init__()  # call to instrument __init__
         self.instrument = "Dalec"
 
-    def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+    # def lightDarkStats(self, grp: HDFGroup, XSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:
+    def lightDarkStats(self, grp: HDFGroup, lightSlice: OrderedDict, darkSlice: OrderedDict, sensortype: str) -> Union[bool, dict[str, Union[np.array, dict]]]:    
         ''' Under development. '''
 
         (delta_t,
@@ -36,7 +37,8 @@ class Dalec(BaseInstrument):
         abc0,
         tempco,
         cd_shape,
-            ) = DALECUtils.readParams(grp, XSlice, sensortype)
+        raw_wvl
+            ) = DALECUtils.readParams(grp, lightSlice, darkSlice,sensortype)
         # %%
         # K1=d0*(V-DC)+d1
         # Ed=a0*((V-DC)/(Inttime+DeltaT_Ed)/K1)/(Tempco_Ed*(Temp-Tref)+1)
@@ -45,19 +47,48 @@ class Dalec(BaseInstrument):
         # for i in range(raw_data.data.shape[0]):
         #     c1=inttime[i]+delta_t
         #     for j in range(cd_shape):
+        #
         #         raw_data.data[i][j] = 100.0*abc0[j]*((raw_data.data[i][j]-dc[i])/c1
         #         /(def1*(raw_data.data[i][j]-dc[i])+def0))/(tempco[j]*(temp[i]-tref)+1)
-        # %%%
-        # Presumably, dc is like TriOS raw_back
-        #   but dc is from grp, so has len of grp raw, not xSlice raw...
-        #   and yet this is how PIU.TriOS.TriOSUtils.readParams handles it. How does that work?
+        #
 
-        # check size of data
-        nband = len(dc)  # indexes changed for raw_back as is brought to L2
-        nmes = len(raw_data)
-        if nband != len(raw_data[0]):
-            print("ERROR: different number of pixels between dat and back")
+        # %%%
+        # # check size of data
+        # nband = len(dc)  # one dark count per sample
+        nmes = len(raw_data) # calibrated bands
+        nband = raw_data.shape[1]
+        # if nband != len(raw_data[0]): # numbers of dark counts vs. light spectra
+        #     print("ERROR: different number of pixels between dat and back")
+        #     return False
+
+        # get light and dark data before correction
+        light_avg = np.mean(raw_data, axis=0)
+        if nmes > 25:
+            light_std = np.std(raw_data, axis=0) / pow(nmes, 0.5)
+        elif nmes > 3:
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(raw_data, axis=0) / np.sqrt(nmes))**2)
+        else:
+            writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
+
+        # TODO: confirm this does NOT need to be 255 bands.
+        ones = np.ones(nband)  # to provide array of 1s with the correct shape
+        dark_avg = ones * np.mean(dc)
+        if nmes > 25:
+            dark_std = ones * (np.std(dc) / pow(nmes, 0.5))
+        else:  # already checked for light data so we know nmes > 3
+            dark_std = np.sqrt(((nmes-1)/(nmes-3))*
+            (ones * (np.std(dc)/np.sqrt(nmes)**2)))
+            # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
+
+        offset_corrected_mesure = raw_data - np.tile(dc,[nband,1]).transpose()
+
+        signal_noise = {}
+        for i, wvl in enumerate(raw_wvl):
+            signal_noise[wvl] = pow(
+                (pow(light_std[i], 2) + pow(dark_std[i], 2)) / pow(np.average(offset_corrected_mesure, axis=0)[i], 2), 0.5)  # sqrt(sigma_light^2 + sigma_dark^2 / dark_corrected_signal^2)
+
+        std_signal = np.std(offset_corrected_mesure, axis=0) / np.average(offset_corrected_mesure, axis=0)  # this is relative
 
 
         return dict(
@@ -77,7 +108,7 @@ class Dalec(BaseInstrument):
 class DALECUtils():
 
     @staticmethod
-    def readParams(grp, xSliceData, s):
+    def readParams(grp, lightSlice, darkSlice, s):
         specialNames = {
             'ES':['Delta_T_Ed','Tempco_Ed','d0','d1','a0'],
             'LT':['Delta_T_Lu','Tempco_Lu','e0','e1','b0'],
@@ -88,16 +119,18 @@ class DALECUtils():
         def0=float(grp.attributes[specialNames[s][2]])
         def1=float(grp.attributes[specialNames[s][3]])
 
-        # ds=gp.datasets[s]
-        raw_data = np.asarray(list(xSliceData.values())).transpose() 
+        raw_data = np.asarray(list(lightSlice.values())).transpose()
+        dc = np.asarray(list(darkSlice[s])).transpose()
 
-        dc=grp.datasets['DARK_CNT'].data[s].tolist()
+        # dc=grp.datasets['DARK_CNT'].data[s].tolist()
         inttime=grp.datasets['INTTIME'].data[s].tolist()
         temp=grp.datasets['SPECTEMP'].data['NONE'].tolist()
         cd=grp.datasets['CAL_COEF']
         abc0 = cd.data[specialNames[s][4]].tolist()
         tempco=cd.data[specialNames[s][1]].tolist()
         cd_shape = cd.data.shape[0]
+
+        raw_wl = np.array(list(grp.datasets[s].columns.keys()),dtype=float)
 
         return(
             delta_t,
@@ -111,4 +144,5 @@ class DALECUtils():
             abc0,
             tempco,
             cd_shape,
+            raw_wl
         )

@@ -3,13 +3,21 @@ import os
 import glob
 import shutil
 import re
-import numpy as np
 from pathlib import Path
+import threading
+import urllib.request
+
+import numpy as np
+
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
-import threading
-import urllib.request
+from ocdb.api.OCDBApi import new_api, OCDBApi
+
+from Source.ConfigFile import ConfigFile
+from Source.Controller import Controller
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source import PACKAGE_DIR as CODE_HOME
 
 
 # Wrap the original urlopen with a fixed timeout argument (must be before ocdb import)
@@ -22,13 +30,6 @@ def urlopen_default_timeout(*args, **kwargs):
         return urllib.request.urlopen(*args, **kwargs)  # If timeout is already specified, use it
     return original_urlopen(*args, **kwargs, timeout=time_out)
 urllib.request.urlopen = urlopen_default_timeout
-
-from ocdb.api.OCDBApi import new_api, OCDBApi
-
-from Source.ConfigFile import ConfigFile
-from Source.Controller import Controller
-from Source.CalibrationFileReader import CalibrationFileReader
-from Source import PACKAGE_DIR as CODE_HOME
 
 class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
@@ -96,7 +97,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         # Class
         self.ClassCalRadioButton = QtWidgets.QRadioButton(
-            f"FRM Class-Specific characterisations\n"# (in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})\n"
+            "FRM Class-Specific characterisations\n"# (in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})\n"
                 "    Sensor-specific calibrations with uncertainties in FidRadDB format required" )
         self.ClassCalRadioButton.setAutoExclusive(False)
         self.ClassCalRadioButton.clicked.connect(self.ClassCalRadioButtonClicked)

@@ -1111,11 +1111,12 @@ class ProcessL2:
             raw_slices = {k: {t: {'datetime': grp[t].datasets['DATETIME'].data[start:end],
                                   'data': ProcessL2.columnToSlice(grp[t].datasets[k].columns, start, end)}
                               for t in ['LIGHT', 'DARK']} for k, grp in raw_groups.items()}
-        # elif ConfigFile.settings['SensorType'].lower() == "dalec":
-        #     raw_groups = {k: map_raw_groups[k] for k in groups}
-        #     raw_slices = {k: {'light': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end),
-        #                       'dark': ProcessL2.columnToSlice(grp.datasets['DARK_CNT'].columns, start, end)}
-        #                     for k, grp in raw_groups.items()}
+        elif ConfigFile.settings['SensorType'].lower() == "dalec":
+            raw_groups = {k: map_raw_groups[k] for k in groups}
+            raw_slices = {k: {'datetime': grp.datasets['DATETIME'].data[start:end],
+                                'light': ProcessL2.columnToSlice(grp.datasets[k].columns, start, end),
+                              'dark': ProcessL2.columnToSlice(grp.datasets['DARK_CNT'].columns, start, end)}
+                            for k, grp in raw_groups.items()}
         else:
             raw_groups = {k: map_raw_groups[k] for k in groups}
             raw_slices = {k: {'datetime': grp.datasets['DATETIME'].data[start:end],
@@ -1884,6 +1885,8 @@ class ProcessL2:
                     newGrp.datasets[ds].datasetToColumns()
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
+                    node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
+                    node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate']
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

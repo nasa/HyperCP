@@ -124,8 +124,18 @@ class PIUDataStore:
                     cal_int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
                     self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist())) # FILE AVERAGE sample integration time (1x float)
                 elif ConfigFile.settings['SensorType'].lower() == "dalec":
-                    cal_int_time = gp.attributes['cal_int_time'] # NOTE: This may be wrong. See ProcessL1bDALEC. Reach out to IMO.
+                    # cal_int_time = gp.attributes['cal_int_time'] # NOTE: This may be wrong. See ProcessL1bDALEC. Reach out to IMO.
+                    # Waiting for a reply. It could be in the raw file header as INTTIME {10,10,10} as 10 ms for each?
                     self.coeff[s]['int_time'] = np.mean(gp.datasets['INTTIME'].columns[s])
+                    rawFileInt = np.array(root.attributes['INTTIME'][2:-1].split(','),dtype=float)
+                    # TODO: Confirm this, and then build a dict with root.attribute "CHANNEL_ORDER" to capture rigorously
+                    if s=='ES':
+                        cal_int_time = rawFileInt[0] # in ms
+                    elif s=='LT':
+                        cal_int_time = rawFileInt[1]
+                    else:
+                        cal_int_time = rawFileInt[2]
+
             self.coeff[s]['cal_int'] = cal_int_time  # Calibration integration time (1x float)
 
     def readCommonPix(self):

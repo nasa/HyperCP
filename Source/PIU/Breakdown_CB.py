@@ -37,6 +37,7 @@ class plottingToolsCB:
     def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
         try:
             BD_VALS = {"ES": es, "LI": li, "LT": lt}
+            # print('Plotting L1B product uncertainty breakdown')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths)
             self.plot_bar_classBased(
                 BD_UNCS, BD_VALS, wavelengths, node.getGroup("ANCILLARY")
@@ -58,7 +59,7 @@ class plottingToolsCB:
                 "nLw": nlw,
                 "Rrs": rrs,
             }
-            print(f'Plotting uncertainty breakdown for {cast}')
+            # print(f'Plotting L2 product uncertainty breakdown for {cast}')
             self.plot_CB_spectral(BD_UNCS, BD_VALS, wavelengths, level="L2")
             self.plot_bar_class_l2(
                 BD_UNCS,
@@ -193,6 +194,7 @@ class plottingToolsCB:
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 ref_at_indx = []
                 for i, v in enumerate(vals_sorted):
+                    # pct = (v / combined) * 100
                     pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(round(pct,1) + 1)
@@ -204,15 +206,15 @@ class plottingToolsCB:
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
-                textstr = f"Bars represent uncertainty relative to total {s} signal (abscissa)." \
-                       f"Percentages displayed by each bar represent component uncertainty as a percentage of total uncertainty at {wvl_at_indx} nm." \
-                       r"They do not total 100% because total uncertainty is calculated by adding contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
-                plt.gcf().text(0.02, 0.018,
-                               textstr,
-                               fontsize=12,
-                               color='black',
-                               wrap=True,
-                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \
+                    f"Percentages displayed by each bar represent the contribution of the component to the variance of {s}, " \
+                    r"where uncertainty is a positive square root of variance $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.04,
+                            textstr,
+                            fontsize=12,
+                            color='black',
+                            wrap=True,
+                            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 5}
                 )
 
                 plt.tight_layout()
@@ -300,6 +302,7 @@ class plottingToolsCB:
                 ref_at_indx = []
                 x_offset = max(vals_sorted) * 0.01  # small offset so text doesn’t touch the bar
                 for i, v in enumerate(vals_sorted):
+                    # pct = (v / combined) * 100
                     pct = (v**2 / combined**2) * 100
                     ax.text(v + x_offset, i, f'{pct:.1f}%', va='center', fontsize=11)
                     ref_at_indx.append(pct)
@@ -311,15 +314,15 @@ class plottingToolsCB:
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
-                textstr = f"Bars represent uncertainty relative to total {s} signal (abscissa)." \
-                       f"Percentages displayed by each bar represent component uncertainty as a percentage of total uncertainty at {wvl_at_indx} nm." \
-                       r"They do not total 100% because total uncertainty is calculated by adding contributions in quadrature $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
-                plt.gcf().text(0.02, 0.018,
-                               textstr,
-                               fontsize=12,
-                               color='black',
-                               wrap=True,
-                               bbox={'facecolor': 'white', 'alpha': 1, 'pad': 10}
+                textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \
+                    f"Percentages displayed by each bar represent the contribution of the component to the variance of {s}, " \
+                    r"where uncertainty is a positive square root of variance $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
+                plt.gcf().text(0.02, 0.04,
+                            textstr,
+                            fontsize=12,
+                            color='black',
+                            wrap=True,
+                            bbox={'facecolor': 'white', 'alpha': 1, 'pad': 5}
                 )
 
                 plt.tight_layout()
