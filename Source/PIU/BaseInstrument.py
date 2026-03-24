@@ -290,11 +290,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))
             pert_uncs[0:6] = [
-                np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix]) * stats['ES']['ave_Light'][PDS.l1ACommonCalPix],
+                np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix] * stats['ES']['ave_Light'][PDS.l1ACommonCalPix]),
                 zeroes,
-                np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix]) * stats['LI']['ave_Light'][PDS.l1ACommonCalPix] if 'LI' in PDS.uncs else zeroes,
+                np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix] * stats['LI']['ave_Light'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
                 zeroes,
-                np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix]) * stats['LT']['ave_Light'][PDS.l1ACommonCalPix] if 'LT' in PDS.uncs else zeroes,
+                np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix] * stats['LT']['ave_Light'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
                 zeroes
             ]
             (
