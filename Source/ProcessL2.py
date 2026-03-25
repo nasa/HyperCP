@@ -1983,6 +1983,12 @@ class ProcessL2:
                     for dsName in removeList:
                         gp.removeDataset(dsName)
 
+        # For Class and Sensor regimes, copy attributes from RAW_UNCERTAINTIES to BREAKDOWN_PRODUCTS
+        for grp in root.groups:
+            if grp.id == 'RAW_UNCERTAINTIES':
+                for gp in node.groups:
+                    if gp.id.startswith('BREAKDOWN'):
+                        gp.copyAttributes(grp)
 
         # Now strip datetimes from all datasets
         for gp in node.groups:
