@@ -1,7 +1,11 @@
 
+import logging
+
 import numpy as np
 import xarray as xr
 import Source.ocbrdf.ocbrdf_main as oc_brdf
+from Source.ConfigFile import ConfigFile
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
 class ProcessL2BRDF():
@@ -56,14 +60,46 @@ class ProcessL2BRDF():
                 for ds in gp.datasets:
                     if ds.startswith("Rrs"):
                         # Can't change datasets in this loop, so make a list
-                        # TODO consider uncertainties!
-                        if not (ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02")):  # ds.endswith("_unc") or
+                        if not (ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02") or ds.endswith("_unc") or ds.endswith("_sd")):
                             Rrs_list.append(ds)
                 
+                # ensure hyperspectral dataset is the first in the loop
+                Rrs_list.insert(0, Rrs_list.pop(Rrs_list.index("Rrs_HYPER")))
+                
+                # I have refactored this to loop through Rrs and nLw at the same time as it makes managing variables for the uncertainty easier
+
+                # dicts to store hyperspectral info for convolving BRDF uncs
+                brdf_unc = {} 
+                hyperspec = {}
+
                 # Extract the spectrla information
-                for ds in Rrs_list:
+                for ds in Rrs_list:  # Rrs_list = [Rrs_HYPER, Rrs_MODISA, Rrs_Sentinel3A, etc.]
                     Rrs_ds = gp.getDataset(ds)
                     Rrs = Rrs_ds.columns
+                    
+                    # Store BRDF corrected rrs
+                    Rrs_BRDF = Rrs.copy()
+
+                    # Apply same factors to corresponding nLw
+                    nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
+                    nLw = nLw_ds.columns
+
+                    nLw_BRDF = nLw.copy()
+                    
+                    try:
+                        # get uncertainty datasets and columns for Rrs and nLw, passig with AttributeError if they do not exits.
+                        Rrs_unc_ds = gp.getDataset(f"{ds}_unc")
+                        Rrs_unc = Rrs_unc_ds.columns
+                        Rrs_BRDF_unc = Rrs_unc.copy()
+
+                        nLw_unc_ds = gp.getDataset(f"{ds.replace('Rrs','nLw')}_unc")
+                        nLw_unc = nLw_unc_ds.columns
+                        nLw_BRDF_unc = nLw_unc.copy()
+                    except AttributeError:  # faster to ask forgiveness than permission
+                        if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+                            writeLogFileAndPrint("Uncertainty group(s) not found")
+                        else:
+                            pass  # expected for TriOS factory  # no uncertainties, continue without them
 
                     wavelength=[]
                     wv_str=[]
@@ -130,58 +166,97 @@ class ProcessL2BRDF():
                         
                         # Compute and apply BRDF
                         OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
-                        
-                        # Store BRDF corrected rrs
-                        Rrs_BRDF = Rrs.copy()
+
+                        if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+
+                            if "hyper" not in ds.lower():
+                                from Source.PIU.Uncertainty_Analysis import Propagate
+                                prop = Propagate(100, cores=1)  # TODO: add mDraws to config
+                                for meas in ["Rrs","nLw"]:
+                                    brdf_unc_vals = prop.conv_hyper_unc(
+                                        hyperspec["wvl_hyper"], # hyperspec wavelengths
+                                        hyperspec[f"{meas}_hyper"], # reflectance signal
+                                        np.sqrt(
+                                            np.array(list(brdf_unc[f"{meas}_hyper"].values()))**2 * hyperspec[f"{meas}_hyper"]**2
+                                        ), # BRDF unc in refltectance units
+                                        platform=ds.split('_')[1]  # which satellite's bands we are integratng to
+                                    )
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v for k, v in zip(wavelength, brdf_unc_vals)}  # put in dictionary
+                            else:
+                                # hyperspectral case must come first
+                                hyperspec["wvl_hyper"] = wavelength
+                                hyperspec["Rrs_hyper"] = I['Rrs'].flatten()
+                                hyperspec["nLw_hyper"] = np.array([v for k,v in nLw.items() if k not in ['Datetime','Datetag','Timetag2']]).T.flatten()
+
+                                for meas in ["Rrs","nLw"]:
+                                    meas_uncs = np.sqrt(np.array(OC_BRDF.brdf_unc.values[0])**2 * hyperspec[f"{meas}_hyper"]**2)
+                                    brdf_unc[f"{meas}_hyper"] = {
+                                        str(k): [v] for k, v in zip(wavelength, meas_uncs)
+                                    }  # turn BRDF uncs into dict so we can convolve uncs
+
                         for k in Rrs:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                if 'unc' in ds:
-                                    Rrs_BRDF[k] = np.sqrt(np.array(OC_BRDF.brdf_unc.sel(bands=float(k)))**2 * np.array(Rrs[k])**2).tolist()  # multiply by sensitivity coeff Rrs
-                                    if not isinstance(Rrs_BRDF[k], list):
-                                        Rrs_BRDF[k] = [Rrs_BRDF[k]]  # uncs not saved as list, perhaps numpy bug
-                                else:
-                                    Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
+                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
+                                nLw_BRDF[k] = (np.array(nLw[k])*np.array(OC_BRDF.C_brdf.sel(bands=float(k)))).tolist()
+
+                                if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+                                    platform = ds.split('_')[1].lower()
+                                    
+                                    # cs1 = Rrs (applied in lines: 166-169), cs2 = BRDF correction factor
+                                    Rrs_BRDF_unc[k] = np.sqrt(
+                                        brdf_unc[f"Rrs_{platform}"][k][0]**2 +
+                                        (np.array(Rrs_unc[k])**2 * OC_BRDF.C_brdf.sel(bands=float(k)).values**2)
+                                    ).tolist()
+
+                                    # cs1 = nLw (applied in lines: 166-169), cs2 = BRDF correction factor
+                                    nLw_BRDF_unc[k] = np.sqrt(
+                                        brdf_unc[f"nLw_{platform}"][k][0]**2 + 
+                                        (np.array(nLw_unc[k])**2 * OC_BRDF.C_brdf.sel(bands=float(k)).values**2)
+                                    ).tolist()
+
+                                    # uncs not saved as list, perhaps numpy bug?
+                                    Rrs_BRDF_unc[k] = Rrs_BRDF_unc[k] if isinstance(Rrs_BRDF_unc[k], list) else [Rrs_BRDF_unc[k]] 
+                                    nLw_BRDF_unc[k] = nLw_BRDF_unc[k] if isinstance(nLw_BRDF_unc[k], list) else [nLw_BRDF_unc[k]]
                         
-                        if 'unc' in ds and 'HYPER' in ds:                            
+                        if 'HYPER' in ds:                            
                             try:
+                                # save to breakdown groups
                                 bd_grp = root.getGroup("BREAKDOWN")
-                                bd_grp.attributes['BRDF_method'] = BRDF_option
-                                bd_ds = bd_grp.addDataset(f"{ds.replace('_unc', '')}_BRDF")
-                                bd_ds.columns = Rrs_BRDF
+                                if 'BRDF_method' not in bd_grp.attributes or not bd_grp.attributes['BRDF_method']:
+                                    bd_grp.attributes['BRDF_method'] = [BRDF_option]
+                                elif BRDF_option not in bd_grp.attributes['BRDF_method']:
+                                    bd_grp.attributes['BRDF_method'].append(BRDF_option)
+                                
+                                bd_rrs = bd_grp.addDataset(f"{ds}_BRDF")
+                                bd_rrs.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["Rrs_hyper"].items()}
+                                bd_rrs.columnsToDataset()
+
+                                bd_nlw = bd_grp.addDataset(f"{ds.replace('Rrs','nLw')}_BRDF")
+                                bd_nlw.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["nLw_hyper"].items()} 
+                                bd_nlw.columnsToDataset()
+
                             except AttributeError:  # faster to ask forgiveness than permission
-                                print("BREAKDOWN group not found")
-
-                        else:
-                            Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
-                            Rrs_BRDF_ds.columns = Rrs_BRDF
-                            Rrs_BRDF_ds.columnsToDataset()
-
-                        # Apply same factors to corresponding nLw
-                        nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
-                        nLw = nLw_ds.columns
-                        nLw_BRDF = nLw.copy()
-                        for k in nLw:
-                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                if 'unc' in ds:
-                                    nLw_BRDF[k] = np.sqrt(np.array(OC_BRDF.brdf_unc.sel(bands=float(k)))**2 * np.array(nLw[k])**2).tolist()  # multiply by sensitivity coeff Rrs
-                                    if not isinstance(nLw_BRDF[k], list):
-                                        nLw_BRDF[k] = [nLw_BRDF[k]]  # uncs not saved as list, perhaps numpy bug
+                                if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+                                    writeLogFileAndPrint("BREAKDOWN group not found")
                                 else:
-                                    nLw_BRDF[k] = (np.array(nLw[k])*np.array(OC_BRDF.C_brdf.sel(bands=float(k)))).tolist()
-    
-                        # Store BRDF corrected nLw
-                        if 'unc' in ds and 'HYPER' in ds:
-                            try:
-                                bd_grp = root.getGroup("BREAKDOWN")
-                                bd_ds = bd_grp.addDataset(f"{ds.replace('Rrs','nLw').replace('_unc', '')}_BRDF")
-                                bd_ds.columns = nLw_BRDF
-                            except AttributeError:
-                                pass            
-                        else:
-                            nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
-                            nLw_BRDF_ds.columns = nLw_BRDF
-                            nLw_BRDF_ds.columnsToDataset()
-                        
+                                    pass  # expected for TriOS factory
+
+                        Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
+                        Rrs_BRDF_ds.columns = Rrs_BRDF
+                        Rrs_BRDF_ds.columnsToDataset()
+
+                        Rrs_BRDF_unc_ds = gp.addDataset(f"{ds}_" + BRDF_option + "_unc")
+                        Rrs_BRDF_unc_ds.columns = Rrs_BRDF_unc
+                        Rrs_BRDF_unc_ds.columnsToDataset()
+
+                        nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
+                        nLw_BRDF_ds.columns = nLw_BRDF
+                        nLw_BRDF_ds.columnsToDataset()
+
+                        nLw_BRDF_unc_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option + "_unc")
+                        nLw_BRDF_unc_ds.columns = nLw_BRDF_unc
+                        nLw_BRDF_unc_ds.columnsToDataset()    
+                    
                         # import matplotlib.pyplot as plt
                         # plt.figure()
                         # ii = 0
