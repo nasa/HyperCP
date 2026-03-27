@@ -588,7 +588,7 @@ class PIUDataStore:
     def read_cal(grp: HDFGroup, s: str, cal_name: str, idx: Optional[str]=None, return_df: bool = False) -> Union[np.ndarray, pd.DataFrame]:
         try:
             if grp.getDataset(s + cal_name) is None:
-                print("here")
+                print(f"Dataset does not exist {s} - {cal_name} - {idx}")
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)[idx]
         except (IndexError, KeyError):
             data = pd.DataFrame(grp.getDataset(s + cal_name).data)
