@@ -69,7 +69,12 @@ class ProcessL1bTriOS:
         # alpha reworked so any divide by 0s can be handled with a condition statement
         f1 = np.array(S1 - S12)
         f2 = np.array(np.power(S12, 2))
-        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))]).tolist()  # stops -inf if S12**2 = 0
+        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))])  # stops -inf if S12**2 = 0
+        
+        # read in class based alpha and replace FRM char where non-linearity correction is too noisy to apply to signal
+        cb_alpha = np.asarray(node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_RAMSES_RADIANCE_LINDATA_CAL").columns['2'][1:])
+        no_lin_corr_indx = cb_alpha == -2e-7
+        alpha[no_lin_corr_indx] = cb_alpha[no_lin_corr_indx]
 
         # Updated calibration gain
         if sensortype == "ES":
