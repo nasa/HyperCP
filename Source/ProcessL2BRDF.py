@@ -166,7 +166,10 @@ class ProcessL2BRDF():
                         
                         # Compute and apply BRDF
                         OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
-
+                        stations = range(OC_BRDF.n.shape[0])
+                        # create n x bands dataset
+                        # nLw Rrs, etc is wvl x len n []
+                        # wvls is len n
                         if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
 
                             if "hyper" not in ds.lower():
@@ -176,21 +179,24 @@ class ProcessL2BRDF():
                                     brdf_unc_vals = prop.conv_hyper_unc(
                                         hyperspec["wvl_hyper"], # hyperspec wavelengths
                                         hyperspec[f"{meas}_hyper"], # reflectance signal
-                                        np.array(list(brdf_unc[f"{meas}_hyper"].values())).flatten(), # BRDF unc in refltectance units
+                                        np.array(list(brdf_unc[f"{meas}_hyper"].values())), # BRDF unc in refltectance units
                                         platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                     )
                                     brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): [v] for k, v in zip(wavelength, brdf_unc_vals)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
-                                hyperspec["wvl_hyper"] = wavelength
-                                hyperspec["Rrs_hyper"] = I['Rrs'].flatten()
-                                hyperspec["nLw_hyper"] = np.array([v for k,v in nLw.items() if k not in ['Datetime','Datetag','Timetag2']]).T.flatten()
-
+                                hyperspec["wvl_hyper"] = wavelength  # 1 x 165
+                                hyperspec["Rrs_hyper"] = I['Rrs']  # n x bands
+                                hyperspec["nLw_hyper"] = np.array([v for k,v in nLw.items() if k not in ['Datetime','Datetag','Timetag2']]).T  # n x bands
+                                # 5 x 165
                                 for meas in ["Rrs","nLw"]:
                                     # convert to Rrs/nLw units by applying cs1 = Rrs or cs1 = nLw
-                                    meas_uncs = np.sqrt(np.array(OC_BRDF.brdf_unc.values[0])**2 * hyperspec[f"{meas}_hyper"]**2)
+                                    meas_uncs = np.zeros_like(hyperspec[f"{meas}_hyper"])
+                                    for station in stations:  # for station in n
+                                        hyperspec[f"{meas}_hyper"][station, :] = hyperspec[f"{meas}_hyper"][station,:] * OC_BRDF.C_brdf.isel(n=station).values
+                                        meas_uncs[station, :] = np.sqrt(np.array(OC_BRDF.brdf_unc.isel(n=station).values)**2 * hyperspec[f"{meas}_hyper"][station, :]**2)
                                     brdf_unc[f"{meas}_hyper"] = {
-                                        str(k): [v] for k, v in zip(wavelength, meas_uncs)
+                                        str(k): list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
                                     }  # turn BRDF uncs into dict so we can convolve uncs
 
                         for k in Rrs:
@@ -200,18 +206,24 @@ class ProcessL2BRDF():
 
                                 if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
                                     platform = ds.split('_')[1].lower()
-                                    
-                                    # cs1 = Rrs (applied in lines: 166-169), cs2 = BRDF correction factor
-                                    Rrs_BRDF_unc[k] = np.sqrt(
-                                        brdf_unc[f"Rrs_{platform}"][k][0]**2 +
-                                        (np.array(Rrs_unc[k])**2 * OC_BRDF.C_brdf.sel(bands=float(k)).values**2)
-                                    ).tolist()
+                                    Rrs_BRDF_unc[k] = []
+                                    nLw_BRDF_unc[k] = []
+                                    for station in stations:
+                                        # cs1 = Rrs (applied in lines: 166-169), cs2 = BRDF correction factor
+                                        Rrs_BRDF_unc[k].append(
+                                            np.sqrt(
+                                                brdf_unc[f"Rrs_{platform}"][k][station]**2 +
+                                                (np.array(Rrs_unc[k][station])**2 * OC_BRDF.C_brdf.sel(bands=float(k), n=station).values**2)
+                                            )
+                                        )
 
-                                    # cs1 = nLw (applied in lines: 166-169), cs2 = BRDF correction factor
-                                    nLw_BRDF_unc[k] = np.sqrt(
-                                        brdf_unc[f"nLw_{platform}"][k][0]**2 + 
-                                        (np.array(nLw_unc[k])**2 * OC_BRDF.C_brdf.sel(bands=float(k)).values**2)
-                                    ).tolist()
+                                        # cs1 = nLw (applied in lines: 166-169), cs2 = BRDF correction factor
+                                        nLw_BRDF_unc[k].append(
+                                            np.sqrt(
+                                                brdf_unc[f"nLw_{platform}"][k][station]**2 + 
+                                                (np.array(nLw_unc[k][station])**2 * OC_BRDF.C_brdf.sel(bands=float(k), n=station).values**2)
+                                            )
+                                        )
 
                                     # uncs not saved as list, perhaps numpy bug?
                                     Rrs_BRDF_unc[k] = Rrs_BRDF_unc[k] if isinstance(Rrs_BRDF_unc[k], list) else [Rrs_BRDF_unc[k]] 
