@@ -1182,7 +1182,7 @@ class ProcessL2:
             convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='A')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            convolve_to_satellite['Sentinel3A'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='B')
+            convolve_to_satellite['Sentinel3B'] = lambda sliceData: Weight_RSR.processSentinel3Bands(sliceData, sensor='B')
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
         satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
