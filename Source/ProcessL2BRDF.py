@@ -176,12 +176,10 @@ class ProcessL2BRDF():
                                     brdf_unc_vals = prop.conv_hyper_unc(
                                         hyperspec["wvl_hyper"], # hyperspec wavelengths
                                         hyperspec[f"{meas}_hyper"], # reflectance signal
-                                        np.sqrt(
-                                            np.array(list(brdf_unc[f"{meas}_hyper"].values()))**2 * hyperspec[f"{meas}_hyper"]**2
-                                        ), # BRDF unc in refltectance units
+                                        np.array(list(brdf_unc[f"{meas}_hyper"].values())).flatten(), # BRDF unc in refltectance units
                                         platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                     )
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v for k, v in zip(wavelength, brdf_unc_vals)}  # put in dictionary
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): [v] for k, v in zip(wavelength, brdf_unc_vals)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength
@@ -189,6 +187,7 @@ class ProcessL2BRDF():
                                 hyperspec["nLw_hyper"] = np.array([v for k,v in nLw.items() if k not in ['Datetime','Datetag','Timetag2']]).T.flatten()
 
                                 for meas in ["Rrs","nLw"]:
+                                    # convert to Rrs/nLw units by applying cs1 = Rrs or cs1 = nLw
                                     meas_uncs = np.sqrt(np.array(OC_BRDF.brdf_unc.values[0])**2 * hyperspec[f"{meas}_hyper"]**2)
                                     brdf_unc[f"{meas}_hyper"] = {
                                         str(k): [v] for k, v in zip(wavelength, meas_uncs)
