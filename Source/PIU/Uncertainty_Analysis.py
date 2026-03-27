@@ -32,7 +32,6 @@ class Propagate:
     M: Int - number of monte carlo draws
     cores: Int - punpy parallel_cores option (see documentation) Set None to ignore, 1 is default.
     """
-    MCP: punpy.MCPropagation
 
     corr_matrix_Default_Instruments = np.array([
         [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -105,6 +104,7 @@ class Propagate:
     ], dtype=np.float64)
 
     def __init__(self, M: int = 100, cores: int = 1):
+        self.MCP: punpy.MCPropagation = None  # declare expected type
         self._platform: str = ''  # internally used variable to store platform string to use in L2 conv products
         self._wavebands: np.array = None  # stores wavebands for convolution
         self.cal_int: dict = {s: {} for s in ['ES','LI','LT']}
@@ -317,21 +317,35 @@ class Propagate:
 
         return np.sqrt(random ** 2 + systematic ** 2)
 
+    def conv_hyper_unc(self, wavelengths, hyperspec, hyper_unc, platform):
+        # assuming fully systematic
+        func =  self.def_sensor_mfunc(platform)
+        test = func(hyperspec.flatten(), wavelengths)  # to check the function works with the input shapes, not actually used in the propagation
+        return self.MCP.propagate_standard(
+            func,  # returns pointer to sensor conv function
+            [hyperspec.flatten(), wavelengths],
+            [hyper_unc.flatten(), np.zeros_like(wavelengths)],
+            corr_x=["syst", None],
+        )  
+
+            # corr_between=["syst", "syst"],  # correlation between inputs
+            # corr_x=[np.eye(len(wavelengths)), np.eye(len(wavelengths))], # correlation between pixels/wavelengths
+
     def def_sensor_mfunc(self, platform):
         """
 
         """
-        if platform.upper() == "S3A" or platform.lower().rstrip().replace('-','') == "sentinel3a":
+        if platform.upper()   == "S3A" or platform.lower().rstrip().replace('-', '') == "sentinel3a":
             func = self.band_Conv_Sensor_S3A
-        elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
+        elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-', '') == "sentinel3b":
             func = self.band_Conv_Sensor_S3B
-        elif platform.upper() == "MOD-A" or platform.lower().rstrip().replace('-','') == "eos-aqua":
+        elif platform.upper() == "MOD-A" or platform.lower().rstrip().replace('-', '') in ["eos-aqua", "modisa"]:
             func = self.band_Conv_Sensor_AQUA
-        elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') == "eos-terra":
+        elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') in ["eos-terra", "modist"]:
             func = self.band_Conv_Sensor_TERRA
-        elif platform.upper() == "VIIRS-J" or platform.lower().rstrip().replace('-', '') == "noaa-J":
+        elif platform.upper() == "VIIRS-J" or platform.lower().rstrip().replace('-', '') in ["noaa-j", "viirs-j"]:
             func = self.band_Conv_Sensor_NOAA_J
-        elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') == "noaa-N":
+        elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') in ["noaa-n", "viirs-n"]:
             func = self.band_Conv_Sensor_NOAA_N
         elif platform.upper() == "HYPER":
             func = self.no_Conv
@@ -625,7 +639,7 @@ class Propagate:
         return rho
 
 
-class SensorNotSupportedError:
+class SensorNotSupportedError(Exception):
     """
     sensor not suppored, perhaps there is a typo in the sensor string
     """
