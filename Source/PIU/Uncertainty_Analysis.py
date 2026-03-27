@@ -343,17 +343,16 @@ class Propagate:
             func = self.band_Conv_Sensor_AQUA
         elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') in ["eos-terra", "modist"]:
             func = self.band_Conv_Sensor_TERRA
-        elif platform.upper() == "VIIRS-J" or platform.lower().rstrip().replace('-', '') in ["noaa-j", "viirs-j"]:
+        elif platform.upper() == "VIIRS-J" or platform.lower().rstrip().replace('-', '') in ["noaa-j", "viirsj"]:
             func = self.band_Conv_Sensor_NOAA_J
-        elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') in ["noaa-n", "viirs-n"]:
+        elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') in ["noaa-n", "viirsn"]:
             func = self.band_Conv_Sensor_NOAA_N
         elif platform.upper() == "HYPER":
             func = self.no_Conv
         else:
-            msg = "sensor not supported"
-            print(msg)
-            raise SensorNotSupportedError("sensor not suppored, perhaps there is a typo in the sensor string")
-
+            writeLogFileAndPrint(f"sensor not suppored {platform} - not performing convolution for uncertainties")
+            return self.no_Conv
+        
         return func
 
     def band_Conv_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array], platform: str) -> np.array:
