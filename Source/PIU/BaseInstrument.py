@@ -626,6 +626,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         ## Update the output dictionary with band L2 hyperspectral and satellite band uncertainties
         for s_key in self._SATELLITES.keys():
+            writeLogFileAndPrint(f"Processing uncertainties for {self._SATELLITES[s_key]['name']} bands")
             UNC.update(
                 self.get_band_outputs(
                     s_key, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
