@@ -1542,7 +1542,7 @@ class ProcessL2:
         elif method == "mobley_rho":
             if ConfigFile.settings["bL2RhoUnc10"] == 0:
                 # Full Mobley 1999 model from LUT
-                rho_uncertainty_obj = Propagate(M=100, cores=0)  # Standard number of draws for reasonable uncertainty estimates
+                rho_uncertainty_obj = Propagate(M=100, cores=1)  # Standard number of draws for reasonable uncertainty estimates
             else:
                 rho_uncertainty_obj = None
             if 'AOD' in anc_slice:

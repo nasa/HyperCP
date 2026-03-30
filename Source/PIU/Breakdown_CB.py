@@ -25,6 +25,20 @@ from Source.utils.loggingHCP import writeLogFileAndPrint
 
 class plottingToolsCB:
     '''Class for class-based uncertainty plotting tools'''
+    _ALL_LABLES = [
+        "noise", 
+        "pert", 
+        "Cal", 
+        "Stab", 
+        "Lin", 
+        "cT", 
+        "Stray", 
+        "pol", 
+        "cosine", 
+        "rho", 
+        "f0",
+        "BRDF",
+    ]
 
     def __init__(self, sza, station, prop: Optional[MCPropagation] = None):
         self.sza = sza
@@ -33,6 +47,12 @@ class plottingToolsCB:
         self.plot_folder = path.join(
             MainConfig.settings["outDir"], "Plots", "L2_Uncertainty_Breakdown"
         )
+
+        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        color_cycle = cycle(palette)
+        self.LABEL_COLORS = {
+            k: v for k,v in zip(self._ALL_LABLES, color_cycle)
+        }
 
     def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
         try:
@@ -133,16 +153,6 @@ class plottingToolsCB:
             LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
         )
 
-        # ✅ Build global color map OUTSIDE the if/else
-        all_labels = []
-        for group in labels.values():
-            all_labels.extend(group)
-        all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
-
-        palette = plt.cm.tab20(np.linspace(0, 1, 20)) #pylance linting error?
-        color_cycle = cycle(palette)
-        LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
-
         for s, keys in labels.items():
             # TODO: add extra wavelengths
             indexes = [
@@ -178,7 +188,7 @@ class plottingToolsCB:
                 # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
-                colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
+                colors_sorted = [self.LABEL_COLORS[lab] for lab in labels_sorted]
 
                 # --- Plot horizontal bars ---
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
@@ -246,16 +256,6 @@ class plottingToolsCB:
             labels["nLw"].append("BRDF")
             labels["Rrs"].append("BRDF")
 
-        # ✅ Build global color map OUTSIDE the if/else
-        all_labels = []
-        for group in labels.values():
-            all_labels.extend(group)
-        all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
-
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
-        color_cycle = cycle(palette)
-        LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
-
         for s, keys in labels.items():
             indexes = [
                 np.argmin(np.abs(wavelengths - 670)),
@@ -290,7 +290,7 @@ class plottingToolsCB:
                 # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
-                colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
+                colors_sorted = [self.LABEL_COLORS[lab] for lab in labels_sorted]
 
                 # --- Plot horizontal bars --- #
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)

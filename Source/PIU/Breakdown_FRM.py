@@ -18,10 +18,31 @@ from Source.PIU.PIUDataStore import PIUDataStore
 
 class plottingToolsFRM:
     '''Class for sensor-based uncertainty plotting tools'''
+    _ALL_LABLES = [
+        "noise", 
+        "env perturbations", 
+        "calibration", 
+        "stability", 
+        "non-linearity", 
+        "temperature", 
+        "strayLight", 
+        "polarisation", 
+        "rho", 
+        "cosine (diffuse)",
+        "cosine (direct)",
+        "f0",
+        "brdf correction",    
+    ]
     def __init__(self, sza, station):
         self.sza = sza
         self.station = station
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
+
+        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        color_cycle = cycle(palette)
+        self.LABEL_COLORS = {
+            k: v for k,v in zip(self._ALL_LABLES, color_cycle)  # no need to use next as we iterate with zip
+        }
 
     def plotL1B(self, wvls, BD_UNCS, signal):
 
@@ -61,28 +82,40 @@ class plottingToolsFRM:
             color_cycle = cycle(palette)
 
             ## DO PLOTS ##
+            "noise", 
+            "non-linearity", 
+            "env perturbations", 
+            "strayLight", 
+            "calibration", 
+            "stability", 
+            "temperature", 
+            "polarisation", 
+            "rho", 
+            "cosine (diffuse)",
+            "cosine (direct)",
+            "f0",   
             wvls = np.array(waveSubset)
-            self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["noise"])
+            self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["non-linearity"])
+            self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["env perturbations"])
+            self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["strayLight"])
+            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["calibration"])
 
             # post normalisation
-            self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["stability"])
+            self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["temperature"])
+            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["noise"])
 
             # plot contributions that vary between sensors
             if meas.upper() != 'LW':
-                self.plot_spectral_FRM(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
-                self.plot_spectral_FRM(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_dir'],  "cosine (direct)",  rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["cosine (direct)"])
+                self.plot_spectral_FRM(meas, wvls, UNC['cos_diff'], "cosine (diffuse)", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["cosine (diffuse)"])
                 if meas.upper() == 'NLW':
-                    self.plot_spectral_FRM(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+                    self.plot_spectral_FRM(meas, wvls, UNC['f0'],  "coddington f0",  rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["f0"])
                 if 'BRDF' in UNC:
-                    self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+                    self.plot_spectral_FRM(meas, wvls, UNC['BRDF'],  "brdf correction",  rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["brdf correction"])
 
-            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim, colour=next(color_cycle))
+            self.plot_spectral_FRM(meas, wvls, UNC['pol'], "polarisation", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["polarisation"])
 
             self.save_figure(s=meas, measurement='Spectral')  # save the figure once all of the contributions have been added to the plot (will close the figure)
 
@@ -169,16 +202,6 @@ class plottingToolsFRM:
                 keys['Rrs'].append("BRDF")
                 labels['Rrs'].append("brdf correction")
 
-        # ✅ Build global color map OUTSIDE the if/else
-        all_labels = []
-        for group in labels.values():
-            all_labels.extend(group)
-        all_labels = list(dict.fromkeys(all_labels))  # remove duplicates, preserve order
-
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
-        color_cycle = cycle(palette)
-        LABEL_COLORS = {lab: next(color_cycle) for lab in all_labels}
-
         indexes = [  # specific wavelengths requested by consortium partners
             np.argmin(np.abs(wavelengths - 670)),
             np.argmin(np.abs(wavelengths - 620)),
@@ -214,7 +237,7 @@ class plottingToolsFRM:
             # --- Sort by value descending for readability --- #
             sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
             vals_sorted, labels_sorted = zip(*sorted_data)
-            colors_sorted = [LABEL_COLORS[lab] for lab in labels_sorted]
+            colors_sorted = [self.LABEL_COLORS[lab] for lab in labels_sorted]
 
             # --- Plot horizontal bars --- #
             ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
