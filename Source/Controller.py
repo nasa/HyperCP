@@ -478,8 +478,9 @@ class Controller:
             # Create Plots
             # Radiometry
             if (
-                ConfigFile.settings['bL2UncertaintyBreakdownPlot'] 
-                and ConfigFile.settings["SensorType"].lower() != "trios es only"
+                ConfigFile.settings['bL2UncertaintyBreakdownPlot']  # unc selected in config
+                and plotDeltaBool  # we can do plots
+                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
             ):
                 plotting.plotUncertainties(node, filename)
             
