@@ -176,13 +176,15 @@ class ProcessL2BRDF():
                                 from Source.PIU.Uncertainty_Analysis import Propagate
                                 prop = Propagate(100, cores=1)  # TODO: add mDraws to config
                                 for meas in ["Rrs","nLw"]:
-                                    brdf_unc_vals = prop.conv_hyper_unc(
-                                        hyperspec["wvl_hyper"], # hyperspec wavelengths
-                                        hyperspec[f"{meas}_hyper"], # reflectance signal
-                                        np.array(list(brdf_unc[f"{meas}_hyper"].values())), # BRDF unc in refltectance units
-                                        platform=ds.split('_')[1]  # which satellite's bands we are integratng to
-                                    )
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): [v] for k, v in zip(wavelength, brdf_unc_vals)}  # put in dictionary
+                                    brdf_unc_vals = np.zeros_like(I['Rrs'])
+                                    for station in stations:
+                                        brdf_unc_vals[station, :] = prop.conv_hyper_unc(
+                                            hyperspec["wvl_hyper"], # hyperspec wavelengths
+                                            hyperspec[f"{meas}_hyper"][station], # reflectance signal
+                                            np.array(list(brdf_unc[f"{meas}_hyper"].values()))[:, station], # BRDF unc in refltectance units
+                                            platform=ds.split('_')[1]  # which satellite's bands we are integratng to
+                                        )
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength  # 1 x 165
