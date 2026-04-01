@@ -585,7 +585,8 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
     badIndx = np.unique(badIndx)
     badTimes = np.unique(badTimes)
     # Duplicates each element to a list of two elements in a list:
-    badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+    # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+    badTimes = np.rot90(np.tile(badTimes,(2,1)), 3)
 
     if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
         # t0 = time.time()

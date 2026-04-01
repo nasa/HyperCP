@@ -941,7 +941,8 @@ class ProcessL2:
                     reflColumns[wave][indx] = 0
 
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)
+        # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)
+        badTimes = np.rot90(np.tile(badTimes,(2,1)), 3)
         logging.writeLogFileAndPrint(f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of {field} spectra flagged')
 
         # # Need to add these at the beginning of the ODict

@@ -241,7 +241,8 @@ class ProcessL1bqc:
                 flags5[indx] = True
 
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        badTimes = np.rot90(np.tile(badTimes,(2,1)), 3)
         msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged (not filtered)'
         logging.writeLogFileAndPrint(msg)
 
@@ -635,7 +636,8 @@ class ProcessL1bqc:
 
             badTimes = np.unique(badTimes)
             # Duplicate each element to a list of two elements in a list
-            badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+            # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+            badTimes = np.rot90(np.tile(badTimes,(2,1)), 3)
             # msg = f'{len(np.unique(badTimes))/len(AncDatetime)*100:.1f}% of spectra flagged'
 
             if badTimes is not None:
