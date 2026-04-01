@@ -1,6 +1,6 @@
 
 import numpy as np
-import numpy.matlib as npm
+# import numpy.matlib as npm
 
 def QAscores_5Bands(test_Rrs, test_lambda):
     '''Quality assurance system for Rrs spectra (Version 2.0)
@@ -187,8 +187,8 @@ def QAscores_5Bands(test_Rrs, test_lambda):
 
     # inCol*inRow
     nRrs_denom = np.sqrt(np.nansum(test_Rrs**2, 0))
-    # nRrs_denom = repmat(nRrs_denom,[inCol,1]);
-    nRrs_denom = npm.repmat(nRrs_denom, inCol, 1)
+    nRrs_denom = np.tile(nRrs_denom,(inCol,1))
+    # nRrs_denom = npm.repmat(nRrs_denom, inCol, 1)
     nRrs = test_Rrs/nRrs_denom
 
     # SAM input, inCol*inRow*refRow
