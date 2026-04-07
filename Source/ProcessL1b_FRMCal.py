@@ -499,7 +499,7 @@ class ProcessL1b_FRMCal:
             alpha = ((S1-S12)/(S12**2))
             
             # read in class based alpha and replace FRM char where non-linearity correction is too noisy to apply to signal
-            cb_alpha = node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_HYPEROCR_RADIANCE_LINDATA_CAL").columns['2'][1:].to_list()
+            cb_alpha = np.asarray(node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_HYPEROCR_RADIANCE_LINDATA_CAL").columns['2'][1:])
             no_lin_corr_indx = cb_alpha == 0
             alpha[no_lin_corr_indx] = cb_alpha[no_lin_corr_indx]
 
