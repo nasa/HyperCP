@@ -753,6 +753,7 @@ class ProcessL1b:
                 and not gp.id.startswith('SunTracker') \
                 and not gp.id.startswith('GPS') \
                 and not gp.id.startswith('ANCILLARY') \
+                and not gp.id.startswith('PYROMETER') \
                     and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "Not Required":
                     logging.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
