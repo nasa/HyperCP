@@ -312,7 +312,7 @@ class ProcessL1aTriOS:
                     break
             else:
                 raise ValueError("No header found in .mlb file")
-        column_names = re.split('\s+%', column_names[1:].strip())
+        column_names = re.split(r'\s+%', column_names[1:].strip())
         # Read Data
         data = pd.read_csv(filename, skiprows=start_index + 1, names=column_names, sep=r'\s+')
         # Format IDData to UTC datetime

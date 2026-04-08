@@ -496,11 +496,12 @@ class ProcessL1b_FRMCal:
 
             # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)  # Slapper
             S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
-            alpha = ((S1-S12)/(S12**2))
-            
+            alpha = (S1-S12)/(S12**2)
+
             # read in class based alpha and replace FRM char where non-linearity correction is too noisy to apply to signal
             cb_alpha = np.asarray(node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_HYPEROCR_RADIANCE_LINDATA_CAL").columns['2'][1:])
             no_lin_corr_indx = cb_alpha == 0
+            # no_lin_corr_indx = [int(i) for i, x in enumerate(cb_alpha) if x == 0]
             alpha[no_lin_corr_indx] = cb_alpha[no_lin_corr_indx]
 
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant')  # PAD with zero if not 255 long

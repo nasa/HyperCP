@@ -12,7 +12,8 @@ def L2avw(wavelength, Rrs):
     lims = [400, 701]
 
     if np.shape(wavelength) != np.shape(Rrs):
-        wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
+        # wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
+        wavelength = np.transpose(np.tile(wavelength,(np.shape(Rrs)[1],1)))
 
     wave_1nm = np.arange(lims[0], lims[1])
     Rrs_1nm = np.empty([wave_1nm.shape[0],Rrs.shape[1]])
