@@ -26,7 +26,7 @@ from Source.utils.loggingHCP import writeLogFileAndPrint
 class plottingToolsCB:
     '''Class for class-based uncertainty plotting tools'''
     _ALL_LABLES = [
-        "noise", 
+        "noise",
         "pert", 
         "Cal", 
         "Stab", 
@@ -34,10 +34,11 @@ class plottingToolsCB:
         "cT", 
         "Stray", 
         "pol", 
-        "cosine", 
         "rho", 
         "f0",
         "BRDF",
+        "cosine",  # CB does not differentiate between direct and diffuse cosine
+        # "not_used",  # need to maintain list size with FRM labels
     ]
 
     def __init__(self, sza, station, prop: Optional[MCPropagation] = None):
@@ -117,6 +118,7 @@ class plottingToolsCB:
                 keys["Rrs"].append("BRDF")
 
         # now we plot the result
+        # colors_sorted = [self.LABEL_COLORS[k] for k in keys[sensor]]
         for sensor in sensors:
             plt.figure(f"{sensor}_{self.station}")
             for key in keys[sensor]:
@@ -124,6 +126,7 @@ class plottingToolsCB:
                     wavelengths,
                     PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]),
                     label=key,
+                    color=self.LABEL_COLORS[key]
                 )
 
             plt.xlabel("Wavelengths")
