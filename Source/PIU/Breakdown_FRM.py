@@ -28,10 +28,10 @@ class plottingToolsFRM:
         "strayLight", 
         "polarisation", 
         "rho", 
-        "cosine (diffuse)",
-        "cosine (direct)",
         "f0",
         "brdf correction",    
+        "cosine (diffuse)",
+        "cosine (direct)",
     ]
     def __init__(self, sza, station):
         self.sza = sza
@@ -52,22 +52,22 @@ class plottingToolsFRM:
             color_cycle = cycle(palette)
 
             ## DO PLOTS ##
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type], colour=next(color_cycle))
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type], colour=next(color_cycle))
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type], colour=next(color_cycle))
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type], colour=next(color_cycle))
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['noise'],  "noise",                   rel_to=signal[s_type], colour=self.LABEL_COLORS["noise"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type], colour=self.LABEL_COLORS["env perturbations"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type], colour=self.LABEL_COLORS["non-linearity"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type], colour=self.LABEL_COLORS["strayLight"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type], colour=self.LABEL_COLORS["calibration"])
 
             # post normalisation
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type], colour=next(color_cycle))
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type], colour=next(color_cycle))
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type], colour=self.LABEL_COLORS["stability"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['ct'],   "ct",        rel_to=signal[s_type], colour=self.LABEL_COLORS["temperature"])
 
             # plot contributions that vary between sensors
             if s_type.upper() == 'ES':
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type], colour=next(color_cycle))
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type], colour=next(color_cycle))
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_dir'],  "cosine (direct)",  rel_to=signal[s_type], colour=self.LABEL_COLORS["cosine (direct)"])
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cos_diff'], "cosine (diffuse)", rel_to=signal[s_type], colour=self.LABEL_COLORS["cosine (diffuse)"])
             else:
-                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type], colour=next(color_cycle))
+                self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pol'], "polarisation", rel_to=signal[s_type], colour=self.LABEL_COLORS["polarisation"])
 
             self.save_figure(s_type)  # save the figure once all of the contributions have been added to the plot (will close the figure)
 
@@ -104,7 +104,7 @@ class plottingToolsFRM:
             # post normalisation
             self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["stability"])
             self.plot_spectral_FRM(meas, wvls, UNC['ct'],   "ct",        rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["temperature"])
-            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["noise"])
+            self.plot_spectral_FRM(meas, wvls, UNC['rho'],  "rho",       rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["rho"])
 
             # plot contributions that vary between sensors
             if meas.upper() != 'LW':
