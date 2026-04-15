@@ -10,6 +10,7 @@ import comet_maths as cm
 
 # Source
 from Source.MainConfig import MainConfig
+from Source.ConfigFile import ConfigFile
 
 # PIU
 from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
@@ -383,6 +384,12 @@ class SolveLPU:
             (1/S12**2)**2 * UNC['S1']**2 +
             ((S12 - 2*DATA['S1']) / S12**3)**2 * LPU_UNCS['S12']
         )
+        if ConfigFile.settings['SensorType'].lower() == "seabird":
+            no_lin_corr = DATA['cb_alpha'] == 0
+        else:
+            no_lin_corr = DATA['cb_alpha'] == -2e-7
+
+        LPU_UNCS['alpha'][no_lin_corr] = UNC['cb_alpha'][no_lin_corr] 
 
         return LPU_UNCS
 
