@@ -26,19 +26,18 @@ from Source.utils.loggingHCP import writeLogFileAndPrint
 class plottingToolsCB:
     '''Class for class-based uncertainty plotting tools'''
     _ALL_LABLES = [
-        "noise",
-        "pert", 
-        "Cal", 
-        "Stab", 
-        "Lin", 
-        "cT", 
-        "Stray", 
-        "pol", 
+        "noise", 
+        "env perturbations", 
+        "calibration", 
+        "stability", 
+        "non-linearity", 
+        "temperature", 
+        "strayLight", 
+        "polarisation", 
         "rho", 
         "f0",
-        "BRDF",
-        "cosine",  # CB does not differentiate between direct and diffuse cosine
-        # "not_used",  # need to maintain list size with FRM labels
+        "brdf correction",    
+        "cosine",
     ]
 
     def __init__(self, sza, station, prop: Optional[MCPropagation] = None):
@@ -53,6 +52,20 @@ class plottingToolsCB:
         color_cycle = cycle(palette)
         self.LABEL_COLORS = {
             k: v for k,v in zip(self._ALL_LABLES, color_cycle)
+        }
+        self.translation = {
+                "noise": "noise",
+                "pert": "env perturbations",
+                "Cal": "calibration",
+                "Stab": "stability",
+                "Lin": "non-linearity",
+                "cT": "temperature",
+                "Stray": "strayLight",
+                "cosine": "cosine",
+                "pol": "polarisation",
+                "rho": "rho",
+                "f0": "f0",
+                "BRDF": "brdf correction",
         }
 
     def PlotL1B(self, node, wavelengths, BD_UNCS, es, li, lt):
@@ -96,6 +109,38 @@ class plottingToolsCB:
 
     def plot_CB_spectral(self, BD_UNCS, BD_VALS, wavelengths, level="L1B"):
         if "L1B" in level:
+            labels = dict(
+                ES=[
+                    "noise",
+                    "env perturbations",
+                    "calibration",
+                    "stability",
+                    "non-linearity",
+                    "temperature",
+                    "strayLight",
+                    "cosine",
+                ],
+                LI=[
+                    "noise", 
+                    "env perturbations", 
+                    "calibration", 
+                    "stability", 
+                    "non-linearity", 
+                    "temperature", 
+                    "strayLight", 
+                    "polarisation", 
+                ],
+                LT=[
+                    "noise",
+                    "env perturbations",
+                    "calibration",
+                    "stability",
+                    "non-linearity",
+                    "temperature",
+                    "strayLight",
+                    "polarisation",
+                ],
+            )
             keys = dict(
                 ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
                 LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
@@ -107,8 +152,35 @@ class plottingToolsCB:
                 else ["ES", "LI", "LT"]
             )
         else:
-            keys = dict(
+            labels = dict(
                 # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+                Rrs=[
+                    "noise", 
+                    "env perturbations", 
+                    "calibration", 
+                    "stability", 
+                    "non-linearity", 
+                    "temperature", 
+                    "strayLight", 
+                    "polarisation", 
+                    "cosine",
+                    "rho",     
+                ],
+                nLw=[
+                    "noise", 
+                    "env perturbations", 
+                    "calibration", 
+                    "stability", 
+                    "non-linearity", 
+                    "temperature", 
+                    "strayLight", 
+                    "polarisation", 
+                    "cosine",
+                    "rho", 
+                    "f0",    
+                ],
+            )
+            keys = dict(
                 Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
                 nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
             )
@@ -121,12 +193,12 @@ class plottingToolsCB:
         # colors_sorted = [self.LABEL_COLORS[k] for k in keys[sensor]]
         for sensor in sensors:
             plt.figure(f"{sensor}_{self.station}")
-            for key in keys[sensor]:
+            for key, label in zip(keys[sensor], labels[sensor]):
                 plt.plot(
                     wavelengths,
                     PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor]),
-                    label=key,
-                    color=self.LABEL_COLORS[key]
+                    label=label,
+                    color=self.LABEL_COLORS[label]
                 )
 
             plt.xlabel("Wavelengths")
@@ -191,7 +263,7 @@ class plottingToolsCB:
                 # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
-                colors_sorted = [self.LABEL_COLORS[lab] for lab in labels_sorted]
+                colors_sorted = [self.LABEL_COLORS[self.translation[lab]] for lab in labels_sorted]
 
                 # --- Plot horizontal bars ---
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
@@ -293,7 +365,7 @@ class plottingToolsCB:
                 # --- Sort by value descending for readability ---
                 sorted_data = sorted(zip(vals, labels_list), key=lambda t: t[0], reverse=True)
                 vals_sorted, labels_sorted = zip(*sorted_data)
-                colors_sorted = [self.LABEL_COLORS[lab] for lab in labels_sorted]
+                colors_sorted = [self.LABEL_COLORS[self.translation[lab]] for lab in labels_sorted]
 
                 # --- Plot horizontal bars --- #
                 ax.barh(labels_sorted, vals_sorted, color=colors_sorted)
