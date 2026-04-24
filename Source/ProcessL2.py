@@ -1255,8 +1255,8 @@ class ProcessL2:
             else:
                 break
 
-        if not stats:  # check if stats was generated and return False if not
-            logging.writeLogFileAndPrint("statistics not generated")
+        if not all([v for v in stats.values()]):  # check if stats was generated and return False if not
+            logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
 
         node.attributes['PERCENT_LT'] = ",".join(percentLtattr)
@@ -1371,8 +1371,10 @@ class ProcessL2:
         x_unc, x_breakdown_unc, x_breakdown_corr = None, None, None
         tic = time.process_time()
         if ConfigFile.settings["fL1bCal"] <= 2:  # Factory Calibration or FRM-Class Specific
-            l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(node, uncGroup, stats, x_slice)
-            if l1b_unc:
+            # PDS has all reported bands, cal'd and not cal'd, at L1A waveband centers IN FACTORY MODE
+            try:
+                PDS = PIUDataStore(node, uncGroup)  # raises NotImplementedError if TriOS-factory or Dalec selected
+                l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(uncGroup, PDS, stats)
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                 for k, v in slice_mean.items():
@@ -1380,37 +1382,41 @@ class ProcessL2:
                         u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
-                    # x_breakdown_unc[k.upper()] = {
-                    #     u[0]: [u[1] * np.abs(s[0])] for s, u in
-                    #     zip(v.values(), x_breakdown_unc[k.upper()].items())  # keys of x_breakdown_unc represent error sources
-                    # }  # TODO figure out why this doesn't work - Ashley
 
+                # convert breakdown uncertainties to absolute and run L2 unc propagation
                 x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
-                if ConfigFile.settings['SensorType'].lower() != "trios es only":
+                if es_only:
+                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)   
+                else:
                     x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
                     x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
-                if es_only:
-                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
-                    l2_bd = {}
-                else:
-                    # from Source.PIU.PIUDataStore import PIUDataStore
-                    pds = PIUDataStore(node, uncGroup)
+                    x_unc, l2_bd = sensor.ClassBasedL2(
+                        PDS, 
+                        stats, 
+                        rho_scalar if rho_vec is None else rho_vec, 
+                        rho_unc, 
+                        F0_hyper, 
+                        F0_unc, 
+                        wavelengths.tolist(), 
+                        x_slice
+                    )
+                    x_breakdown_unc.update(l2_bd)
 
-                    x_unc, l2_bd = sensor.ClassBasedL2(node, uncGroup, pds, stats, rho_scalar, rho_vec, rho_unc, F0_hyper, F0_unc, wavelengths.tolist(), x_slice)
-                x_breakdown_unc.update(l2_bd)
-            elif not(ConfigFile.settings['SensorType'].lower() in ["dalec", "trios", "trios es only"] and (ConfigFile.settings["fL1bCal"] == 1)):
-                logging.writeLogFileAndPrint("ProcessL2.ensemblesReflectance: Instrument uncertainty processing failed. Aborting.")
-                return False
+            except NotImplementedError:
+                pass  # we expect TriOS factory and DALEC to raise this.
+
         elif ConfigFile.settings["fL1bCal"] == 3:  # FRM-Sensor Specific
 
-            pds = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
+            PDS = PIUDataStore(node, uncGroup, raw_groups, raw_slices)
 
-            l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(pds, stats, wavelengths)
+            l1b_unc, x_breakdown_corr, x_breakdown_unc = sensor.FRM(PDS, stats, wavelengths)
             x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
-            x_unc = sensor.FRML2(pds, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
+            x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
+        
+        # log uncertainty processing time
         logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s")
 
         # Move uncertainties to x_unc and drop samples form x_slice
