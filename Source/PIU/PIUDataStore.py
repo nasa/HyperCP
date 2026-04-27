@@ -30,7 +30,7 @@ class PIUDataStore:
     """contains class to read and store input uncertainties for PIU"""
     sensors: list = ['ES', 'LI', 'LT']
 
-    def __init__(self, root: HDFRoot, inpt: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
+    def __init__(self, root: HDFRoot, inpt: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None):
         """ class which contains methods that provide digestable uncertainties to classes in PIU 
             converts datafile inputs into a dictionary of coefficients and uncertainties for all regimes
         """
@@ -40,6 +40,7 @@ class PIUDataStore:
         self.uncs:      dict = {s: {} for s in self.sensors}
         self.coeff:     dict = {s: {} for s in self.sensors}
         self.cal_level: int = ConfigFile.settings["fL1bCal"]
+        self.mDraws = 100
 
         self.cal_start: dict = {s: {} for s in self.sensors}
         self.cal_stop:  dict = {s: {} for s in self.sensors}
@@ -53,7 +54,7 @@ class PIUDataStore:
 
         ancGroup = root.getGroup("ANCILLARY")
         self.sza = round(ancGroup.getDataset("SZA").columns["SZA"][0], 2) # take to 2.d.p for outputting
-
+        
         try:
             ancGroup = root.getGroup("ANCILLARY")
             self.station = ancGroup.getDataset("STATION").columns["STATION"][0]
@@ -66,23 +67,21 @@ class PIUDataStore:
         except (AttributeError, KeyError):
             self.cast = None
 
-        if not create_empty:  # do not read uncs and coeffs if we are creating an empty PDS
-
-            if self.cal_level == 3:
-                [self.readCalFRM(root, inpt, raw_grps, raw_slices, sensor) for sensor in self.sensors]
-                self.readCommonPix()
+        if self.cal_level == 3:
+            [self.readCalFRM(root, inpt, raw_grps, raw_slices, sensor) for sensor in self.sensors]
+            self.readCommonPix()
+        else:
+            self.get_inttime(root)
+            if self.cal_level == 2:
+                [self.readCalClassBased(root,inpt, sensor) for sensor in self.sensors]
+            elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+                [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
             else:
-                self.get_inttime(root)
-                if self.cal_level == 2:
-                    [self.readCalClassBased(root,inpt, sensor) for sensor in self.sensors]
-                elif ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    [self.readCalFactory(root, inpt, sensor) for sensor in self.sensors]
-                else:
-                    writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
-                    raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
-                self.readCommonPix()
-                # finally
-                [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
+                writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
+                raise NotImplementedError  # TODO: test behaviour of this - implemented because __init__ classes cannot have return or yeilds - Ashley
+            self.readCommonPix()
+            
+            [self.read_uncertainties(root, inpt, sensor) for sensor in self.sensors]
 
     def get_inttime(self, root: HDFRoot):
         # BUG?: Why are we using the MEAN integration time of all the samples?? What does this get used for?
@@ -657,3 +656,14 @@ class PIUDataStore:
     @staticmethod
     def interpolateSamples(Columns, waves, newWavebands):
         return utils.interpolateSamples(Columns, waves, newWavebands)
+
+    # --- BUILTINS --- # 
+    def __iter__(self):
+        for sensor in self.sensors:
+            yield (
+            self.sensor, 
+            {
+                "coeff": self.coeff[sensor], 
+                "uncs":  self.uncs[sensor]
+            }
+        )
