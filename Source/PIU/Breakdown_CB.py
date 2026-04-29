@@ -206,14 +206,14 @@ class plottingToolsCB:
             plt.ylabel("Relative Uncertainty (%)")
             plt.ylim(0, 5)
             plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
-            plt.legend()
+            plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
             plt.grid()
 
             # fp = path.join(self.plot_folder, f"spectral_CB_{sensor}_{self.station}.png")
             fp = path.join(self.plot_folder, f"{sensor}_CB_spectral_{self.station}.png")
             if not path.exists(self.plot_folder):
                 makedirs(self.plot_folder)
-            plt.savefig(fp)
+            plt.savefig(fp, bbox_inches='tight')
             plt.close(f"{sensor}_{self.station}")
 
     def plot_bar_classBased(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str, np.array]:
@@ -291,10 +291,10 @@ class plottingToolsCB:
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
-                textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \
+                textstr = f"Bars represent relative uncertainty in {s} signal at {wvl_at_indx} nm. " \
                     f"Percentages displayed by each bar represent the contribution of the component to the variance of {s}, " \
                     r"where uncertainty is a positive square root of variance $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
-                plt.gcf().text(0.02, 0.04,
+                plt.gcf().text(0.03, 0.03,
                             textstr,
                             fontsize=12,
                             color='black',
@@ -461,7 +461,7 @@ class plottingToolsCB:
             return False
 
         if legend:
-            plt.legend()
+            plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
         if grid:
             plt.grid("both")
 
@@ -480,7 +480,7 @@ class plottingToolsCB:
             finally:
                 umask(orig_umask)
 
-        plt.savefig(fp)
+        plt.savefig(fp, bbox_inches='tight')
         plt.close()
 
 
