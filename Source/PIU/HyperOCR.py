@@ -66,31 +66,34 @@ class HyperOCR(BaseInstrument):
         Nd = np.asarray(list(darkData.values())).shape[1]
         for i, k in enumerate(lightData.keys()):
             wvl = str(float(k))
+    
+            # apply normailsation here as we have value per scan
+            Ldata = np.array(lightData[k]) * (self.cal_int[s]/self.int_time[s])
+            Ddata = np.array(darkData[k]) * (self.cal_int[s]/self.int_time[s])
 
             # apply normalisation to the standard deviations used in uncertainty calculations
             if N > 25:  # normal case
-                std_light.append(np.std(lightData[k])/np.sqrt(N))
-                std_dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
+                std_light.append(np.std(Ldata)/np.sqrt(N))
+                std_dark.append(np.std(Ddata)/np.sqrt(Nd))  # sigma here is essentially sigma**2 so N must sqrt
             elif N > 3:  # few scans, use different statistics
-                std_light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
-                std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
+                std_light.append(np.sqrt(((N-1)/(N-3))*(np.std(Ldata) / np.sqrt(N))**2))
+                std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(Ddata) / np.sqrt(Nd))**2))
             else:
                 writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
-            ave_light.append(np.average(lightData[k]))
-            ave_dark.append(np.average(darkData[k]))
-            env_pert.append(np.abs(np.std(lightData[k])/np.average(lightData[k])))
+            ave_light.append(np.average(Ldata))
+            ave_dark.append(np.average(Ddata))
+            env_pert.append(np.abs(np.std(Ldata)/np.average(Ldata)))
 
             for x in range(N):
                 try:
-                    lightData[k][x] -= darkData[k][x]
+                    Ldata[x] -= Ddata[x]
                 except IndexError as err:
                     writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
                     return False
 
-
-            signalAve = np.average(lightData[k])  # at this point in the code lightdata is light-dark see line 95
+            signalAve = np.average(Ldata)  # at this point in the code lightdata is light-dark see line 95
 
             if signalAve:
                 signal_noise[wvl] = pow((pow(std_light[i], 2) + pow(std_dark[i], 2))/pow(signalAve, 2), 0.5)
@@ -98,7 +101,7 @@ class HyperOCR(BaseInstrument):
             else:
                 signal_noise[wvl] = 0.0
 
-            std_signal.append(np.std(lightData[k])/signalAve)  # as % of Dark corrected signal
+            std_signal.append(np.std(Ldata)/signalAve)  # as % of Dark corrected signal
 
         return dict(
             ave_Light=np.array(ave_light),
@@ -107,7 +110,7 @@ class HyperOCR(BaseInstrument):
             std_Dark=np.array(std_dark),
             Signal_std=np.array(std_signal),
             Signal_noise=signal_noise,
-            )  # output as dictionary for use in ProcessL2/PIU
+        )  # output as dictionary for use in ProcessL2/PIU
 
     def FRM(self, PDS: pds, stats, newWaveBands) -> dict[str, np.array]:
         """
