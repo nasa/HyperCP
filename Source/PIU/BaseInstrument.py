@@ -112,23 +112,39 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             from Source import PATH_TO_CONFIG
             from Source.ConfigFile import ConfigFile
             from Source.CalibrationFileReader import CalibrationFileReader
+            
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
+                gp = root.getGroup(f"{s_type}_LIGHT_L1AQC")
+                calPath = path.join(
+                    PATH_TO_CONFIG,
+                    f"{path.splitext(ConfigFile.filename)[0]}_Calibration"
+                )
 
-            gp = root.getGroup(f"{s_type}_LIGHT_L1AQC")
-            calPath = path.join(
-                PATH_TO_CONFIG,
-                f"{path.splitext(ConfigFile.filename)[0]}_Calibration"
-            )
+                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
+                cal_int_time = np.array(
+                    [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
+                )
 
-            cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
-            cal_int_time = np.array(
-                [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
-            )
-
-            # needs to be sliced
-            cal_int_time = int(np.mean(cal_int_time[~np.isnan(cal_int_time)][1:]) * 1000) # convert to int (*1000 for 4sf of information)
-            # cut all 0s and first pixel
-            self.int_time[s_type] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
-            self.cal_int[s_type]  = cal_int_time
+                # needs to be sliced
+                cal_int_time = int(np.mean(cal_int_time[~np.isnan(cal_int_time)][1:]) * 1000) # convert to int (*1000 for 4sf of information)
+                # cut all 0s and first pixel
+                self.int_time[s_type] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
+                self.cal_int[s_type]  = cal_int_time
+            elif ConfigFile.settings['SensorType'].lower() == "dalec":
+                gp = root.getGroup(f"{s_type}_L1AQC")
+                # cal_int_time = gp.attributes['cal_int_time'] # NOTE: This may be wrong. See ProcessL1bDALEC. Reach out to IMO.
+                # Waiting for a reply. It could be in the raw file header as INTTIME {10,10,10} as 10 ms for each?
+                self.int_time[s_type] = np.mean(gp.datasets['INTTIME'].columns[s_type])
+                rawFileInt = np.array(root.attributes['INTTIME'][2:-1].split(','),dtype=float)
+                # TODO: Confirm this, and then build a dict with root.attribute "CHANNEL_ORDER" to capture rigorously
+                if s_type=='ES':
+                    cal_int_time = rawFileInt[0] # in ms
+                elif s_type=='LT':
+                    cal_int_time = rawFileInt[1]
+                else:
+                    cal_int_time = rawFileInt[2]
+            else:
+                pass  # TriOS can handle this already in LightDarkStats
 
             if i_type.lower() in ["sorad", "trios", "trios es only"]:
                 # NOTE: trios stores dark data in standard sequence - no shutter
@@ -218,7 +234,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
     def ClassBasedL1A(
             self, 
-            # xSlice,
             uncGrp: HDFGroup, 
             PDS: PIUDataStore, 
             stats: dict[str, np.array],
@@ -249,46 +264,48 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ones   = np.ones_like(PDS.uncs['ES']['cal'])[PDS.l1ACommonCalPix]
         zeroes = np.zeros_like(PDS.uncs['ES']['cal'])[PDS.l1ACommonCalPix]
 
-        means = [stats['ES']['ave_Light'][PDS.l1ACommonCalPix],
-                 stats['ES']['ave_Dark'][PDS.l1ACommonCalPix],
-                 stats['LI']['ave_Light'][PDS.l1ACommonCalPix] if 'LI' in stats else ones,
-                 stats['LI']['ave_Dark'][PDS.l1ACommonCalPix] if 'LI' in stats else ones,
-                 stats['LT']['ave_Light'][PDS.l1ACommonCalPix] if 'LT' in stats else ones,
-                 stats['LT']['ave_Dark'][PDS.l1ACommonCalPix] if 'LT' in stats else ones,
-                 PDS.coeff['ES']['cal'][PDS.l1ACommonCalPix],
-                 PDS.coeff['LI']['cal'][PDS.l1ACommonCalPix] if 'LI' in PDS.coeff else ones,
-                 PDS.coeff['LT']['cal'][PDS.l1ACommonCalPix] if 'LT' in PDS.coeff else ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
+        means = [
+            stats['ES']['ave_Light'][PDS.l1ACommonCalPix],
+            stats['ES']['ave_Dark'][PDS.l1ACommonCalPix],
+            stats['LI']['ave_Light'][PDS.l1ACommonCalPix] if 'LI' in stats else ones,
+            stats['LI']['ave_Dark'][PDS.l1ACommonCalPix] if 'LI' in stats else ones,
+            stats['LT']['ave_Light'][PDS.l1ACommonCalPix] if 'LT' in stats else ones,
+            stats['LT']['ave_Dark'][PDS.l1ACommonCalPix] if 'LT' in stats else ones,
+            PDS.coeff['ES']['cal'][PDS.l1ACommonCalPix],
+            PDS.coeff['LI']['cal'][PDS.l1ACommonCalPix] if 'LI' in PDS.coeff else ones,
+            PDS.coeff['LT']['cal'][PDS.l1ACommonCalPix] if 'LT' in PDS.coeff else ones,
+            ones, ones, ones,
+            ones, ones, ones,
+            ones, ones, ones,
+            ones, ones, ones,
+            ones, ones, ones,
         ]
 
-        uncertainties = [stats['ES']['std_Light'][PDS.l1ACommonCalPix],
-                         stats['ES']['std_Dark'][PDS.l1ACommonCalPix],
-                         stats['LI']['std_Light'][PDS.l1ACommonCalPix] if 'LI' in stats else zeroes,
-                         stats['LI']['std_Dark'][PDS.l1ACommonCalPix] if 'LI' in stats else zeroes,
-                         stats['LT']['std_Light'][PDS.l1ACommonCalPix] if 'LT' in stats else zeroes,
-                         stats['LT']['std_Dark'][PDS.l1ACommonCalPix] if 'LT' in stats else zeroes,
-                         (PDS.uncs['ES']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['ES']['cal'][PDS.l1ACommonCalPix]),
-                         (PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['LI']['cal'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
-                         (PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['LT']['cal'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
-                         PDS.uncs['ES']['stab'][PDS.l1ACommonCalPix255],
-                         PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255] if 'LI' in PDS.uncs else zeroes,
-                         PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255] if 'LT' in PDS.uncs else zeroes,
-                         PDS.uncs['ES']['nlin'][PDS.l1ACommonCalPix],
-                         PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix] if 'LI' in PDS.uncs else zeroes,
-                         PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix] if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['ES']['stray'][PDS.l1ACommonCalPix255]) / 100,  # change straylight and set nl uncs with file
-                         np.array(PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255]) / 100 if 'LI' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LT']['stray'][PDS.l1ACommonCalPix255]) / 100 if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['ES']['ct'][PDS.l1ACommonCalPix]),
-                         np.array( PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
-                         np.array( PDS.uncs['LT']['ct'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
-                         np.array(PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
-                         np.array( PDS.uncs['LT']['pol'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
-                         np.array( PDS.uncs['ES']['cos'][PDS.l1ACommonCalPix]),
+        uncertainties = [
+            stats['ES']['std_Light'][PDS.l1ACommonCalPix],
+            stats['ES']['std_Dark'][PDS.l1ACommonCalPix],
+            stats['LI']['std_Light'][PDS.l1ACommonCalPix] if 'LI' in stats else zeroes,
+            stats['LI']['std_Dark'][PDS.l1ACommonCalPix] if 'LI' in stats else zeroes,
+            stats['LT']['std_Light'][PDS.l1ACommonCalPix] if 'LT' in stats else zeroes,
+            stats['LT']['std_Dark'][PDS.l1ACommonCalPix] if 'LT' in stats else zeroes,
+            (PDS.uncs['ES']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['ES']['cal'][PDS.l1ACommonCalPix]),
+            (PDS.uncs['LI']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['LI']['cal'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
+            (PDS.uncs['LT']['cal'][PDS.l1ACommonCalPix] / 200 * PDS.coeff['LT']['cal'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
+            PDS.uncs['ES']['stab'][PDS.l1ACommonCalPix255],
+            PDS.uncs['LI']['stab'][PDS.l1ACommonCalPix255] if 'LI' in PDS.uncs else zeroes,
+            PDS.uncs['LT']['stab'][PDS.l1ACommonCalPix255] if 'LT' in PDS.uncs else zeroes,
+            PDS.uncs['ES']['nlin'][PDS.l1ACommonCalPix],
+            PDS.uncs['LI']['nlin'][PDS.l1ACommonCalPix] if 'LI' in PDS.uncs else zeroes,
+            PDS.uncs['LT']['nlin'][PDS.l1ACommonCalPix] if 'LT' in PDS.uncs else zeroes,
+            np.array(PDS.uncs['ES']['stray'][PDS.l1ACommonCalPix255]) / 100,  # change straylight and set nl uncs with file
+            np.array(PDS.uncs['LI']['stray'][PDS.l1ACommonCalPix255]) / 100 if 'LI' in PDS.uncs else zeroes,
+            np.array(PDS.uncs['LT']['stray'][PDS.l1ACommonCalPix255]) / 100 if 'LT' in PDS.uncs else zeroes,
+            np.array(PDS.uncs['ES']['ct'][PDS.l1ACommonCalPix]),
+            np.array( PDS.uncs['LI']['ct'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
+            np.array( PDS.uncs['LT']['ct'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
+            np.array(PDS.uncs['LI']['pol'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
+            np.array( PDS.uncs['LT']['pol'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
+            np.array( PDS.uncs['ES']['cos'][PDS.l1ACommonCalPix]),
         ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -306,8 +323,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         es, li, lt = Prop_CB.instruments(*means)
 
-        # BD_UNCS, BD_VALS = PlotMaths.classBased(Prop_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
-        BD_UNCS = PlotMaths.classBased(Prop_CB, means, uncertainties, cul=False)  # can set to be cumulative spectral plots
+        # can set to be cumulative spectral plots
+        BD_UNCS = PlotMaths.classBased(Prop_CB, means, uncertainties, cul=False)  
 
         # # check if negative signal for any pixels
         # is_negative = np.any([ x < 0 for x in means])
@@ -512,15 +529,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                          return_as_dict=False)
         # Some PDS elements are at the reported/output bands, some at the full 255 pixels. Use masks accordingly.
         #   These are all at common pixels, regardless of the wavelength.
-                # These are all at a common set of bands from raw ES at the common set of calibrated pixels
-        
+        # These are all at a common set of bands from raw ES at the common set of calibrated pixels
+
         lw_means = [
-            lt, rho, li,
-            # statsL2['LTave_Light'], statsL2['LTave_Dark'], 
-            # rho,
-            # statsL2['LIstd_Light'], statsL2['LIstd_Dark'],
-            # PDSL2['LICcal'], PDSL2['LTCcal'],
-            ones, ones,
+            statsL2['LTave_Light'], statsL2['LTave_Dark'],
+            rho,
+            statsL2['LIave_Light'], statsL2['LIave_Dark'],
+            # lt, rho, li,
+            # ones, ones,
+            PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones,
             ones, ones,
             ones, ones,
@@ -529,14 +546,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         lw_uncertainties = [
-            np.abs(statsL2['LTSignal_noise'] * lt),
-            rhoUNC,
-            np.abs(statsL2['LISignal_noise'] * li),
-            # np.abs(statsL2['LTstd_Light'] * lt), np.abs(statsL2['LTstd_Dark'] * lt),
+            # np.abs(statsL2['LTSignal_noise'] * lt),
             # rhoUNC,
-            # np.abs(statsL2['LIstd_Light'] * li), np.abs(statsL2['LIstd_Dark'] * li),
-            (PDSL2['LIcal'] / 200), # * PDSL2['LICcal'],
-            (PDSL2['LTcal'] / 200), # * PDSL2['LTCcal'],
+            # np.abs(statsL2['LISignal_noise'] * li),
+            np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
+            rhoUNC,
+            np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
+            (PDSL2['LIcal'] / 200) * PDSL2['LICcal'],
+            (PDSL2['LTcal'] / 200) * PDSL2['LTCcal'],
             PDSL2['LIstab'],
             PDSL2['LTstab'],
             PDSL2['LInlin'],
@@ -549,16 +566,26 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDSL2['LIpol']
         ]
         lwAbsUnc = Prop_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
-        # lt - rho * li
+        lwl1b =  lt - rho * li
+        lwmf = Prop_CB.Lw(*lw_means)
+
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(l2Wavelength, lwl1b, label='Lw L1B')
+        # plt.plot(l2Wavelength, lwmf, label='Lw MF')
+        # plt.xlabel('Wavelength')
+        # plt.ylabel('Lw (radiance units)')
+        # plt.legend()
+        # plt.show()
 
         rrs_means = [
-            # statsL2['LTave_Light'], statsL2['LTave_Dark'], 
-            # rho,
-            # statsL2['LIstd_Light'], statsL2['LIstd_Dark'],
-            # statsL2['ESstd_Light'], statsL2['ESstd_Dark'],
-            lt, rho, li, es,
-            ones, ones, ones,
-            # PDSL2['ESCcal'], PDSL2['LICcal'], PDSL2['LTCcal'],
+            statsL2['LTave_Light'], statsL2['LTave_Dark'], 
+            rho,
+            statsL2['LIave_Light'], statsL2['LIave_Dark'],
+            statsL2['ESave_Light'], statsL2['ESave_Dark'],
+            # lt, rho, li, es,
+            # ones, ones, ones,
+            PDSL2['ESCcal'], PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones, ones,
             ones, ones, ones,
             ones, ones, ones,
@@ -567,17 +594,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         rrs_uncertainties = [
-            np.abs(statsL2['LTSignal_noise'] * lt),
-            rhoUNC,
-            np.abs(statsL2['LISignal_noise'] * li),
-            np.abs(statsL2['ESSignal_noise'] * es),
-            # np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
+            # np.abs(statsL2['LTSignal_noise'] * lt),
             # rhoUNC,
-            # np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
-            # np.abs(statsL2['ESstd_Light']), np.abs(statsL2['ESstd_Dark']),
-            (PDSL2['EScal'] / 200),  # * PDSL2['ESCcal'],
-            (PDSL2['LIcal'] / 200),  # * PDSL2['LICcal'],
-            (PDSL2['LTcal'] / 200),  # * PDSL2['LTCcal'],
+            # np.abs(statsL2['LISignal_noise'] * li),
+            # np.abs(statsL2['ESSignal_noise'] * es),
+            np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
+            rhoUNC,
+            np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
+            np.abs(statsL2['ESstd_Light']), np.abs(statsL2['ESstd_Dark']),
+            (PDSL2['EScal'] / 200) * PDSL2['ESCcal'],
+            (PDSL2['LIcal'] / 200) * PDSL2['LICcal'],
+            (PDSL2['LTcal'] / 200) * PDSL2['LTCcal'],
             PDSL2['ESstab'],
             PDSL2['LIstab'],
             PDSL2['LTstab'],
@@ -595,6 +622,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDSL2['EScos']
         ]
 
+        rrs_test = Prop_CB.RRS(*rrs_means)
         rrsAbsUnc = Prop_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(Prop_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
@@ -602,25 +630,30 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         # then propagate perturbation uncertainty
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
-        pert_uncs[0:3] = [
-            np.abs(statsL2['LTSignal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+        pert_uncs[0:5] = [
+            np.abs(statsL2['LTSignal_std']) * statsL2['LTave_Light'] if 'LT' in PDS.uncs else zeroes,
             zeroes,
-            np.abs(statsL2['LISignal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
+            zeroes,
+            np.abs(statsL2['LISignal_std']) * statsL2['LIave_Light'] if 'LI' in PDS.uncs else zeroes,
+            zeroes,
         ]
 
         BD_UNCS['Lw']['pert'] = Prop_CB.Propagate_Lw_HYPER(lw_means, pert_uncs)
 
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
-        pert_uncs[0:4] = [
-            np.abs(statsL2['LTSignal_std']) * np.abs(lt) if 'LT' in PDS.uncs else zeroes,
+        pert_uncs[0:7] = [
+            np.abs(statsL2['LTSignal_std']) * statsL2['LTave_Light'] if 'LT' in PDS.uncs else zeroes,
             np.zeros_like(ones),
-            np.abs(statsL2['LISignal_std']) * np.abs(li) if 'LI' in PDS.uncs else zeroes,
-            np.abs(statsL2['ESSignal_std']) * np.abs(es),
+            np.zeros_like(ones),
+            np.abs(statsL2['LISignal_std']) * statsL2['LIave_Light'] if 'LI' in PDS.uncs else zeroes,
+            np.zeros_like(ones),
+            np.abs(statsL2['ESSignal_std']) * statsL2['ESave_Light'],
+            np.zeros_like(ones),
         ]
 
         BD_UNCS['Rrs']['pert'] = Prop_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
 
-        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst")
+        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst") 
         no_unc_f0  = cm.generate_sample(PDS.mDraws, f0,  None,   None)
         no_unc_rrs = cm.generate_sample(PDS.mDraws, BD_VALS['Rrs'], None,   None)
 
