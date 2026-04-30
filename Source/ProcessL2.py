@@ -1247,7 +1247,7 @@ class ProcessL2:
             else:
                 nSpecEnd = nSpecStart
 
-            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+            stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
@@ -1374,10 +1374,12 @@ class ProcessL2:
             # PDS has all reported bands, cal'd and not cal'd, at L1A waveband centers IN FACTORY MODE
             try:
                 PDS = PIUDataStore(node, uncGroup)  # raises NotImplementedError if TriOS-factory or Dalec selected
-                l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(uncGroup, PDS, stats)
+                l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(x_slice, uncGroup, PDS, stats)
                 x_slice.update(l1b_unc)
-                # convert uncertainties back into absolute form using the signals recorded from ProcessL2
+                # convert uncertainties back into absolute form using the signals recorded from ProcessL1B
                 for k, v in slice_mean.items():
+                    # uncertainty as % multiplied by signal in radiometric units
+                    
                     x_slice[k.lower() + 'Unc'] = {
                         u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
