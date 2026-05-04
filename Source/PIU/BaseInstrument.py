@@ -192,11 +192,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return False
 
     def ClassBasedL1A(self,
-                   node: HDFRoot,
-                   uncGrp: HDFGroup,
-                   stats: dict[str, np.array],
-                   xslice: dict[str, dict[str, np.array]],
-                   ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
+                    node: HDFRoot,
+                    uncGrp: HDFGroup,
+                    stats: dict[str, np.array],
+                    ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
+                #    node: HDFRoot,
+                #    uncGrp: HDFGroup,
+                #    stats: dict[str, np.array],
+                #    xslice: dict[str, dict[str, np.array]],
+                #    ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
         """
         Propagates class based uncertainties for all instruments. If no calibration uncertainties are available will use Sirrex-7 
         to propagate uncertainties in the SeaBird Case. See D-10 secion 5.3.1.

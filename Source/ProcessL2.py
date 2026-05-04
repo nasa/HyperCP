@@ -1374,7 +1374,8 @@ class ProcessL2:
             # PDS has all reported bands, cal'd and not cal'd, at L1A waveband centers IN FACTORY MODE
             try:
                 PDS = PIUDataStore(node, uncGroup)  # raises NotImplementedError if TriOS-factory or Dalec selected
-                l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(uncGroup, PDS, stats)
+                # l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(uncGroup, PDS, stats)
+                l1b_unc, x_breakdown_unc = sensor.ClassBasedL1A(node,uncGroup,stats)
                 x_slice.update(l1b_unc)
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                 for k, v in slice_mean.items():
