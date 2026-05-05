@@ -56,11 +56,11 @@ class plottingToolsCB:
         self.translation = {
                 "noise": "noise",
                 "pert": "env perturbations",
-                "Cal": "calibration",
-                "Stab": "stability",
-                "Lin": "non-linearity",
-                "cT": "temperature",
-                "Stray": "strayLight",
+                "radcal": "calibration",
+                "stab": "stability",
+                "clin": "non-linearity",
+                "ct": "temperature",
+                "cSL": "strayLight",
                 "cosine": "cosine",
                 "pol": "polarisation",
                 "rho": "rho",
@@ -142,9 +142,12 @@ class plottingToolsCB:
                 ],
             )
             keys = dict(
-                ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-                LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-                LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+                ES=["noise", "pert", "radcal", "stab", "clin", "ct", "cSL", "cosine"],
+                LI=["noise", "pert", "radcal", "stab", "clin", "ct", "cSL", "pol"],
+                LT=["noise", "pert", "radcal", "stab", "clin", "ct", "cSL", "pol"],
+                # ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+                # LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+                # LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
             )
             sensors = (
                 ["ES"]
@@ -160,8 +163,8 @@ class plottingToolsCB:
                     "calibration", 
                     "stability", 
                     "non-linearity", 
-                    "temperature", 
                     "strayLight", 
+                    "temperature", 
                     "polarisation", 
                     "cosine",
                     "rho",     
@@ -171,18 +174,18 @@ class plottingToolsCB:
                     "env perturbations", 
                     "calibration", 
                     "stability", 
-                    "non-linearity", 
-                    "temperature", 
-                    "strayLight", 
-                    "polarisation", 
+                    "non-linearity",
+                    "strayLight",
+                    "temperature",
+                    "polarisation",
                     "cosine",
                     "rho", 
                     "f0",    
                 ],
             )
             keys = dict(
-                Rrs=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"],
-                nLw=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho", "f0"],
+                Rrs=["noise", "pert", "radcal", "stab", "clin", "cSL", "ct", "pol", "cosine", "rho"],
+                nLw=["noise", "pert", "radcal", "stab", "clin", "cSL", "ct", "pol", "cosine", "rho", "f0"],
             )
             sensors = ["nLw", "Rrs"]
             if "BRDF" in BD_UNCS["Rrs"]:
@@ -206,14 +209,14 @@ class plottingToolsCB:
             plt.ylabel("Relative Uncertainty (%)")
             plt.ylim(0, 5)
             plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
-            plt.legend()
+            plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
             plt.grid()
 
             # fp = path.join(self.plot_folder, f"spectral_CB_{sensor}_{self.station}.png")
             fp = path.join(self.plot_folder, f"{sensor}_CB_spectral_{self.station}.png")
             if not path.exists(self.plot_folder):
                 makedirs(self.plot_folder)
-            plt.savefig(fp)
+            plt.savefig(fp, bbox_inches='tight')
             plt.close(f"{sensor}_{self.station}")
 
     def plot_bar_classBased(self, BD_UNCS, BD_VALS, wavelengths, ancGrp) -> dict[str, np.array]:
@@ -223,9 +226,9 @@ class plottingToolsCB:
         #     regime = "Class"
 
         labels = dict(
-            ES=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            ES=["noise", "pert", "radcal", "stab", "clin", "cSL", "ct", "cosine"],
+            LI=["noise", "pert", "radcal", "stab", "clin", "cSL", "ct", "pol"],
+            LT=["noise", "pert", "radcal", "stab", "clin", "cSL", "ct", "pol"],
         )
 
         for s, keys in labels.items():
@@ -291,10 +294,10 @@ class plottingToolsCB:
                 plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
-                textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \
+                textstr = f"Bars represent relative uncertainty in {s} signal at {wvl_at_indx} nm. " \
                     f"Percentages displayed by each bar represent the contribution of the component to the variance of {s}, " \
                     r"where uncertainty is a positive square root of variance $u_{c}^{2} =$ " + "\u03A3" + r"$_{i=0}^{N} u_{i}^{2}$"
-                plt.gcf().text(0.02, 0.04,
+                plt.gcf().text(0.03, 0.03,
                             textstr,
                             fontsize=12,
                             color='black',
@@ -317,15 +320,11 @@ class plottingToolsCB:
     def plot_bar_class_l2(
         self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp
     ) -> Optional[bool]:
-        # if ConfigFile.settings["fL1bCal"] == 1:
-        #     regime = "Factory"
-        # else:
-        #     regime = "Class"
 
         labels = dict(
             # Lw =["noise", "pert", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
-            Rrs=["noise","pert","Cal","Stab","Lin","cT","Stray","pol","cosine","rho",],
-            nLw=["noise","pert","Cal","Stab","Lin","cT","Stray","pol","cosine","rho","f0",],
+            Rrs=["noise","pert","radcal","stab","clin","ct","cSL","pol","cosine","rho",],
+            nLw=["noise","pert","radcal","stab","clin","ct","cSL","pol","cosine","rho","f0",],
         )
         if "BRDF" in BD_UNCS["Rrs"]:
             labels["nLw"].append("BRDF")
@@ -461,7 +460,7 @@ class plottingToolsCB:
             return False
 
         if legend:
-            plt.legend()
+            plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
         if grid:
             plt.grid("both")
 
@@ -480,7 +479,7 @@ class plottingToolsCB:
             finally:
                 umask(orig_umask)
 
-        plt.savefig(fp)
+        plt.savefig(fp, bbox_inches='tight')
         plt.close()
 
 
@@ -493,19 +492,15 @@ class PlotMaths:
     def classBased(prop: MCPropagation, vals: list, uncs: list, cul: bool = False):
         """ """
         keys = dict(
-            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            ES=["noise", "radcal", "stab", "clin", "cSL", "ct", "cosine"],
+            LI=["noise", "radcal", "stab", "clin", "cSL", "ct", "pol"],
+            LT=["noise", "radcal", "stab", "clin", "cSL", "ct", "pol"],
         )
         UNCS = {"ES": {}, "LI": {}, "LT": {}}
-        VALS = {}
         p_uncs = np.zeros_like(np.asarray(uncs))
-        VALS["ES"], VALS["LI"], VALS["LT"] = prop.instruments(
-            *vals
-        )  # get values to make uncs relative
 
         # Add uncertainty elements incrementally. Indexes refer to elements listed in keys above, as they appear in vals and uncs
-        for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
+        for indx, i in enumerate([0, 6, 9, 12, 15, 18, 21]):  # len(uncs) = 21
             if indx == 0:
                 p_uncs[0:6] = uncs[0:6]
             else:
@@ -532,7 +527,7 @@ class PlotMaths:
             if not cul:
                 p_uncs = np.zeros_like(np.asarray(uncs))  # reset uncertaitnies
 
-        return UNCS, VALS
+        return UNCS
 
     @staticmethod
     def classBasedL2(
@@ -548,10 +543,12 @@ class PlotMaths:
         VALS = {}
 
         # Get RRS uncertainty contributions
-        keys_lw = ["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"]
+        keys_lw = ["noise", "radcal", "stab", "clin", "cSL", "ct", "pol", "rho"]
         VALS["Lw"] = prop.Lw(*lw_vals)
         uLw = np.zeros_like(np.asarray(lw_uncs))
-        for indx, i in enumerate([0, 3, 5, 7, 11, 9, 13, 1]):
+        # indexes for if we do light - dark in L2
+        for indx, i in enumerate([0, 5, 7, 9, 11, 13, 15, 2]):
+        # for indx, i in enumerate([0, 3, 5, 7, 9, 11, 13, 2]):
             if indx == 0:
                 uLw[0] = lw_uncs[0]
                 uLw[2] = lw_uncs[2]
@@ -573,28 +570,19 @@ class PlotMaths:
                 uLw = np.zeros_like(np.asarray(lw_uncs))  # reset uncertaitnies
 
         # Get RRS uncertainty contributions
-        keys_rrs = [
-            "noise",
-            "Cal",
-            "Stab",
-            "Lin",
-            "cT",
-            "Stray",
-            "pol",
-            "cosine",
-            "rho",
-        ]
+        keys_rrs = ["noise", "radcal", "stab", "clin", "cSL", "ct", "pol", "cosine", "rho"]
         uRrs = np.zeros_like(np.asarray(rrs_uncs))
         VALS["Rrs"] = prop.RRS(*rrs_vals)  # get values to make uncs relative
-        for indx, i in enumerate([0, 4, 7, 10, 16, 13, 19, 21, 1]):
+        # for indx, i in enumerate([0, 7, 10, 13, 16, 19, 21, 24, 2]):
+        for indx, i in enumerate([0, 7, 10, 13, 16, 19, 21, 24, 2]):
             if indx == 0:
-                uRrs[0:4] = rrs_uncs[0:4]
-                uRrs[1] = np.zeros(len(rrs_uncs[1]))
+                uRrs[0:7] = rrs_uncs[0:7]
+                uRrs[2] = np.zeros(len(rrs_uncs[2]))
             elif indx == 8:
                 uRrs[1] = rrs_uncs[1]  # add rho
             elif indx == 6:
                 uRrs[i : i + 2] = rrs_uncs[i : i + 2]
-            elif indx == 7:
+            elif indx >= 7:
                 uRrs[i] = rrs_uncs[i]
             else:
                 uRrs[i : i + 3] = rrs_uncs[i : i + 3]

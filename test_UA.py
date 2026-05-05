@@ -4,7 +4,7 @@ import numpy as np
 from Source.PIU.Uncertainty_Analysis import Propagate
 
 
-prop = Propagate(M = 100, cores=0)
+prop = Propagate(M = 1000, cores=0)
 lt_light = np.array([
     6620.65588235,  6959.4800885 ,  7372.58955882,  7766.46676471,
     8142.29233038,  8520.48823529,  8761.43539823,  9249.94441176,
@@ -184,10 +184,10 @@ class test_measurement_functions(unittest.TestCase):
             ones, ones,
         ]
         uncs_lw = [
-            ones*0.01, lt_dark*0.001,
+            lt_light*0.01, lt_dark*0.001,
             rho*0.003,
             li_light*0.01, li_dark*0.001,
-            li_cal*0.018, lt_cal*0.02,
+            li_cal*0.02, lt_cal*0.02,
             ones*0.01, ones*0.01,
             ones*0.02, ones*0.02,
             ones*0.03, ones*0.03,
@@ -207,31 +207,49 @@ class test_measurement_functions(unittest.TestCase):
             ones, ones, ones,
         ]
         uncs_rrs = [
-            ones*0.01, lt_dark*0.001,
+            lt_light*0.01, lt_dark*0.001,
             rho*0.003,
             li_light*0.01, li_dark*0.001,
             es_light*0.01, es_dark*0.001,
-            es_cal*0.018, li_cal*0.02, lt_cal*0.02,
+            es_cal*0.02, li_cal*0.02, lt_cal*0.02,
             ones*0.01, ones*0.01, ones*0.01,
             ones*0.02, ones*0.02, ones*0.02,
             ones*0.03, ones*0.03, ones*0.03,
             ones*0.01, ones*0.01, ones*0.01,
             ones*0.024, ones*0.024, ones*0.024,
         ]
+        lw = prop.Lw(*means_lw)
         lwAbsUnc = prop.Propagate_Lw_HYPER(means_lw, uncs_lw)
+        rrs = prop.RRS(*means_rrs)
         rrsAbsUnc = prop.Propagate_RRS_HYPER(means_rrs, uncs_rrs)
         
         from Source.PIU.Breakdown_CB import PlotMaths
 
+        
+        def run_rrs(prop, means_lw, means_rrs, uncs_lw, uncs_rrs):
+            BD_UNCS , _ = PlotMaths.classBasedL2(prop, means_lw, means_rrs, uncs_lw, uncs_rrs, cul=False)
+            
+            BD_UNCS['Lw'] = {k: BD_UNCS['Lw'][k] / np.abs(lw) for k in BD_UNCS['Lw']}
+            BD_UNCS['Rrs'] = {k: BD_UNCS['Rrs'][k] / np.abs(rrs) for k in BD_UNCS['Rrs']}
+            return BD_UNCS["Rrs"]["radcal"]*100
+
+
         BD_UNCS , _ = PlotMaths.classBasedL2(prop, means_lw, means_rrs, uncs_lw, uncs_rrs, cul=False)
+        # convert all to relative units
+        BD_UNCS['Lw'] = {k: BD_UNCS['Lw'][k] / np.abs(lw) for k in BD_UNCS['Lw']}
+        BD_UNCS['Rrs'] = {k: BD_UNCS['Rrs'][k] / np.abs(rrs) for k in BD_UNCS['Rrs']}
+        lwRelUnc  = lwAbsUnc / np.abs(lw)
+        rrsRelUnc = rrsAbsUnc / np.abs(rrs)
+
         validation = {}
         for k in BD_UNCS.keys():  # for ['lw' 'rrs']
             validation[k] = np.sqrt(
                 sum([v**2 for v in BD_UNCS[k].values()])  # add in quad
             )
+
         for i in range(len(es_light)):
-            self.assertAlmostEqual(validation['Lw'][i], lwAbsUnc[i], delta=1e-2)
-            self.assertAlmostEqual(validation['Rrs'][i], rrsAbsUnc[i], delta=1e-2)
+            self.assertAlmostEqual(validation['Lw'][i], lwRelUnc[i], delta=1e-2)
+            self.assertAlmostEqual(validation['Rrs'][i], rrsRelUnc[i], delta=1e-2)
 
 
 if __name__ == '__main__':

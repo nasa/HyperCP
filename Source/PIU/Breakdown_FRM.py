@@ -82,19 +82,6 @@ class plottingToolsFRM:
             palette = plt.cm.tab20(np.linspace(0, 1, 20))
             color_cycle = cycle(palette)
 
-            ## DO PLOTS ##
-            "noise", 
-            "non-linearity", 
-            "env perturbations", 
-            "strayLight", 
-            "calibration", 
-            "stability", 
-            "temperature", 
-            "polarisation", 
-            "rho", 
-            "cosine (diffuse)",
-            "cosine (direct)",
-            "f0",   
             wvls = np.array(waveSubset)
             self.plot_spectral_FRM(meas, wvls, UNC['noise'],  "noise",                   rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["noise"])
             self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["non-linearity"])
@@ -307,7 +294,7 @@ class plottingToolsFRM:
             return False
 
         if legend:
-            plt.legend()
+            plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
         if grid:
             plt.grid('both')
 

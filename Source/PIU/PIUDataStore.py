@@ -456,7 +456,7 @@ class PIUDataStore:
         ind_rad_wvl[0:self.cal_start[s]] = False
         ind_rad_wvl[self.cal_stop[s]+1:] = False
         self.ind_rad_wvl[s] = ind_rad_wvl
-        self.wvl[s] = np.array(radcal.columns['1'])
+        self.coeff[s]['radcal_wvl'] = np.array(radcal.columns['1'])
 
     def readCalFactory(self, node: HDFRoot, inpt: HDFGroup, s: str) -> None:
         # For SeaBird Factory, these are interpolated from Sirrex-7 to
@@ -481,7 +481,7 @@ class PIUDataStore:
         ind_rad_wvl[self.cal_stop[s]+1:] = False
 
         self.ind_rad_wvl[s] = ind_rad_wvl
-        self.wvl[s] = np.array(radcal.columns['wvl'])
+        self.coeff[s]['radcal_wvl'] = np.array(radcal.columns['wvl'])
 
     def read_uncertainties(self, root, inpt: HDFGroup, s: str) -> None:
         instrument = ConfigFile.settings['SensorType'].lower()
