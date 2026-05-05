@@ -163,8 +163,8 @@ class plottingToolsCB:
                     "calibration", 
                     "stability", 
                     "non-linearity", 
-                    "temperature", 
                     "strayLight", 
+                    "temperature", 
                     "polarisation", 
                     "cosine",
                     "rho",     
@@ -174,10 +174,10 @@ class plottingToolsCB:
                     "env perturbations", 
                     "calibration", 
                     "stability", 
-                    "non-linearity", 
-                    "temperature", 
-                    "strayLight", 
-                    "polarisation", 
+                    "non-linearity",
+                    "strayLight",
+                    "temperature",
+                    "polarisation",
                     "cosine",
                     "rho", 
                     "f0",    
@@ -547,8 +547,8 @@ class PlotMaths:
         VALS["Lw"] = prop.Lw(*lw_vals)
         uLw = np.zeros_like(np.asarray(lw_uncs))
         # indexes for if we do light - dark in L2
-        # for indx, i in enumerate([0, 5, 7, 9, 11, 13, 15, 2]):
-        for indx, i in enumerate([0, 3, 5, 7, 9, 11, 13, 2]):
+        for indx, i in enumerate([0, 5, 7, 9, 11, 13, 15, 2]):
+        # for indx, i in enumerate([0, 3, 5, 7, 9, 11, 13, 2]):
             if indx == 0:
                 uLw[0] = lw_uncs[0]
                 uLw[2] = lw_uncs[2]
@@ -574,15 +574,15 @@ class PlotMaths:
         uRrs = np.zeros_like(np.asarray(rrs_uncs))
         VALS["Rrs"] = prop.RRS(*rrs_vals)  # get values to make uncs relative
         # for indx, i in enumerate([0, 7, 10, 13, 16, 19, 21, 24, 2]):
-        for indx, i in enumerate([0, 4, 7, 10, 13, 16, 19, 21, 2]):
+        for indx, i in enumerate([0, 7, 10, 13, 16, 19, 21, 24, 2]):
             if indx == 0:
-                uRrs[0:4] = rrs_uncs[0:4]
-                uRrs[1] = np.zeros(len(rrs_uncs[1]))
+                uRrs[0:7] = rrs_uncs[0:7]
+                uRrs[2] = np.zeros(len(rrs_uncs[2]))
             elif indx == 8:
                 uRrs[1] = rrs_uncs[1]  # add rho
             elif indx == 6:
                 uRrs[i : i + 2] = rrs_uncs[i : i + 2]
-            elif indx == 7:
+            elif indx >= 7:
                 uRrs[i] = rrs_uncs[i]
             else:
                 uRrs[i : i + 3] = rrs_uncs[i : i + 3]

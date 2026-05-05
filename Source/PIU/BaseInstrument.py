@@ -235,7 +235,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     def ClassBasedL1A(
             self, 
             uncGrp: HDFGroup, 
-            PDS: PIUDataStore, 
+            PDS: PIUDataStore,
             stats: dict[str, np.array],
         ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
         """
@@ -343,11 +343,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))
             pert_uncs[0:6] = [
-                np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix] * es),
+                np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix] * stats['ES']['ave_Light'][PDS.l1ACommonCalPix]),
                 zeroes,
-                np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix] * li) if 'LI' in PDS.uncs else zeroes,
+                np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix] * stats['LI']['ave_Light'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
                 zeroes,
-                np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix] * lt) if 'LT' in PDS.uncs else zeroes,
+                np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix] * stats['LT']['ave_Light'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
                 zeroes
             ]
             (
@@ -395,7 +395,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                                   l2_wvl,
                                                   return_as_dict=True
             )
-
 
         out['valid_pixels']=PDS.nan_mask # <- PDS.nan_mask not implemented?
 
@@ -622,9 +621,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDSL2['EScos']
         ]
 
-        rrs_test = Prop_CB.RRS(*rrs_means)
+        # rrs_test = Prop_CB.RRS(*rrs_means)
         rrsAbsUnc = Prop_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
-
         BD_UNCS, BD_VALS = PlotMaths.classBasedL2(Prop_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, cul=False)
 
         # then propagate perturbation uncertainty
