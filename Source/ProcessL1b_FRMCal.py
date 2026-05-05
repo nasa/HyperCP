@@ -365,7 +365,10 @@ class ProcessL1b_FRMCal:
 
     @staticmethod
     def Zong_SL_correction_matrix(LSF, n_IB: int = 3):
-        LSF[LSF<=0] = 0
+        # for row in LSF:
+        #     row[row,<=0] = 0
+        LSF = [[row[i] if row[i] > 0 else 0 for i in range(len(row))] for row in LSF]
+        # LSF[LSF<=0] = 0
         SDF = np.copy(LSF)
         for i in range(len(LSF)):
         # for j in range(len(LSF)):
@@ -374,7 +377,7 @@ class ProcessL1b_FRMCal:
             j2 = i+n_IB
             if j1 <= 0:
                 j1 = 0
-            IB = LSF[i,j1:j2+1]
+            IB = LSF[i][j1:j2+1]
             IBsum = np.sum(IB)
             if np.sum(IB) == 0:
                 IBsum = 1.0

@@ -368,9 +368,10 @@ class ProcessL1aTriOS:
         data = pd.read_csv(inputfile, skiprows=flag_data+1, nrows=255, header=None, sep=r'\s+')
 
         # NAN filtering, set to zero
-        for col in data:
-            indnan = data[col].astype(str).str.contains('nan', case=False)
-            data.loc[indnan, col] = '0.0'
+        # for col in data:
+        #     indnan = data[col].astype(str).str.contains('nan', case=False)
+        #     data.loc[indnan, col] = '0.0'
+        data.fillna(0.0)
 
         return metadata,data
 

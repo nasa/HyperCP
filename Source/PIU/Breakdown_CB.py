@@ -274,7 +274,8 @@ class plottingToolsCB:
                 # --- Add percentage labels to the right of each bar ---
 
                 # Combined uncertainty
-                combined = (np.sum(v**2 for v in vals)) ** 0.5
+                # combined = (np.sum(v**2 for v in vals)) ** 0.5
+                combined = (np.sum(np.fromiter((v**2 for v in vals), dtype='float'))) ** 0.5
 
                 # relative uncertainties
                 # unc component / total signal
