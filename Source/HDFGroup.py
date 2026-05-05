@@ -115,7 +115,8 @@ class HDFGroup:
             f = f.create_group(self.id)
             # Write attributes
             for k in self.attributes:
-                f.attrs[k] = np.string_(self.attributes[k])
+                # f.attrs[k] = np.string_(self.attributes[k])
+                f.attrs[k] = np.bytes_(self.attributes[k])
             # Write datasets
             for key,ds in self.datasets.items():
                 #f.create_dataset(ds.id, data=np.asarray(ds.data))

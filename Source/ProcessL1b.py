@@ -751,6 +751,7 @@ class ProcessL1b:
         for gp in node.groups:
             if not gp.id.endswith('_L1AQC') and not gp.id.startswith('SATTHS') \
                 and not gp.id.startswith('SunTracker') \
+                and not gp.id.startswith('SOLARTRACKER') \
                 and not gp.id.startswith('GPS') \
                 and not gp.id.startswith('ANCILLARY') \
                 and not gp.id.startswith('PYROMETER') \

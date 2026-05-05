@@ -99,7 +99,8 @@ class HDFRoot:
             #print("Root:", self.id)
             # Write attributes
             for k in self.attributes:
-                f.attrs[k] = np.string_(self.attributes[k])
+                # f.attrs[k] = np.string_(self.attributes[k])
+                f.attrs[k] = np.bytes_(self.attributes[k])
                 # h5toh4 converter requires "__GLOSDS" to be appended
                 # to attribute name for it to be recognized correctly:
                 #f.attrs[k+"__GLOSDS"] = np.string_(self.attributes[k])

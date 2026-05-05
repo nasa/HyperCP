@@ -256,54 +256,54 @@ class RhoCorrections:
             raise InterpolationError(f"cannot find LUT netcdf file {db_path} at {PATH_TO_DATA}") from err
 
         try:
-            if ConfigFile.settings['SensorType'].lower() == "sorad":
-                zhang_interp = spin.interpn(
-                    points=(
-                        LUT.wind.values,
-                        LUT.aot.values,
-                        LUT.sza.values,
-                        LUT.relAz.values,
-                        LUT.sal.values,
-                        LUT.SST.values,
-                        LUT.wavelength.values
-                    ),
-                    values=LUT.Glint.values,
-                    xi=(
-                        ws,
-                        aod,
-                        sza,
-                        rel_az,
-                        sal,
-                        wt,
-                        nwb
-                    ),
-                    method="pchip", # should be cubic - temporary fix due to memory issues
+            # if ConfigFile.settings['SensorType'].lower() == "sorad":
+            zhang_interp = spin.interpn(
+                points=(
+                    LUT.wind.values,
+                    LUT.aot.values,
+                    LUT.sza.values,
+                    LUT.relAz.values,
+                    LUT.sal.values,
+                    LUT.SST.values,
+                    LUT.wavelength.values
+                ),
+                values=LUT.Glint.values,
+                xi=(
+                    ws,
+                    aod,
+                    sza,
+                    rel_az,
+                    sal,
+                    wt,
+                    nwb
+                ),
+                method="pchip", # should be cubic - temporary fix due to memory issues
                 )
-                print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
-            else:
-                zhang_interp = spin.interpn(
-                    points=(
-                        LUT.wind.values,
-                        LUT.aot.values,
-                        LUT.sza.values,
-                        LUT.relAz.values,
-                        LUT.sal.values,
-                        LUT.SST.values,
-                        LUT.wavelength.values
-                    ),
-                    values=LUT.Glint.values,
-                    xi=(
-                        ws,
-                        aod,
-                        sza,
-                        rel_az,
-                        sal,
-                        wt,
-                        nwb
-                    ),
-                    method="cubic",
-                )
-                print('Interpolating Z17 LUT using cubic method')
+            print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
+            # else:
+            #     zhang_interp = spin.interpn(
+            #         points=(
+            #             LUT.wind.values,
+            #             LUT.aot.values,
+            #             LUT.sza.values,
+            #             LUT.relAz.values,
+            #             LUT.sal.values,
+            #             LUT.SST.values,
+            #             LUT.wavelength.values
+            #         ),
+            #         values=LUT.Glint.values,
+            #         xi=(
+            #             ws,
+            #             aod,
+            #             sza,
+            #             rel_az,
+            #             sal,
+            #             wt,
+            #             nwb
+            #         ),
+            #         method="cubic",
+            #     )
+            #     print('Interpolating Z17 LUT using cubic method')
 
             logging.writeLogFileAndPrint(f'Zhang17 LUT Elapsed Time: {time.time() - tic:.1f} s')
 

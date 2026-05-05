@@ -4,28 +4,28 @@ channels:
   - defaults
   - ocdb
 dependencies:
-  - python=3.11
-  - pyqt=5.15
-  - requests=2.28
-  - tqdm=4.65
-  - numpy=1
-  - h5py=3.7
-  - pytz=2022.7
+  - python
+  - pyqt
+  - requests
+  - tqdm
+  - numpy
+  - h5py
+  - pytz
   - matplotlib
-  - scipy=1.10
-  - pandas=1.5
-  - pysolar=0.10
+  - scipy
+  - pandas
+  - pysolar
   - xarray
-  - cdsapi>=0.7.2
-  - netcdf4=1.6
+  - cdsapi
+  - netcdf4
   - j6s
-  - pytables=3.7
-  - pyspectral=0.12.5
+  - pytables
+  - pyspectral
   - pyqtgraph
   - ocdb-client
   - pip
   - pip:
-    - comet_maths<=1.0.3
+    - comet_maths
     - punpy
     - fpdf2
     - lmfit
