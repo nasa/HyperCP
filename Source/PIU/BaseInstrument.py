@@ -476,9 +476,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # May need to truncate to Z17 rho wavebands, depending on how comprehensive the calibration was spectrally
             # L2 data are already at common, interpolated bands, so use Es keys
             fullL2bands = np.array(list(xSlice['es'].keys()),dtype=float)
-            es = es[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
-            li = li[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
-            lt = lt[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            # es = es[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            # li = li[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            # lt = lt[int(np.where(fullL2bands==min(l2Wavelength))[0]):int(np.where(fullL2bands==max(l2Wavelength))[0])+1]
+            es = es[np.where(fullL2bands==min(l2Wavelength))[0][0]:np.where(fullL2bands==max(l2Wavelength))[0][0]+1]
+            li = li[np.where(fullL2bands==min(l2Wavelength))[0][0]:np.where(fullL2bands==max(l2Wavelength))[0][0]+1]
+            lt = lt[np.where(fullL2bands==min(l2Wavelength))[0][0]:np.where(fullL2bands==max(l2Wavelength))[0][0]+1]
 
         ones = np.ones_like(es)
 

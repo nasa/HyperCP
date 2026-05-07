@@ -48,7 +48,8 @@ class plottingToolsCB:
             MainConfig.settings["outDir"], "Plots", "L2_Uncertainty_Breakdown"
         )
 
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        # palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        palette = plt.get_cmap('tab20')(np.linspace(0, 1, 20))
         color_cycle = cycle(palette)
         self.LABEL_COLORS = {
             k: v for k,v in zip(self._ALL_LABLES, color_cycle)
