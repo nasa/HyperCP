@@ -1393,17 +1393,27 @@ class ProcessL2:
                     x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
                     x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
+                    rho_val = rho_scalar if rho_vec is None else rho_vec
                     x_unc, l2_bd = sensor.ClassBasedL2(
                         PDS, 
                         stats, 
-                        rho_scalar if rho_vec is None else rho_vec, 
+                        rho_val, 
                         rho_unc, 
                         F0_hyper, 
                         F0_unc, 
                         wavelengths.tolist(), 
                         x_slice
                     )
-                    x_breakdown_unc.update(l2_bd)
+                    lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
+                    rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
+                    nlw = rrs * np.array(list(F0_hyper.values()))
+
+                    # update breeakdown with L2 unc components
+                    x_breakdown_unc['Lw']  = {k: l2_bd['Lw'][k]  * np.abs(lw)  for k in l2_bd['Lw']}
+                    x_breakdown_unc['Rrs'] = {k: l2_bd['Rrs'][k] * np.abs(rrs) for k in l2_bd['Rrs']}
+                    x_breakdown_unc['nLw'] = {k: l2_bd['nLw'][k] * np.abs(nlw) for k in l2_bd['nLw']}
+
+                    # x_breakdown_unc.update(l2_bd)
 
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
