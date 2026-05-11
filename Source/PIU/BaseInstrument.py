@@ -534,8 +534,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             statsL2['LTave_Light'], statsL2['LTave_Dark'],
             rho,
             statsL2['LIave_Light'], statsL2['LIave_Dark'],
-            # lt, rho, li,
-            # ones, ones,
             PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones,
             ones, ones,
@@ -545,9 +543,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         lw_uncertainties = [
-            # np.abs(statsL2['LTSignal_noise'] * lt),
-            # rhoUNC,
-            # np.abs(statsL2['LISignal_noise'] * li),
             np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
             rhoUNC,
             np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
@@ -565,25 +560,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDSL2['LIpol']
         ]
         lwAbsUnc = Prop_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
-        lwl1b =  lt - rho * li
-        lwmf = Prop_CB.Lw(*lw_means)
-
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.plot(l2Wavelength, lwl1b, label='Lw L1B')
-        # plt.plot(l2Wavelength, lwmf, label='Lw MF')
-        # plt.xlabel('Wavelength')
-        # plt.ylabel('Lw (radiance units)')
-        # plt.legend()
-        # plt.show()
 
         rrs_means = [
             statsL2['LTave_Light'], statsL2['LTave_Dark'], 
             rho,
             statsL2['LIave_Light'], statsL2['LIave_Dark'],
             statsL2['ESave_Light'], statsL2['ESave_Dark'],
-            # lt, rho, li, es,
-            # ones, ones, ones,
             PDSL2['ESCcal'], PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones, ones,
             ones, ones, ones,
@@ -593,10 +575,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         rrs_uncertainties = [
-            # np.abs(statsL2['LTSignal_noise'] * lt),
-            # rhoUNC,
-            # np.abs(statsL2['LISignal_noise'] * li),
-            # np.abs(statsL2['ESSignal_noise'] * es),
             np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
             rhoUNC,
             np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),

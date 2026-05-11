@@ -4,7 +4,9 @@ import numpy as np
 from Source.PIU.Uncertainty_Analysis import Propagate
 
 
-prop = Propagate(M = 100, cores=0)
+prop = Propagate(M = 100, cores=0)  
+
+# chosen values 16:32 from PySAS sample data - first ensemble, first scan after glitter removal
 lt_light = np.array([
     6620.65588235,  6959.4800885 ,  7372.58955882,  7766.46676471,
     8142.29233038,  8520.48823529,  8761.43539823,  9249.94441176,
