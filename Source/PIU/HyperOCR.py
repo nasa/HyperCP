@@ -17,6 +17,7 @@ import comet_maths as cm
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 
 # PIU files
+from Source.ConfigFile import ConfigFile
 from Source.PIU.BaseInstrument import BaseInstrument
 from Source.PIU.PIUDataStore import PIUDataStore as pds
 from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
@@ -68,8 +69,12 @@ class HyperOCR(BaseInstrument):
             wvl = str(float(k))
     
             # apply normailsation here as we have value per scan
-            Ldata = np.array(lightData[k]) * (self.cal_int[s]/self.int_time[s])
-            Ddata = np.array(darkData[k]) * (self.cal_int[s]/self.int_time[s])
+            if ConfigFile.settings['fL1bCal'] == 3:
+                Ldata = np.array(lightData[k])
+                Ddata = np.array(darkData[k])
+            else:  # if not sensor based then we apply the normalisation here
+                Ldata = np.array(lightData[k]) * (self.cal_int[s]/self.int_time[s])
+                Ddata = np.array(darkData[k]) * (self.cal_int[s]/self.int_time[s])
 
             # apply normalisation to the standard deviations used in uncertainty calculations
             if N > 25:  # normal case
@@ -130,7 +135,7 @@ class HyperOCR(BaseInstrument):
 
             # set up uncertainty propagation
             mDraws = 100  # number of monte carlo draws
-            prop = punpy.MCPropagation(mDraws, parallel_cores=1)
+            prop = punpy.MCPropagation(mDraws, parallel_cores=1)  # TODO make parallel cores 0
 
             LPU = SolveLPU(prop)
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
@@ -209,9 +214,11 @@ class HyperOCR(BaseInstrument):
             BD_UNCS['radcal'][ind_nocal] = 0  # set radcal uncertainty to 0 where calibration is not applied
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
-            data = np.mean(DATA['light'], axis=0)
+            # data = np.mean(DATA['light'], axis=0)
+            data = stats[s_type]['ave_Light']
             data[ind_nocal is True] = 0  # 0 out data outside of cal so it doesn't affect statistics
-            dark = np.mean(DATA['dark'], axis=0)
+            # dark = np.mean(DATA['dark'], axis=0)
+            dark = stats[s_type]['ave_Dark']
             dark[ind_nocal is True] = 0
 
             # signal uncertainties

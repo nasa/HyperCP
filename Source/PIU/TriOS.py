@@ -9,6 +9,7 @@ import punpy
 import comet_maths as cm
 
 # Source files
+from Source.ConfigFile import ConfigFile
 from Source.HDFGroup import HDFGroup
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.PIU.Breakdown_FRM import SolveLPU
@@ -79,8 +80,12 @@ class TriOS(BaseInstrument):
             offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset[n]
 
             # Normalization for integration time
-            normalised_mesure[n, :] = offset_corrected_mesure[n, :]*int_time_t0/int_time[n]
-            Light[n, :] = back_corrected_mesure[n, :]*int_time_t0/int_time[n]
+            if ConfigFile.settings['fL1bCal'] == 3:
+                Light[n, :] = back_corrected_mesure[n, :]
+                normalised_mesure[n, :] = offset_corrected_mesure[n, :]
+            else:  # only apply normalisation to stats if in class based or factory regime
+                Light[n, :] = back_corrected_mesure[n, :]*int_time_t0/int_time[n]
+                normalised_mesure[n, :] = offset_corrected_mesure[n, :]*int_time_t0/int_time[n]
 
             # Sensitivity calibration
             # calibrated_mesure[n, :] = normalized_mesure/raw_cal  # uncommented /raw_cal L1985-6
@@ -90,20 +95,25 @@ class TriOS(BaseInstrument):
         if nmes > 25:
             light_std = np.std(Light, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
-            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2)
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(Light, axis=0) / np.sqrt(nmes))**2)
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
-        dark_avg = ones * np.mean(offset)
+        dark_avg = ones * np.mean(Light[:, DarkPixelStart:DarkPixelStop])  # np.mean takes avg over 2 dims if axis not specified
+        Dark = np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1)
         if nmes > 25:
-            dark_std = ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0) / pow(nmes, 0.5))
-        else:  # already checked for light data so we know nmes > 3
-            dark_std = np.sqrt(((nmes-1)/(nmes-3))*
-            (ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/np.sqrt(nmes)**2)))
+            dark_std = ones * (np.std(Dark, axis=0) / pow(nmes, 0.5))
+        elif nmes > 3:  # already checked for light data so we know nmes > 3
+            # something is wrong with this equation
+            sc = (nmes-1)/(nmes-3)
+            dark_std = ones * np.sqrt(sc * (np.std(Dark)/pow(nmes, 0.5))**2)
+            # dark_std2 = np.sqrt(((nmes-1)/(nmes-3)) * (ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/pow(nmes, 0.5)**2)))
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
-
+        else:
+            return False
+        
         # both are relative to the normalised dark corrected signal
         signal_noise = {}
         for i, wvl in enumerate(raw_wvl):
@@ -207,11 +217,13 @@ class TriOS(BaseInstrument):
             BD_CORR['updated_gain'] = np.mean(sample_updated_radcal_gain, axis=0)
 
             # dark correction
-            std_light = stats[s_type]['std_Light'] # / 65535.0 # standard deviations are taken from generateSensorStats
+            # since we now normalise in lightDarkStats this is comparing normalised uncertainties to un-normalised signal ballooning the uncertainties
+            # we need to separate lightdarkstats between SB and CB not just reverse the normalisation before making the light/dark samples - Ashley
+            std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
 
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
-            sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")  # mean of std_dark?
+            sample_offset    = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
             BD_UNCS['noise'] = prop.process_samples(None, sample_dark_corr)
 
