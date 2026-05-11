@@ -166,7 +166,7 @@ class ProcessL1b:
             if np.any(prior2acq):
                 # Selection of the closest char data file PRE-EXISTING to the measuring date
                 # chosen_file_idx = np.argmax(available_files_calTime_seconds[prior2acq])
-                chosen_file_idx = int(np.where(prior2acq)[0])
+                chosen_file_idx = int(np.where(prior2acq)[0][0])
                 # chosen_file = available_files[prior2acq][chosen_file_idx]
                 chosen_file = available_files[chosen_file_idx]
             else:

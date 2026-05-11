@@ -415,7 +415,7 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         cyi = np.empty([len(v) if hasattr(v, '__iter__') else 1 for v in xi])
         for cy, s, e in zip(ys, indices[:-1], indices[1:]):
             cx = [v[s:e] if i == chunked_axis else v for i, v in enumerate(x)]
-            cxi = np.array(np.meshgrid(*[v[s:e] if i == chunked_axis else v for i, v in enumerate(xi)], copy=False)).T
+            cxi = np.asarray(np.meshgrid(*[v[s:e] if i == chunked_axis else v for i, v in enumerate(xi)])).T
             try:
                 cyi[:, :, s:e, :] = interpn(cx, cy, cxi.reshape(-1, ndim)).reshape(cxi.shape[:-1]).T
             except ValueError as err:
@@ -424,7 +424,7 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         return cyi
     else:
         # One shot
-        vxi = np.array(np.meshgrid(*xi, copy=False)).T
+        vxi = np.asarray(np.meshgrid(*xi)).T
         return interpn(x, y, vxi.reshape(-1, ndim)).reshape(vxi.shape[:-1]).T
 
 
@@ -501,7 +501,7 @@ def get_sky_sun_rho(env, sensor, round4cache=False, DB=None):
 
     # Sun radiance
     logger.debug('Interpolating sunrad')
-    xi = np.array(np.meshgrid(env['zen_sun'], env['od'], sensor['wv'], copy=False)).T.reshape(-1, 3)
+    xi = np.asarray(np.meshgrid(env['zen_sun'], env['od'], sensor['wv'])).T.reshape(-1, 3)
     sunrad = interpn((db['zen_sun'], db['od'], db['wv']), sunrad0, xi.reshape(-1, 3)).reshape(xi.shape[:-1]).T.squeeze()
 
     sun_vec = gen_vec_polar(np.deg2rad(env['zen_sun']))
@@ -512,22 +512,22 @@ def get_sky_sun_rho(env, sensor, round4cache=False, DB=None):
     # Radiance Inc
     logger.debug('Interpolating radiance')
     x = (sdb['wind'], sdb['od'][:, 9], sdb['zen_sun'], sdb['wv'], sdb['zen_view'], sdb['azm_view'])
-    xi = np.array(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
-                              sensor['wv'], 180 - sensor['ang'][0], 180 - sensor['ang'][1], copy=False)).T
+    xi = np.asarray(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
+                              sensor['wv'], 180 - sensor['ang'][0], 180 - sensor['ang'][1])).T
     rad_inc_sca = interpn(x, rad_boa_sca, xi.reshape(-1, 6)).reshape(xi.shape[:-1]).T.squeeze()
-    xi = np.array(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
-                              sensor['wv'], sensor['ang'][0], 180 - sensor['ang'][1]), copy=False).T
+    xi = np.asarray(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
+                              sensor['wv'], sensor['ang'][0], 180 - sensor['ang'][1])).T
     rad_mea_sca = interpn(x, rad_boa_sca, xi.reshape(-1, 6)).reshape(xi.shape[:-1]).T.squeeze()
     rho_sca = rad_mea_sca / rad_inc_sca
 
     # Radiance Inc
     logger.debug('Interpolating radiance again')
     x = (vdb['wind'], vdb['od'][:, 9], vdb['zen_sun'], vdb['wv'], vdb['zen_view'], vdb['azm_view'])
-    xi = np.array(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
-                              sensor['wv'], 180 - sensor['ang'][0], 180 - sensor['ang'][1], copy=False)).T
+    xi = np.asarray(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
+                              sensor['wv'], 180 - sensor['ang'][0], 180 - sensor['ang'][1])).T
     rad_inc_vec = interpn(x, rad_boa_vec, xi.reshape(-1, 6)).reshape(xi.shape[:-1]).T.squeeze()
-    xi = np.array(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
-                              sensor['wv'], sensor['ang'][0], 180 - sensor['ang'][1], copy=False)).T
+    xi = np.asarray(np.meshgrid(env['wind'], env['od'], env['zen_sun'],
+                              sensor['wv'], sensor['ang'][0], 180 - sensor['ang'][1])).T
     rad_mea_vec = interpn(x, rad_boa_vec, xi.reshape(-1, 6)).reshape(xi.shape[:-1]).T.squeeze()
     rho_vec = rad_mea_vec / rad_inc_vec
 

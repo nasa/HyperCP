@@ -48,7 +48,8 @@ class plottingToolsCB:
             MainConfig.settings["outDir"], "Plots", "L2_Uncertainty_Breakdown"
         )
 
-        palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        # palette = plt.cm.tab20(np.linspace(0, 1, 20))
+        palette = plt.get_cmap('tab20')(np.linspace(0, 1, 20))
         color_cycle = cycle(palette)
         self.LABEL_COLORS = {
             k: v for k,v in zip(self._ALL_LABLES, color_cycle)
@@ -276,7 +277,8 @@ class plottingToolsCB:
                 # --- Add percentage labels to the right of each bar ---
 
                 # Combined uncertainty
-                combined = (np.sum(v**2 for v in vals)) ** 0.5
+                # combined = (np.sum(v**2 for v in vals)) ** 0.5
+                combined = (np.sum(np.fromiter((v**2 for v in vals), dtype='float'))) ** 0.5
 
                 # relative uncertainties
                 # unc component / total signal
