@@ -375,7 +375,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # L2 Sensor Viewing Angle
         l2SVALabel = QtWidgets.QLabel("Sensor Viewing Angle", self)
-        self.SVARadioButtonDefault = QtWidgets.QRadioButton("40°")
+        self.SVARadioButtonDefault = QtWidgets.QRadioButton("40° (Default)")
         self.SVARadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["fL2SVA"]==40:
             self.SVARadioButtonDefault.setChecked(True)

@@ -315,7 +315,7 @@ class plottingToolsFRM:
             finally:
                 umask(orig_umask)
 
-        plt.savefig(fp)
+        plt.savefig(fp, bbox_inches='tight')
         plt.close()
 
     @staticmethod
