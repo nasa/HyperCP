@@ -64,7 +64,7 @@ class ProcessL1b_Interp:
 
         newAncGroup = node.addGroup("ANCILLARY_TEMP")
         newAncGroup.attributes = ancGroup.attributes.copy()
-        
+
         # GPS can come from GPS group (preferred) or Ancillary group (can it ever come from SunTracker?)
         latData,lonData,courseData,sogData = None,None,None,None
         if gpsGroup is not None:
@@ -589,7 +589,8 @@ class ProcessL1b_Interp:
                 for ds in newGroup.datasets:
                     if ds == 'DATETIME':
                         del gp.datasets[ds]
-                    elif ds.startswith('BACK_') or ds.startswith('CAL_'):
+                    elif (ConfigFile.settings['SensorType'].lower() in ['trios','sorad','trios es only']) and\
+                        (ds.startswith('BACK_') or ds.startswith('CAL_')):
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
@@ -792,6 +793,12 @@ class ProcessL1b_Interp:
         if ConfigFile.settings["SensorType"].lower() == "trios es only":
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
+
+            # Unclear why es only did not get datasets folded into columns yet
+            for dsName in esL1AQCGroup.datasets:
+                if dsName != 'DATETIME':
+                    esL1AQCGroup.datasets[dsName].datasetToColumns()
+
         else:
             ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
             ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
@@ -803,6 +810,11 @@ class ProcessL1b_Interp:
                 liL1AQCGroup.copy(liL1AQC)
                 ltL1AQCGroup = root.addGroup('LT_L1AQC')
                 ltL1AQCGroup.copy(ltL1AQC)
+                # if ConfigFile.settings['SensorType'].lower() == "dalec":
+                #     esL1AQCGroup.datasets['CAL_COEF'].datasetToColumns()
+                #     liL1AQCGroup.datasets['CAL_COEF'].datasetToColumns()
+                #     ltL1AQCGroup.datasets['CAL_COEF'].datasetToColumns()
+
             else:
                 esDarkGroup = root.addGroup('ES_DARK_L1AQC')
                 esDarkGroup.copy(esL1AQCDark)
@@ -896,26 +908,6 @@ class ProcessL1b_Interp:
             # carried forward. For radiometers, this means that ancillary metadata such as
             # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
 
-            # Required:
-            if not ProcessL1b_Interp.interpTimestamps(esData, interpData, "ES", fileName, verbose):
-                return None
-            if not ProcessL1b_Interp.interpTimestamps(liData, interpData, "LI", fileName, verbose):
-                return None
-            if not ProcessL1b_Interp.interpTimestamps(ltData, interpData, "LT", fileName, verbose):
-                return None
-
-        #     # Optional
-        #     if "HUMIDITY" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(humidityData, interpData, "HUMIDITY", fileName)
-        #     if "PITCH" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(pitchData, interpData, "PITCH", fileName)
-        #     if "ROLL" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(rollData, interpData, "ROLL", fileName)
-        #     if "HEADING" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(headingData, interpData, "HEADING", fileName)
-        #     if "TILT" in robotGroup.datasets:
-        #         ProcessL1b_Interp.interpTimestamps(tiltData, interpData, "TILT", fileName)
-
         if pyrGroup is not None:
             # Optional:
             ProcessL1b_Interp.interpTimestamps(pyrData, interpData, "T", fileName, verbose)
@@ -954,13 +946,15 @@ class ProcessL1b_Interp:
         for gp in root.groups:
             for dsName in gp.datasets:
                 if dsName == 'DATETIME':
+                    # Must be the last dataset or crashes on mutation of ODict
                     del gp.datasets[dsName]
-                elif dsName.startswith('BACK_') or dsName.startswith('CAL_'):
+                elif (ConfigFile.settings['SensorType'].lower() in ['trios','sorad','trios es only']) and\
+                        (dsName.startswith('BACK_') or dsName.startswith('CAL_')):
                     continue
                 else:
                     ds = gp.datasets[dsName]
                     if "Datetime" in ds.columns:
                         ds.columns.pop("Datetime")
-                    ds.columnsToDataset() # redundant for radiometry, but harmless
+                ds.columnsToDataset() # redundant for radiometry, but harmless
 
         return root

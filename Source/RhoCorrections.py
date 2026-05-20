@@ -25,7 +25,7 @@ class RhoCorrections:
 
         logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
 
-        theta = 40 # viewing nadir angle of Lt or VZA of Li (TODO: tweak to allow theta=30)
+        theta = 40 # viewing nadir angle of Lt or VZA of Li
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
         phiViews = np.arange(0, 180+1, 15)  # 0:15:180 # phiView is relAz
@@ -123,7 +123,7 @@ class RhoCorrections:
                 # (estimated from Ruddick 2006).
                 rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
         else:
-            # TODO: Check this placeholder for forced 10% Rho uncertainty:
+            # Forced 10% Rho uncertainty:
             rhoDelta = []
             for w in waveBands:
                 rhoDelta.append(0.10 * rhoScalar)
@@ -278,9 +278,33 @@ class RhoCorrections:
                         nwb
                     ),
                     method="pchip", # should be cubic - temporary fix due to memory issues
-                )
+                    )
                 print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
             else:
+                # zhang_interp = spin.interpn(
+                #     points=(
+                #         LUT.wind.values,
+                #         LUT.aot.values,
+                #         LUT.sza.values.astype(np.float64),
+                #         LUT.relAz.values.astype(np.float64),
+                #         LUT.sal.values.astype(np.float64),
+                #         LUT.SST.values.astype(np.float64),
+                #         LUT.wavelength.values
+                #     ),
+                #     values=LUT.Glint.values,
+                #     xi=(
+                #         ws,
+                #         aod,
+                #         sza,
+                #         rel_az,
+                #         sal,
+                #         wt,
+                #         nwb
+                #     ),
+                #     method="cubic",
+                #     bounds_error=False,
+                #     fill_value=None,
+                # )
                 zhang_interp = spin.interpn(
                     points=(
                         LUT.wind.values,
@@ -301,9 +325,10 @@ class RhoCorrections:
                         wt,
                         nwb
                     ),
-                    method="cubic",
+                    method="pchip",
                 )
-                print('Interpolating Z17 LUT using cubic method')
+                # print('Interpolating Z17 LUT using cubic method')
+                print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
 
             logging.writeLogFileAndPrint(f'Zhang17 LUT Elapsed Time: {time.time() - tic:.1f} s')
 

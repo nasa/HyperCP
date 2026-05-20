@@ -69,7 +69,12 @@ class ProcessL1bTriOS:
         # alpha reworked so any divide by 0s can be handled with a condition statement
         f1 = np.array(S1 - S12)
         f2 = np.array(np.power(S12, 2))
-        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))]).tolist()  # stops -inf if S12**2 = 0
+        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))])  # stops -inf if S12**2 = 0
+        
+        # read in class based alpha and replace FRM char where non-linearity correction is too noisy to apply to signal
+        cb_alpha = np.asarray(node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_RAMSES_RADIANCE_LINDATA_CAL").columns['2'][1:])
+        no_lin_corr_indx = cb_alpha == -2e-7
+        alpha[no_lin_corr_indx] = cb_alpha[no_lin_corr_indx]
 
         # Updated calibration gain
         if sensortype == "ES":
@@ -239,10 +244,15 @@ class ProcessL1bTriOS:
             # exit()
             return False
 
-        # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
+        ## sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0        
         ind_zero = raw_cal==0
         ind_nan  = np.isnan(raw_cal)
         ind_nocal = ind_nan | ind_zero
+        
+        # This was an unreliable tracer of calibrated bands if factory and FidRadDB were at odds. Confirm in with CAL_START CAL_STOP
+        ind_nocal[0:int(grp.attributes['CAL_START'])] = True
+        ind_nocal[int(grp.attributes['CAL_STOP'])+1:] = True
+        
         raw_cal[ind_nocal] = 1          # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
@@ -389,8 +399,8 @@ class ProcessL1bTriOS:
 
         # Identify calibrated bands
         for gp in node.groups:
-            if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
-                calData = gp.datasets[f'CAL_{gp.id}'].data
+            if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT' or '_L1AQC' in gp.id:
+                calData = gp.datasets[f'CAL_{gp.id[0:2]}'].data
                 whrTrue = np.where(calData)[0]
                 gp.attributes['CAL_START'] = str(min(whrTrue))
                 gp.attributes['CAL_STOP'] = str(max(whrTrue))
@@ -405,6 +415,25 @@ class ProcessL1bTriOS:
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
+
+            # Check that the FidRadDB file agrees on which bands are calibrated.
+            # TODO: Port this test over to SeaBird, DALEC, etc.
+            uncGroup = node.getGroup('RAW_UNCERTAINTIES')
+            if ConfigFile.settings['SensorType'].lower() == "trios es only":
+                sensors = ["ES"]
+            else:
+                sensors = ["ES", "LI", "LT"]
+            for sensor in sensors:
+                ds = uncGroup.datasets[f'{sensor}_RADCAL_CAL']
+                whrTrue = np.where(ds.columns['2'] > 0)[0]
+                if node.getGroup(sensor).attributes['CAL_START'] != str(min(whrTrue)) or \
+                        node.getGroup(sensor).attributes['CAL_STOP'] != str(max(whrTrue)):
+
+                    node.getGroup(sensor).attributes['CAL_START'] = str(min(whrTrue))
+                    node.getGroup(sensor).attributes['CAL_STOP'] = str(max(whrTrue))
+                    node.getGroup(f'{sensor}_L1AQC').attributes['CAL_START'] = str(min(whrTrue))
+                    node.getGroup(f'{sensor}_L1AQC').attributes['CAL_STOP'] = str(max(whrTrue))
+
             if node is None:
                 logging.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None

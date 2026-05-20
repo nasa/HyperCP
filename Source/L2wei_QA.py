@@ -1,6 +1,6 @@
 
 import numpy as np
-import numpy.matlib as npm
+# import numpy.matlib as npm
 
 def QAscores_5Bands(test_Rrs, test_lambda):
     '''Quality assurance system for Rrs spectra (Version 2.0)
@@ -151,21 +151,29 @@ def QAscores_5Bands(test_Rrs, test_lambda):
 
     refRow, _ = ref_nRrs.shape
 
-    # ''' Match the ref_lambda and test_lambda '''
-    idx0 = np.empty(len(ref_lambda), dtype='int') # for ref_lambda
-    idx1 = np.empty(len(test_lambda), dtype='int') # for test_lambda
+    # Match the ref_lambda and test_lambda
+    # idx0 = np.empty(len(ref_lambda), dtype='int') # for ref_lambda
+    # idx1 = np.empty(len(test_lambda), dtype='int') # for test_lambda
+    # for i, value in enumerate(test_lambda):
+    #     pos, = np.where(ref_lambda == value) #find(ref_lambda==value);
+    #     if pos.size > 0:
+    #         idx0[i] = pos.astype(int)
+    #         idx1[i] = i
+    #     else:
+    #         idx1[i] = np.nan
+    idx0_list = []
+    idx1_list = []
 
     for i, value in enumerate(test_lambda):
-        pos, = np.where(ref_lambda == value) #find(ref_lambda==value);
-        # if isempty(pos)
-        if pos.size > 0:
-            idx0[i] = pos.astype(int)
-            idx1[i] = i
-        else:
-            idx1[i] = np.nan
+        pos = np.where(ref_lambda == value)[0]
 
-    pos = np.isnan(idx1)
-    np.delete(idx1, pos)
+        if pos.size > 0:
+            idx0_list.append(pos[0])
+            idx1_list.append(i)
+
+    # Convert the populated lists to NumPy integer arrays
+    idx0 = np.array(idx0_list, dtype=int)
+    idx1 = np.array(idx1_list, dtype=int)
 
     test_lambda = test_lambda[idx1]
     test_Rrs = test_Rrs[:,idx1]
@@ -187,8 +195,8 @@ def QAscores_5Bands(test_Rrs, test_lambda):
 
     # inCol*inRow
     nRrs_denom = np.sqrt(np.nansum(test_Rrs**2, 0))
-    # nRrs_denom = repmat(nRrs_denom,[inCol,1]);
-    nRrs_denom = npm.repmat(nRrs_denom, inCol, 1)
+    nRrs_denom = np.tile(nRrs_denom,(inCol,1))
+    # nRrs_denom = npm.repmat(nRrs_denom, inCol, 1)
     nRrs = test_Rrs/nRrs_denom
 
     # SAM input, inCol*inRow*refRow

@@ -12,7 +12,8 @@ def L2avw(wavelength, Rrs):
     lims = [400, 701]
 
     if np.shape(wavelength) != np.shape(Rrs):
-        wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
+        # wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
+        wavelength = np.transpose(np.tile(wavelength,(np.shape(Rrs)[1],1)))
 
     wave_1nm = np.arange(lims[0], lims[1])
     Rrs_1nm = np.empty([wave_1nm.shape[0],Rrs.shape[1]])
@@ -24,7 +25,7 @@ def L2avw(wavelength, Rrs):
     wave_1nm = np.rot90(wave_1nm,3)
     avw =  np.sum( Rrs_1nm / np.sum( Rrs_1nm/wave_1nm, axis = 0) , axis = 0).tolist()
     lambda_max = wave_1nm[np.argmax(Rrs_1nm, axis=0), 0].tolist()
-    brightness =  np.trapz(Rrs_1nm, wave_1nm, axis=0).tolist()
+    brightness =  np.trapezoid(Rrs_1nm, wave_1nm, axis=0).tolist()
 
     return avw, lambda_max, brightness
 

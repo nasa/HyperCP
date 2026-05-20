@@ -33,6 +33,13 @@ class CalibrationFile:
         #print("CalibrationFile.read()")
         (_, filename) = os.path.split(f.name)
         self.name = filename
+        if filename.lower().startswith('hed') or filename.lower().startswith('hld'):
+            self.frameType = 'ShutterDark'
+        elif filename.lower().startswith('hse') or filename.lower().startswith('hsl'):
+            self.frameType = 'ShutterLight'
+        else:
+            self.frameType = 'Not Required'
+
         while 1:
             line = f.readline()
             line = line.decode("utf-8")

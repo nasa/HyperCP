@@ -50,7 +50,7 @@ class Controller:
             root = HDFRoot.readHDF5(outFilePath)
             fail = 0
             root.attributes['Fail'] = 0
-        except Exception:
+        except FileNotFoundError:
             fail =1
             # Processing failed at this level. Open the level below it
             #   This won't work for ProcessL1A looking back for RAW...
@@ -59,7 +59,7 @@ class Controller:
                     # Processing successful at the next lower level
                     # Shift from the output to the input directory
                     root = HDFRoot.readHDF5(inFilePath)
-                except Exception:
+                except FileNotFoundError:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
                     if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                         logging.errorWindow("File Error", msg)
@@ -139,7 +139,8 @@ class Controller:
                 pdf.print_chapter('L2', 'Process L1BQC to L2', inLog, inPlotPath, fileName, root)
 
         try:
-            pdf.output(name=outPDF, dest='F')
+            # pdf.output(name=outPDF, dest='F')
+            pdf.output(name=outPDF)
         except Exception:
             msg = '**********************Unable to write the PDF file. It may be open in another program.**********************'
             logging.errorWindow("File Error", msg)
@@ -350,7 +351,7 @@ class Controller:
         print("ProcessL1aqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Unable to open file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
@@ -391,20 +392,18 @@ class Controller:
         logging.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
             return None
 
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
-            # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
-            # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bDALEC.processL1b(root, outFilePath)
         else:
-            root = ProcessL1b.processL1b(root, outFilePath)
+            root = ProcessL1b.processL1bSeaBird(root, outFilePath)
 
         # Write output file
         if root is not None:
@@ -436,7 +435,7 @@ class Controller:
         print("ProcessL1bqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except Exception:
+        except FileNotFoundError:
             msg = "Unable to open file. May be open in another application."
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
@@ -479,12 +478,14 @@ class Controller:
 
             # Create Plots
             # Radiometry
+            if (
+                ConfigFile.settings['bL2UncertaintyBreakdownPlot']  # unc selected in config
+                and plotDeltaBool  # we can do plots
+                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
+            ):
+                plotting.plotUncertainties(node, filename)
+            
             if ConfigFile.settings['bL2PlotRrs']==1:
-                if (
-                    ConfigFile.settings['bL2UncertaintyBreakdownPlot'] 
-                    and ConfigFile.settings["SensorType"].lower() != "trios es only"
-                ):
-                    plotting.plotUncertainties(node, filename)
                 if ConfigFile.settings["SensorType"].lower() == "trios es only":
                     logging.writeLogFileAndPrint("Rrs plot is not available for TriOS ES-Only. Skipping plot.")
                 else:
@@ -683,7 +684,7 @@ class Controller:
                 root = HDFRoot.readHDF5(inFilePath)
                 root.attributes['L1BQC_FILE_NAME'] = inFileName
                 del root.attributes["In_Filepath"]
-            except Exception:
+            except FileNotFoundError:
                 msg = "Unable to open file. May be open in another application."
                 logging.errorWindow("File Error", msg)
                 logging.writeLogFileAndPrint(msg)
@@ -696,18 +697,24 @@ class Controller:
                 return False
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
-            # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
+            # called here
+            if ConfigFile.settings["fL1bCal"] == 3:
+                currentRegime = 'Sensor-specific'
+            elif ConfigFile.settings["fL1bCal"] == 2:
+                currentRegime = 'Class-specific'
+            else:
+                currentRegime = 'Factory'
             if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
+                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
                 return False
 
 

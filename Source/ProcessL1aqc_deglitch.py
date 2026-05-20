@@ -54,8 +54,9 @@ class ProcessL1aqc_deglitch:
 
                 badIndex2 = filtering.darkConvolution(timeSeries2,avg2,stdData,sigma)
 
-                for i in range(len(badIndex)):
-                    if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
+                # for i in range(len(badIndex)):
+                for i, bI in enumerate(badIndex):
+                    if badIndex1[i] is True or badIndex2[i] is True or bI is True:
                         badIndex[i] = True
                     else:
                         badIndex[i] = False # this is redundant
@@ -113,8 +114,9 @@ class ProcessL1aqc_deglitch:
 
                 badIndex2 = filtering.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
 
-                for i in range(len(badIndex)):
-                    if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
+                # for i in range(len(badIndex)):
+                for i, bI in enumerate(badIndex):
+                    if badIndex1[i] is True or badIndex2[i] is True or bI is True:
                         badIndex[i] = True
                     else:
                         badIndex[i] = False # this is redundant
@@ -219,7 +221,8 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
+                        if ConfigFile.settings["bL1aqcPlotDeglitch"]:
+                            plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
                 index +=1
 
         if lightData is None:
@@ -275,7 +278,8 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
+                        if ConfigFile.settings["bL1aqcPlotDeglitch"]:
+                            plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
                 index +=1
 
         # Delete the glitchy rows of the datasets

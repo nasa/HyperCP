@@ -34,7 +34,7 @@ def solve_2nd_order_poly(A, B, C):
 def drop_unused_coords(var):
     for coord in var.coords:
         if coord not in var.dims:
-            var = var.drop(coord)
+            var = var.drop_vars(coord)
     return var
 
 def squeeze_trivial_dims(ds,dimOrderAccordingTo='Rw'):

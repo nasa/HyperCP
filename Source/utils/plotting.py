@@ -1,6 +1,8 @@
 '''################################# PLOTTING ORIENTED #################################'''
 
 import os
+import logging
+from datetime import datetime as dt
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -15,6 +17,8 @@ from Source.MainConfig import MainConfig
 import Source.utils.comparing as comparing
 import Source.utils.averaging as averaging
 from Source.utils.dating import dateTagToDateTime, timeTag2ToDateTime
+from Source.PIU.Breakdown_FRM import plottingToolsFRM
+from Source.PIU.Breakdown_CB import plottingToolsCB
 
 register_matplotlib_converters()
 
@@ -509,7 +513,6 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
             filterFactor=3, rType='None'):
 
     if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
-        import logging
         logging.getLogger('matplotlib.font_manager').disabled = True
 
         outDir = MainConfig.settings["outDir"]
@@ -582,7 +585,8 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
     badIndx = np.unique(badIndx)
     badTimes = np.unique(badTimes)
     # Duplicates each element to a list of two elements in a list:
-    badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+    # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+    badTimes = np.rot90(np.tile(badTimes,(2,1)), 3)
 
     if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
         # t0 = time.time()
@@ -625,7 +629,6 @@ def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 7
 def plotUncertainties(root, filename):
     # read in required values and uncs from root
     # import relevant methods
-    from datetime import datetime as dt
     irrGrp = root.getGroup("IRRADIANCE")
     radGrp = root.getGroup("RADIANCE")
     refGrp = root.getGroup("REFLECTANCE")
@@ -648,11 +651,11 @@ def plotUncertainties(root, filename):
                 casts.append(
                     timeTag2ToDateTime(dateTagToDateTime(date), tt2)
                 )
-                
+
         else:
             cols.pop("Datetag")
             cols.pop("Timetag2")
-    
+
     # TODO: add BRDF UNC to BD_UNCS if available
     bd_grp = root.getGroup("BREAKDOWN")
     waveSubset = np.array(list(es_cols.keys()), float)
@@ -687,9 +690,9 @@ def plotUncertainties(root, filename):
             BD_UNCS[s][src] = np.array([ds.columns[wvl][t] for wvl in waveKeys])  # use list comp to turn Odict to np.array per cast
 
         if ConfigFile.settings['fL1bCal'] <= 2:
-            from Source.PIU.Breakdown_CB import plottingToolsCB
             PT = plottingToolsCB(sza, station)
 
+            print(f'Plotting Class-specific uncertainty breakdown for {station}')
             PT.PlotL1B(
                 root,
                 waveSubset,
@@ -700,18 +703,18 @@ def plotUncertainties(root, filename):
             )
             PT.PlotL2(
                 root,
-                waveSubset, 
-                BD_UNCS, 
-                nlw, 
+                waveSubset,
+                BD_UNCS,
+                nlw,
                 rrs
             )
 
         elif ConfigFile.settings['fL1bCal'] == 3:
-            from Source.PIU.Breakdown_FRM import plottingToolsFRM
             PT = plottingToolsFRM(sza, station)
 
+            print(f'Plotting Sensor-specific uncertainty breakdown for {station}')
             PT.plotL1B(
-                waveSubset, 
+                waveSubset,
                 BD_UNCS,
                 dict(
                     ES=es,
@@ -720,12 +723,12 @@ def plotUncertainties(root, filename):
                 ),
             )
             PT.plotL2(
-                waveSubset, 
-                BD_UNCS, 
+                waveSubset,
+                BD_UNCS,
                 dict(
                     Rrs=rrs,
                     nLw=nlw,
-                ) 
+                )
             )
 
 def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):

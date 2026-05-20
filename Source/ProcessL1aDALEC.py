@@ -109,7 +109,7 @@ class ProcessL1aDALEC:
         gp.attributes['CalFileName']=calid
         gp.attributes['FrameType']="Not Required"
         gp.addDataset("DATETAG")
-        gp.addDataset("TIMETAG2")            
+        gp.addDataset("TIMETAG2")
         gp.datasets["DATETAG"].data = np.array(DateTag, dtype=[('NONE', '<f8')])
         gp.datasets["TIMETAG2"].data = np.array(TimeTag2, dtype=[('NONE', '<f8')])
         gp.addDataset("LAT")
@@ -124,7 +124,7 @@ class ProcessL1aDALEC:
         gp.attributes['CalFileName']=calid
         gp.attributes['FrameType']="Not Required"
         gp.addDataset("DATETAG")
-        gp.addDataset("TIMETAG2")            
+        gp.addDataset("TIMETAG2")
         gp.datasets["DATETAG"].data = np.array(DateTag, dtype=[('NONE', '<f8')])
         gp.datasets["TIMETAG2"].data = np.array(TimeTag2, dtype=[('NONE', '<f8')])
         gp.addDataset("HUMIDITY")
@@ -209,7 +209,7 @@ class ProcessL1aDALEC:
 
 
             gp.addDataset("DATETAG")
-            gp.addDataset("TIMETAG2")            
+            gp.addDataset("TIMETAG2")   
             gp.datasets["DATETAG"].data = np.array(DateTag, dtype=[('NONE', '<f8')])
             gp.datasets["TIMETAG2"].data = np.array(TimeTag2, dtype=[('NONE', '<f8')])
             gp.addDataset("DARK_CNT")
@@ -345,6 +345,8 @@ class ProcessL1aDALEC:
         if flag_data == 0:
             print('PROBLEM WITH Data FILE: data not found')
             exit()
+
+        # Skip the headers and field definitions, then skips non-data lines below
         skiprows=list(range(flag_data+1))
 
         index = index + 1
@@ -354,9 +356,11 @@ class ProcessL1aDALEC:
 
         for line in file_dat:
             if not ProcessL1aDALEC.validate_line(line.split(",")):
+                # DALEC does not start new files when logging is stopped/started, or when settings are changed
+                # Non-data lines are often settings updates.
                 skiprows.append(index)
-                print("Bad data line: "+str(index))
-                print(line)
+                # print("Bad data line: "+str(index))
+                print(f'Status update: {line}')
             index = index + 1
 
         file_dat.close()

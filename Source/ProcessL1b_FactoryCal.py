@@ -1,5 +1,4 @@
 ''' Process L1AQC to L1B for SeaBird in Factory or Class regime '''
-import re
 import datetime as dt
 import numpy as np
 import pandas as pd
@@ -64,27 +63,34 @@ class ProcessL1b_FactoryCal:
 
     @staticmethod
     def processOPTIC3(ds, cd, immersed, inttime):
-        # a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        cint = float(cd.coefficients[3])
-        #print(inttime.data.shape[0], self.data.shape[0])
+        ''' This should only return calibrated bands in the datasets. '''
         k = cd.id
-        #print(cint, aint)
-        #print(cd.id)
-        for x in range(ds.data.shape[0]):
-            aint = inttime.data[cd.type][x]
-            # ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
-            ##############################################################
-            #   When applying calibration to the dark current corrected
-            #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
-            #   presuming light and dark factory cals are equivalent (which they are).
-            ##############################################################            
-            if cd.dummy == 0:
+        if cd.dummy == 0:
+            # Reported datasets with no calibrations are left unchanged
+            a1 = float(cd.coefficients[1])
+            im = float(cd.coefficients[2]) if immersed else 1.0
+            cint = float(cd.coefficients[3])
+            #print(inttime.data.shape[0], self.data.shape[0])
+
+            #print(cint, aint)
+            #print(cd.id)
+            for x in range(ds.data.shape[0]):
+                aint = inttime.data[cd.type][x]
+                # ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+                ##############################################################
+                #   When applying calibration to the dark current corrected
+                #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
+                #   presuming light and dark factory cals are equivalent (which they are).
+                ##############################################################
                 ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
-            else:
-                # NOTE: Control for buffered, uncalibrated channels
-                ds.data[k][x] = np.nan
+        else:
+            # Set uncalibrated pixels to 0
+            # for x in range(ds.data.shape[0]):
+            # ds.data[k][x] = 0
+            # Drop uncalibrated data
+            ds.datasetToColumns()
+            del ds.columns[k]
+            ds.columnsToDataset()
 
     @staticmethod
     def processOPTIC4(ds, cd, immersed):
@@ -140,7 +146,7 @@ class ProcessL1b_FactoryCal:
 
         inttime = None
         for cd in cf.data: # cd is the name of the cal file data
-            # Process slightly differently for INTTIME
+            # Process slightly differently for INTTIME and save for second loop
             if cd.type == "INTTIME":
                 #print("Process INTTIME")
                 ds = gp.getDataset("INTTIME")
@@ -159,37 +165,21 @@ class ProcessL1b_FactoryCal:
         """
         function to recover effective calibration start and stop pixel from cal files.
         """
-        cal_name_pattern = re.compile("HS.", re.IGNORECASE)  # patter for selecting shutterlight data
-        coefs = {}
         dummy = {}
-        indx = {}
         start = {}
         stop = {}
         for k, var in calibrationMap.items():
             # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
-            if re.search(cal_name_pattern, k) and k.endswith('.cal'):  # any(['HSE' in k, 'HSL' in k]):
-            # var.frameType == "shutterlight":  # ideal solution for this section, but frameType not populated in cal data
-                coefs[k] = []
+            if calibrationMap[k].frameType.lower() == "shutterlight" or calibrationMap[k].frameType.lower() == "shutterdark":
                 dummy[k] = []
-                for d in var.data:
-                    if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
-                        coefs[k].append(d.fitType)
-                        dummy[k].append(d.dummy)
-
-                indx[k] = []
-                for i, c in enumerate(coefs[k]):
-                    if c == 'OPTIC3':
-                        if dummy[k][i] == 0:
-                            indx[k].append(i)
-
-        # NOTE: Made specific to each sensor in calibrationMap
-        for k,ind in indx.items():
-            start[k] = min(ind)
-            stop[k] = max(ind)
-        # start[k] = max(ind[0] for k,ind in indx.items())  # -1 to cover the first pixel which has no coef but is valid
-        # stop[k] = min(ind[-1] for ind in indx.values())
-            if start[k] < 0: #  cannot be less than 0
-                start[k] = 0
+                for cd in var.data:
+                    if cd.type == 'ES' or cd.type == 'LI' or cd.type == 'LT':
+                        dummy[k].append(cd.dummy)
+                indexes = dummy[k]
+                start[k] = indexes.index(0)
+                reversed_index = indexes[::-1].index(0)
+                # Calculate the index in the original list
+                stop[k] = len(indexes) - 1 - reversed_index
         return start, stop
 
     @staticmethod
@@ -205,17 +195,18 @@ class ProcessL1b_FactoryCal:
         pyrUnits = None
 
         now = dt.datetime.now()
-        # get effective calibration and save to node attributes
-        start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
+        # start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
         logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
-
         logging.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
+            # if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
+            #     gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
+            #     gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
             if 'L1AQC' not in gp.id:
                 logging.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
@@ -258,8 +249,6 @@ class ProcessL1b_FactoryCal:
         #  don't have values from Tartu for full FRM. Here, use all the Es bands.
         direct_ratio = res_sixS['direct_ratio']
         diffuse_ratio = res_sixS['diffuse_ratio']
-        # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
-        # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
         model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
 
         sixS_grp = node.addGroup("SIXS_MODEL")
@@ -270,7 +259,9 @@ class ProcessL1b_FactoryCal:
 
         ds = sixS_grp.addDataset("sixS_irradiance")
 
-        irr_grp = node.getGroup('ES_LIGHT_L1AQC')
+        # BUG: For non-L2, 6S should be at the L1B, uninterpolated bands, not all reported bands
+        # irr_grp = node.getGroup('ES_LIGHT_L1AQC')
+        irr_grp = node.getGroup('ES')
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
         rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
@@ -311,8 +302,11 @@ class ProcessL1b_FactoryCal:
 
                 for cd in cf.data:
                     # Process only OPTIC3
-                    if cd.fitType == "OPTIC3":
+                    if cd.fitType == "OPTIC3" and not cd.dummy:
                         coeff.append(float(cd.coefficients[1]))
+                        wvl.append(float(cd.id))
+                    elif cd.fitType == "OPTIC3" and cd.dummy:
+                        coeff.append(0)
                         wvl.append(float(cd.id))
         return np.array(wvl), np.array(coeff)
 

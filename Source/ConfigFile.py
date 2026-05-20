@@ -57,6 +57,7 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
 
         ConfigFile.settings["bL1aqcDeglitch"] = 1
+        ConfigFile.settings["bL1aqcPlotDeglitch"] = 0
         # These can be experimentally derived with the AnomalyDetection tool
         ConfigFile.settings["fL1aqcESWindowDark"] = 11
         ConfigFile.settings["fL1aqcESWindowLight"] = 5

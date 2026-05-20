@@ -278,7 +278,7 @@ def read_char(filepath: str, gp) -> None:
                                 solar_zen_range = None
                             else:
                                 logging.writeLogFileAndPrint(f"Dataset could not be constructed. Utilties.read_char(file-path, HDFGroup) in {gp.attributes['CHARACTERISATION_FILE_TYPE']}")
-                                raise KeyError
+                                raise KeyError  # TODO: write custom exception for this case, with description of how to fix (SZA_range or AZ ang not in char file)
                         # populate ds attributes with header data
                         for k, v in attrs.items():
                             ds.attributes[k] = v  # set the attributes

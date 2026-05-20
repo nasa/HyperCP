@@ -231,7 +231,7 @@ class readSB:
                 if 'comma' in line.lower():
                     delim = ',+'
                 elif 'space' in line.lower():
-                    delim = '\s+'
+                    delim = r'\s+'
                 elif 'tab'   in line.lower():
                     delim = '\t+'
                 else:
@@ -350,8 +350,8 @@ class readSB:
         """
         dt = []
 
-        dateRegex = "(\d{4})(\d{2})(\d{2})"
-        timeRegex = "(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?"
+        dateRegex = r"(\d{4})(\d{2})(\d{2})"
+        timeRegex = r"(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?"
 
         if self.length == 0:
             raise ValueError('readSB.data structure is missing for file: {:}'.format(self.filename))
@@ -448,7 +448,7 @@ class readSB:
         elif 'date_time' in self.data:
 
             for i in self.data('date_time'):
-                da = re.search("{(\d{4})-(\d{2})-(\d{2})}\s(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?", i)
+                da = re.search(r"{(\d{4})-(\d{2})-(\d{2})}\s(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?", i)
                 try:
                     if (da.group(7) is not None):
                         millisecond = da.group(7).replace(".","")
@@ -578,7 +578,7 @@ class readSB:
              'minute' in self.data:
 
             for d,h,mn in zip([str(de) for de in self.data['date']], self.data['hour'], self.data['minute']):
-                da = re.search("(\d{4})(\d{2})(\d{2})", d)
+                da = re.search(r"(\d{4})(\d{2})(\d{2})", d)
                 try:
                     dt.append(datetime(int(da.group(1)), \
                                        int(da.group(2)), \
@@ -629,7 +629,7 @@ class readSB:
              'hour'   in self.data:
 
             for d,h in zip([str(de) for de in self.data['date']], self.data['hour']):
-                da = re.search("(\d{4})(\d{2})(\d{2})", d)
+                da = re.search(r"(\d{4})(\d{2})(\d{2})", d)
                 try:
                     dt.append(datetime(int(da.group(1)), \
                                        int(da.group(2)), \
@@ -707,8 +707,8 @@ class readSB:
 
         elif 'start_date' in self.headers and 'start_time' in self.headers:
 
-            da = re.search("(\d{4})(\d{2})(\d{2})", self.headers['start_date'])
-            ti = re.search("(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?\[(gmt|GMT)\]", self.headers['start_time'])
+            da = re.search(r"(\d{4})(\d{2})(\d{2})", self.headers['start_date'])
+            ti = re.search(r"(\d{1,2})\:(\d{2})\:(\d{2})(\.\d{1,6})?\[(gmt|GMT)\]", self.headers['start_time'])
             for i in range(self.length):
                 try:
                     if (ti.group(4) is not None):

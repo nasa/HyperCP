@@ -353,7 +353,10 @@ class ProcessL1b_FRMCal:
 
     @staticmethod
     def Zong_SL_correction_matrix(LSF, n_IB: int = 3):
-        LSF[LSF<=0] = 0
+        # for row in LSF:
+        #     row[row,<=0] = 0
+        LSF = [[row[i] if row[i] > 0 else 0 for i in range(len(row))] for row in LSF]
+        # LSF[LSF<=0] = 0
         SDF = np.copy(LSF)
         for i in range(len(LSF)):
         # for j in range(len(LSF)):
@@ -362,7 +365,7 @@ class ProcessL1b_FRMCal:
             j2 = i+n_IB
             if j1 <= 0:
                 j1 = 0
-            IB = LSF[i,j1:j2+1]
+            IB = LSF[i][j1:j2+1]
             IBsum = np.sum(IB)
             if np.sum(IB) == 0:
                 IBsum = 1.0
@@ -491,7 +494,14 @@ class ProcessL1b_FRMCal:
 
             # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)  # Slapper
             S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
-            alpha = ((S1-S12)/(S12**2)).tolist()
+            alpha = (S1-S12)/(S12**2)
+
+            # read in class based alpha and replace FRM char where non-linearity correction is too noisy to apply to signal
+            cb_alpha = np.asarray(node.getGroup("RAW_UNCERTAINTIES").getDataset("CLASS_HYPEROCR_RADIANCE_LINDATA_CAL").columns['2'][1:])
+            no_lin_corr_indx = cb_alpha == 0
+            # no_lin_corr_indx = [int(i) for i, x in enumerate(cb_alpha) if x == 0]
+            alpha[no_lin_corr_indx] = cb_alpha[no_lin_corr_indx]
+
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant')  # PAD with zero if not 255 long
             # TODO: update with Tartu interpolation
 

@@ -73,12 +73,13 @@ class unc_management:
                         unc_group.removeDataset(ds.id)  # remove dataset
 
         return True
-    
+
     @staticmethod
     def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensor_list = []
+        # Only add sensors we have in case of ES-ONLY
         for grp in node.groups:
             for s in ['ES', 'LI', 'LT']:
                 if s in grp.id and not s in sensor_list:
@@ -106,11 +107,13 @@ class unc_management:
                 ds.columns['wvl'] = x_new
                 ds.columnsToDataset()
 
+            # Currently STRAYDATA is cropped at L2
             for dtype in [
                 "_TEMPDATA_CAL", "_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL", "_RADCAL_LAMP", "_RADCAL_PANEL",
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90",
                 "_STRAYDATA_CAL"
                 ]:
+                # "_STRAYDATA_CAL"
                 try:
                     ds = grp.getDataset(f"{sensor}{dtype}")
                     ds.datasetToColumns()
@@ -218,7 +221,7 @@ class unc_management:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorId = unc_management.get_sensor_dict(node)
-        grp.datasets
+        # grp.datasets
         sensor_list = []
         for grp in node.groups:
             for s in ['ES', 'LI', 'LT']:
@@ -228,27 +231,23 @@ class unc_management:
         for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
-            # indx = ds.attributes["INDEX"]
-            # pixel = np.array(ds.columns['0'[1:])
-            bands = np.array(ds.columns['1'][1:])
-            coeff = np.array(ds.columns['2'][1:])
-            valid = bands>0
-            # x_new2 = bands[valid]
+            bands = np.array(ds.columns['1'][1:]) # Drop 0th pixel from _RADCAL file of 256 from local variable
+            # coeff = np.array(ds.columns['2'][1:])
+            valid = bands>0 # Flag unreported bands from _RADCAL file of 255
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
-                # inv_dict = {v: k for k, v in sensorId.items()}
-                # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)
 
+            # Wavelengths of reported sensor data:
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
             # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
-                print("ERROR: band wavelength not found in calibration file")
+                print("ERROR: Reported bands in _RADCAL file do not match sensor data bands")
                 print(len(bands[valid]))
                 print(len(x_new))
                 return False
@@ -277,9 +276,9 @@ class unc_management:
                         ds.columns[str(indx)] = y_new
                     ds.columns['0'] = x_new
                     ds.columnsToDataset()
-        
+
         return True
-    
+
     @staticmethod
     def get_sensor_dict(node):
         sensorID = {}
