@@ -4,7 +4,9 @@ import numpy as np
 from Source.PIU.Uncertainty_Analysis import Propagate
 
 
-prop = Propagate(M = 100, cores=0)
+prop = Propagate(M = 100, cores=0)  
+
+# chosen values 16:32 from PySAS sample data - first ensemble, first scan after glitter removal
 lt_light = np.array([
     6620.65588235,  6959.4800885 ,  7372.58955882,  7766.46676471,
     8142.29233038,  8520.48823529,  8761.43539823,  9249.94441176,
@@ -135,9 +137,9 @@ class test_measurement_functions(unittest.TestCase):
         rrs = prop.RRS(*means)
         rrs_test = np.array(
             [
-                0.00825507, 0.00848941, 0.00865582, 0.00882336, 
-                0.00906053, 0.00927642, 0.00939125, 0.00954061, 
-                0.0096705, 0.0098884, 0.0101438 , 0.01046205, 
+                0.00825507, 0.00848941, 0.00865582, 0.00882336,
+                0.00906053, 0.00927642, 0.00939125, 0.00954061,
+                0.0096705, 0.0098884, 0.0101438 , 0.01046205,
                 0.01073842, 0.01106971, 0.01132391, 0.01163325,
             ]
         )
@@ -218,20 +220,26 @@ class test_measurement_functions(unittest.TestCase):
             ones*0.01, ones*0.01, ones*0.01,
             ones*0.024, ones*0.024, ones*0.024,
         ]
+
+        lw  = prop.Lw(*means_lw)
+        rrs = prop.RRS(*means_rrs)
+
         lwAbsUnc = prop.Propagate_Lw_HYPER(means_lw, uncs_lw)
         rrsAbsUnc = prop.Propagate_RRS_HYPER(means_rrs, uncs_rrs)
+        lwRelUnc = (lwAbsUnc / lw)*100
+        rrsRelUnc = (rrsAbsUnc / rrs)*100
         
         from Source.PIU.Breakdown_CB import PlotMaths
 
         BD_UNCS , _ = PlotMaths.classBasedL2(prop, means_lw, means_rrs, uncs_lw, uncs_rrs, cul=False)
         validation = {}
-        for k in BD_UNCS.keys():  # for ['lw' 'rrs']
+        for k, signal in zip(BD_UNCS.keys(), [lw, rrs]):  # for ['lw' 'rrs']
             validation[k] = np.sqrt(
                 sum([v**2 for v in BD_UNCS[k].values()])  # add in quad
-            )
+            ) / signal
         for i in range(len(es_light)):
-            self.assertAlmostEqual(validation['Lw'][i], lwAbsUnc[i], delta=1e-2)
-            self.assertAlmostEqual(validation['Rrs'][i], rrsAbsUnc[i], delta=1e-2)
+            self.assertAlmostEqual(validation['Lw'][i], lwRelUnc[i], delta=1e-2)
+            self.assertAlmostEqual(validation['Rrs'][i], rrsRelUnc[i], delta=1e-2)
 
 
 if __name__ == '__main__':

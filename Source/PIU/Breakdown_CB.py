@@ -192,6 +192,8 @@ class plottingToolsCB:
             if "BRDF" in BD_UNCS["Rrs"]:
                 keys["nLw"].append("BRDF")
                 keys["Rrs"].append("BRDF")
+                labels["nLw"].append("brdf correction")
+                labels["Rrs"].append("brdf correction")
 
         # now we plot the result
         # colors_sorted = [self.LABEL_COLORS[k] for k in keys[sensor]]
@@ -206,10 +208,10 @@ class plottingToolsCB:
                 )
 
             plt.xlabel("Wavelengths")
-            plt.xlim(350, 900)
+            plt.xlim(400, 800)
             plt.ylabel("Relative Uncertainty (%)")
             plt.ylim(0, 5)
-            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
+            plt.title(f"Class-Based - Breakdown of {sensor} Uncertainties, solar zenith = {round(self.sza, 2)}")
             plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
             plt.grid()
 
@@ -259,7 +261,7 @@ class plottingToolsCB:
                 # Safety: handle empty or all-zero data
                 if not vals or sum(vals) == 0:
                     ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
-                    plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
+                    plt.title(f"{s} Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
                     plt.axis('off')
                     plt.tight_layout()
                     return
@@ -293,7 +295,7 @@ class plottingToolsCB:
                 ax.invert_yaxis()  # largest at top
                 ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
-                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
+                plt.title(f"{s} Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=40)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
                 textstr = f"Bars represent relative uncertainty in {s} signal at {wvl_at_indx} nm. " \
@@ -358,7 +360,7 @@ class plottingToolsCB:
                 # Safety: handle empty or all-zero data
                 if not vals or sum(vals) == 0:
                     ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
-                    plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
+                    plt.title(f"{s} Class-Based Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
                     plt.axis('off')
                     plt.tight_layout()
                     return False
@@ -387,7 +389,7 @@ class plottingToolsCB:
                 ax.invert_yaxis()  # largest at top
                 ax.set_xlabel(f"Uncertainty relative to {s} (%)")
                 ax.set_ylabel("Contributors")
-                plt.title(f"{s} FRM Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+                plt.title(f"{s} Class-Based Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
                 # --- Add text explaining calculation of combined uncertainty --- #
                 textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \
@@ -442,7 +444,7 @@ class plottingToolsCB:
             except AttributeError:
                 plt.figure(s)
 
-        plt.title(f"FRM Breakdown: {s}")
+        plt.title(f"Breakdown: {s}")
         plt.plot(x, u_rel, label=f"{name}")
 
         plt.xlabel("Wavelength (nm)")
@@ -457,6 +459,8 @@ class plottingToolsCB:
         legend: bool = True,
         grid: bool = True,
     ):
+        """
+        """
         if (not s) and (not fp):
             print("either sensor or filepath must be defined to save a figure")
             return False
@@ -552,10 +556,10 @@ class PlotMaths:
         for indx, i in enumerate([0, 5, 7, 9, 11, 13, 15, 2]):
         # for indx, i in enumerate([0, 3, 5, 7, 9, 11, 13, 2]):
             if indx == 0:
-                uLw[0] = lw_uncs[0]
-                uLw[2] = lw_uncs[2]
+                uLw[0:1] = lw_uncs[0:1]
+                uLw[3:4] = lw_uncs[3:4]
             elif indx == 7:
-                uLw[1] = lw_uncs[1]  # add rho
+                uLw[2] = lw_uncs[2]  # add rho
             else:
                 uLw[i : i + 2] = lw_uncs[i : i + 2]
 
@@ -580,8 +584,6 @@ class PlotMaths:
             if indx == 0:
                 uRrs[0:7] = rrs_uncs[0:7]
                 uRrs[2] = np.zeros(len(rrs_uncs[2]))
-            elif indx == 8:
-                uRrs[1] = rrs_uncs[1]  # add rho
             elif indx == 6:
                 uRrs[i : i + 2] = rrs_uncs[i : i + 2]
             elif indx >= 7:
