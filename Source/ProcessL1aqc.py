@@ -178,8 +178,11 @@ class ProcessL1aqc:
         elif ConfigFile.settings['SensorType'].lower() == 'sorad':
             if  gp.id.startswith("sorad"):
                 gp.id = "SunTracker_sorad"
+            else:
+                gp.id = cf.sensorType
         else:
             gp.id = cf.sensorType
+     
 
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
@@ -236,6 +239,7 @@ class ProcessL1aqc:
         ancDateTag = None
         for gp in node.groups:
             if gp.id.startswith('GP'):
+                print(gp.id)
                 ancLat = []
                 ancLon = []
                 gpsDateTime = gp.getDataset('DATETIME').data
@@ -265,7 +269,7 @@ class ProcessL1aqc:
                         gpsStatus = gp.getDataset('STATUS')
                     else:
                         gpsStatus = gp.getDataset('FIXQUAL')
-
+                       
             elif gp.id.startswith('ES'):
                 esDateTime = gp.getDataset('DATETIME').data
             elif gp.id.startswith('SATTHS'):
@@ -286,13 +290,13 @@ class ProcessL1aqc:
 
                 ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
-
-                latAnc = []
-                lonAnc = []
+                
+                ancLat = []
+                ancLon = []
                 for i in range(gpsLat.data.shape[0]):
-                    latAnc.append(gpsLat[i])
-                    lonAnc.append(gpsLon[i])
-
+                    ancLat.append(gpsLat[i])
+                    ancLon.append(gpsLon[i])
+         
         if esDateTime is None:
             logging.writeLogFileAndPrint('Required Es data is missing. Check L1A and raw input files. Abort.')
             return None
