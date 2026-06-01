@@ -1254,8 +1254,8 @@ class ProcessL2:
                 percent_lt += 10
             else:
                 break
-
-        if not all([v for v in stats.values()]):  # check if stats was generated and return False if not
+        if ((isinstance(stats, bool) and stats == False) or
+                not all([v for v in stats.values()])):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
 
@@ -1426,7 +1426,10 @@ class ProcessL2:
             x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
-            x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
+            if es_only:
+                x_unc = sensor.FRML2ESOnly(wavelengths, x_slice)
+            else:
+                x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
         
         # log uncertainty processing time
         logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s")
