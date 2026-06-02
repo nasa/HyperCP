@@ -1221,6 +1221,7 @@ class ProcessL2:
         # first_band = next(iter(ltSlice))
         # first_band_values = ltSlice[first_band]
         # y=list(range(0,len(first_band_values)))
+  
         stats = False
         while percent_lt <= 50:
             percentLtattr[attrEnsInd-1] = str(int(ConfigFile.settings['fL2PercentLt']))
@@ -1246,8 +1247,14 @@ class ProcessL2:
                     return False
             else:
                 nSpecEnd = nSpecStart
+<<<<<<< HEAD
 
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
+=======
+         
+            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
+            
+>>>>>>> 37d6eaf (temporary fix (for sparse so-rad data) allowing nmeas to be 3 in the ensemble stats)
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
@@ -1258,7 +1265,7 @@ class ProcessL2:
         if not all([v for v in stats.values()]):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
-
+       
         node.attributes['PERCENT_LT'] = ",".join(percentLtattr)
         # %% Append Ensemble Size
         for grp in node.groups:
@@ -1913,7 +1920,8 @@ class ProcessL2:
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
                     node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
-                    # node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] # commented out for sorad - I don't think this was given in our cal file
+                    if ConfigFile.settings['SensorType'].lower() != 'sorad':
+                        node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] # for now, skip sorad (not present)
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

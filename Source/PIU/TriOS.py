@@ -93,9 +93,18 @@ class TriOS(BaseInstrument):
         # get light and dark data before correction
         light_avg = np.mean(Light, axis=0)  # [ind_nocal == False]
         if nmes > 25:
+<<<<<<< HEAD
             light_std = np.std(Light, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         elif nmes > 3:
             light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(Light, axis=0) / np.sqrt(nmes))**2)
+=======
+            light_std = np.std(back_corrected_mesure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+        # TJ - as temporay fix (for sparse sorad data) nmes > 2 is enforced rather than nmes > 3
+        # To avoid division by zero, the (nmes-3) factors in the denominators of L93 and L103 are set to (nmes-2)
+        # As a proper fix, I think we probably need a check on data sparsity higher up the processing chain
+        elif nmes > 2: 
+            light_std = np.sqrt(((nmes-1)/(nmes-2))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2) # TJ: (nmes-2) as temporay fix
+>>>>>>> 37d6eaf (temporary fix (for sparse so-rad data) allowing nmeas to be 3 in the ensemble stats)
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
@@ -104,12 +113,19 @@ class TriOS(BaseInstrument):
         dark_avg = ones * np.mean(Light[:, DarkPixelStart:DarkPixelStop])  # np.mean takes avg over 2 dims if axis not specified
         Dark = np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1)
         if nmes > 25:
+<<<<<<< HEAD
             dark_std = ones * (np.std(Dark, axis=0) / pow(nmes, 0.5))
         elif nmes > 3:  # already checked for light data so we know nmes > 3
             # something is wrong with this equation
             sc = (nmes-1)/(nmes-3)
             dark_std = ones * np.sqrt(sc * (np.std(Dark)/pow(nmes, 0.5))**2)
             # dark_std2 = np.sqrt(((nmes-1)/(nmes-3)) * (ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/pow(nmes, 0.5)**2)))
+=======
+            dark_std = ones * (np.std(np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0) / pow(nmes, 0.5))
+        else:  # already checked for light data so we know nmes > 3
+            dark_std = np.sqrt(((nmes-1)/(nmes-2))* # TJ: (nmes-2) as temporay fix
+            (ones * (np.std(np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/np.sqrt(nmes)**2)))
+>>>>>>> 37d6eaf (temporary fix (for sparse so-rad data) allowing nmeas to be 3 in the ensemble stats)
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
         else:
             return False
