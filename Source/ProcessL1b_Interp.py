@@ -126,8 +126,6 @@ class ProcessL1b_Interp:
                 if ds == 'TILT':
                     tiltData = ProcessL1b_Interp.convertDataset(STGroup, "TILT", newAncGroup, "TILT")
                     newAncGroup.attributes['Tilt_Source'] = STGroup.attributes['CalFileName']
-                        tiltData = ProcessL1b_Interp.convertDataset(STGroup, "TILT", newAncGroup, "TILT")
-                        newAncGroup.attributes['Tilt_Source'] = STGroup.attributes['CalFileName']
                
         if THSGroup is not None and tiltData is None:
             for ds in THSGroup.datasets:
