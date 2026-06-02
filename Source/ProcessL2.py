@@ -1247,14 +1247,10 @@ class ProcessL2:
                     return False
             else:
                 nSpecEnd = nSpecStart
-<<<<<<< HEAD
+
 
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
-=======
-         
-            stats = sensor.generateSensorStats(sensor_type, raw_groups, raw_slices, wavelengths, y)
-            
->>>>>>> 37d6eaf (temporary fix (for sparse so-rad data) allowing nmeas to be 3 in the ensemble stats)
+
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
