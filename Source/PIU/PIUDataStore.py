@@ -498,7 +498,7 @@ class PIUDataStore:
         deltaTCal = meas_date - cal_date
 
         stab_unc = np.abs(int(deltaTCal.days)/365) * 0.01  # ignoring leap years
-        self.uncs[s]['stab'] = np.ones(255, dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
+        self.uncs[s]['stab'] = np.ones(len(self.uncs[s]['cal']), dtype=float) * stab_unc # 1% stability uncertainty estimate for class based
 
         self.uncs[s]['stray'] = self.extract_unc_from_grp(inpt, f"{s}_STRAYDATA_CAL", '1')
         # BUG: clipSL breaks the PIU mean_val to uncertainty comparison in MCP
@@ -520,7 +520,7 @@ class PIUDataStore:
             if sza_range is not None:
                 if float(lw) > self.sza:
                     self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR", col_name='1')
-                elif float(lw) < self.sza < float(up):
+                elif float(lw) <= self.sza < float(up):
                     self.uncs[s]['cos'] = self.extract_unc_from_grp(grp=inpt, name=f"{s}_ANGDATA_COSERROR_RANGE{sza_range}", col_name='1')
                 else:
                     writeLogFileAndPrint(f"SZA out of bound with sza={self.sza} with range={lw}:{up}")

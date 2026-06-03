@@ -168,9 +168,15 @@ class ProcessL1b_FRMCal:
                     percent_direct_solar_irradiance[n,i] = float(
                         temp["percent_of_direct_solar_irradiance_at_target"]
                     )
+                    # Clamp negative values to 0 as they are unphysical
+                    if percent_direct_solar_irradiance[n,i] < 0:
+                        percent_direct_solar_irradiance[n,i] = 0
                     percent_diffuse_solar_irradiance[n,i] = float(
                         temp["percent_of_diffuse_atmospheric_irradiance_at_target"]
                     )
+                    # Clamp negative values to 0 as they are unphysical
+                    if percent_diffuse_solar_irradiance[n, i] < 0:
+                        percent_diffuse_solar_irradiance[n, i] = 0
                     direct_solar_irradiance[n,i] = float(
                         temp["direct_solar_irradiance_at_target_[W m-2 um-1]"]
                     )
