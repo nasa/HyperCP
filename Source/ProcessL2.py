@@ -1379,7 +1379,7 @@ class ProcessL2:
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL1B
                 for k, v in slice_mean.items():
                     # uncertainty as % multiplied by signal in radiometric units
-                    
+
                     x_slice[k.lower() + 'Unc'] = {
                         u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
@@ -1388,22 +1388,25 @@ class ProcessL2:
                 # convert breakdown uncertainties to absolute and run L2 unc propagation
                 x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
                 if es_only:
-                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)   
+                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                 else:
                     x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
                     x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
                     rho_val = rho_scalar if rho_vec is None else rho_vec
                     x_unc, l2_bd = sensor.ClassBasedL2(
-                        PDS, 
-                        stats, 
-                        rho_val, 
-                        rho_unc, 
-                        F0_hyper, 
-                        F0_unc, 
-                        wavelengths.tolist(), 
+                        PDS,
+                        stats,
+                        rho_val,
+                        rho_unc,
+                        F0_hyper,
+                        F0_unc,
+                        wavelengths.tolist(),
                         x_slice
                     )
+                    # Patch for rho_val as dict in PR #462
+                    if isinstance(rho_val, dict):
+                        rho_val = np.asarray(list(rho_val.values()), dtype=float)
                     lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
                     rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
                     nlw = rrs * np.array(list(F0_hyper.values()))
