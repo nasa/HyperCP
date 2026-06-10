@@ -1407,8 +1407,12 @@ class ProcessL2:
                     # Patch for rho_val as dict in PR #462
                     if isinstance(rho_val, dict):
                         rho_val = np.asarray(list(rho_val.values()), dtype=float)
-                    lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
-                    rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
+
+                    slicedes = np.array([val[0] if k in rho_vec.keys() else 0 for k, val in x_slice['es'].items()])
+                    slicedli = np.array([val[0] if k in rho_vec.keys() else 0 for k, val in x_slice['li'].items()])
+                    slicedlt = np.array([val[0] if k in rho_vec.keys() else 0 for k, val in x_slice['lt'].items()])
+                    lw = slicedli[np.where(slicedli > 0)] - rho_val * slicedlt[np.where(slicedlt > 0)]
+                    rrs = lw / slicedes[np.where(slicedes > 0)]
                     nlw = rrs * np.array(list(F0_hyper.values()))
 
                     # update breeakdown with L2 unc components
