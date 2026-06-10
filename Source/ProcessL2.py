@@ -1223,7 +1223,10 @@ class ProcessL2:
         # y=list(range(0,len(first_band_values)))
   
         stats = False
-        while percent_lt <= 50:
+        while percent_lt <= 100:
+            # Changed to 100% (no glitter filter) to allow sparser data to be processed
+            # Discussed at HCP meeting on 10/06/2026 - it is desirable that `fallback' values of percent_lt
+            # that are relaxed from the config are flagged/recorded in L2 ouput
             percentLtattr[attrEnsInd-1] = str(int(ConfigFile.settings['fL2PercentLt']))
 
             if enable_percent_lt:
