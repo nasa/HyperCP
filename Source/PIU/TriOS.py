@@ -94,11 +94,8 @@ class TriOS(BaseInstrument):
         light_avg = np.mean(Light, axis=0)  # [ind_nocal == False]
         if nmes > 25:
             light_std = np.std(Light, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
-        # TJ - as temporay fix (for sparse sorad data) nmes > 2 is enforced rather than nmes > 3
-        # To avoid division by zero, the (nmes-3) factors in the denominators of L93 and L103 are set to (nmes-2)
-        # As a proper fix, I think we probably need a check on data sparsity higher up the processing chain
-        elif nmes > 2: 
-            light_std = np.sqrt(((nmes-1)/(nmes-2))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2) # TJ: (nmes-2) as temporay fix)
+        elif nmes > 3: 
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2) #
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
@@ -108,9 +105,9 @@ class TriOS(BaseInstrument):
         Dark = np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1)
         if nmes > 25:
             dark_std = ones * (np.std(Dark, axis=0) / pow(nmes, 0.5))
-        elif nmes > 2:  # already checked for light data so we know nmes > 3 (TJ: temporarily changed to 2)
+        elif nmes > 3:  # already checked for light data so we know nmes > 3
             # something is wrong with this equation
-            sc = (nmes-1)/(nmes-2)
+            sc = (nmes-1)/(nmes-3)
             dark_std = ones * np.sqrt(sc * (np.std(Dark)/pow(nmes, 0.5))**2)
             # dark_std2 = np.sqrt(((nmes-1)/(nmes-3)) * (ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/pow(nmes, 0.5)**2)))
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
