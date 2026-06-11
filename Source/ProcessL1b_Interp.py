@@ -90,7 +90,7 @@ class ProcessL1b_Interp:
 
                 newAncGroup.attributes['GPS_Source'] = gpsGroup.attributes['CalFileName']
                 
-        elif gpsGroup is None and STGroup.id.endswith("sorad") == True: 
+        elif STGroup is not None and STGroup.id.endswith("sorad") == True: 
             # This is the case where GPS is part of a suntracker group for sorad
             ProcessL1b_Interp.convertDataset(STGroup, "LATITUDE", newAncGroup, "LATITUDE")
             ProcessL1b_Interp.convertDataset(STGroup, "LONGITUDE", newAncGroup, "LONGITUDE")
