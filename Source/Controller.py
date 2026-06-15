@@ -258,6 +258,12 @@ class Controller:
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
+            
+            elif '.tdf' in key: # accounts for pseudo so-rad tdf
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.name = key
+                    calibrationMap[key] = cf
 
         return calibrationMap
 

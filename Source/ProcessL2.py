@@ -1221,8 +1221,12 @@ class ProcessL2:
         # first_band = next(iter(ltSlice))
         # first_band_values = ltSlice[first_band]
         # y=list(range(0,len(first_band_values)))
+  
         stats = False
-        while percent_lt <= 50:
+        while percent_lt <= 100:
+            # Changed to 100% (no glitter filter) to allow sparser data to be processed
+            # Discussed at HCP meeting on 10/06/2026 - it is desirable that `fallback' values of percent_lt
+            # that are relaxed from the config are flagged/recorded in L2 ouput
             percentLtattr[attrEnsInd-1] = str(int(ConfigFile.settings['fL2PercentLt']))
 
             if enable_percent_lt:
@@ -1247,7 +1251,9 @@ class ProcessL2:
             else:
                 nSpecEnd = nSpecStart
 
+
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
+
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
@@ -1258,7 +1264,7 @@ class ProcessL2:
                 not all([v for v in stats.values()])):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
-
+       
         node.attributes['PERCENT_LT'] = ",".join(percentLtattr)
         # %% Append Ensemble Size
         for grp in node.groups:
@@ -1921,11 +1927,13 @@ class ProcessL2:
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
+                    #breakpoint()
                     newGrp.datasets[ds].datasetToColumns()
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
                     node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
-                    node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate']
+                    if ConfigFile.settings['SensorType'].lower() != 'sorad':
+                        node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] # for now, skip sorad (not present)
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

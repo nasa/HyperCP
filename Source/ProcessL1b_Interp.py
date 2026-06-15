@@ -66,6 +66,8 @@ class ProcessL1b_Interp:
         newAncGroup.attributes = ancGroup.attributes.copy()
 
         # GPS can come from GPS group (preferred) or Ancillary group (can it ever come from SunTracker?)
+        # TJ - Yes (sort of!). For so-rad we need to explitly use the coordinates in the ST group here,
+        # otherwise the so-rads internal GPS is overwritten by the ancillary
         latData,lonData,courseData,sogData = None,None,None,None
         if gpsGroup is not None:
             # Flip these data into the new Ancillary group
@@ -87,12 +89,24 @@ class ProcessL1b_Interp:
 
 
                 newAncGroup.attributes['GPS_Source'] = gpsGroup.attributes['CalFileName']
+                
+        elif STGroup is not None and STGroup.id.endswith("sorad") == True: 
+            # This is the case where GPS is part of a suntracker group for sorad
+            ProcessL1b_Interp.convertDataset(STGroup, "LATITUDE", newAncGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(STGroup, "LONGITUDE", newAncGroup, "LONGITUDE")
+            latData = newAncGroup.getDataset("LATITUDE")
+            lonData = newAncGroup.getDataset("LONGITUDE")
+            newAncGroup.attributes["SOURCE"] = 'SUNTRACKER_sorad'
+            newAncGroup.attributes["CalFileName"] = 'SUNTRACKER_sorad'
+      
         else:
             # TODO: If GPS is part of the SunTracker group, and gpsGroup was not yet established, pull Lat/Lon from Suntracker Group
-            #       Have not encountered this yet ^^
+            #       Have not encountered this yet ^^. TJ - I did this for sorad above
             latData = ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newAncGroup, "LATITUDE")
             lonData =ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newAncGroup, "LONGITUDE")
             newAncGroup.attributes['GPS_Source'] = ancGroup.id
+
+
 
         # These data parameters can come from SunTracker (preferred) or ancillary group
         relAzData,szaData,solAzData, tiltData = None,None,None,None
@@ -112,7 +126,7 @@ class ProcessL1b_Interp:
                 if ds == 'TILT':
                     tiltData = ProcessL1b_Interp.convertDataset(STGroup, "TILT", newAncGroup, "TILT")
                     newAncGroup.attributes['Tilt_Source'] = STGroup.attributes['CalFileName']
-
+               
         if THSGroup is not None and tiltData is None:
             for ds in THSGroup.datasets:
                 if ds == 'TILT':

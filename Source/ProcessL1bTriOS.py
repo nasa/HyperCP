@@ -499,21 +499,22 @@ class ProcessL1bTriOS:
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
             # get instrument serial number and sensor type
+            if instrument != 'sorad.tdf':
 
-            instrument_number = os.path.splitext(instrument)[0]
-            sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
-            enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
-            if enabled:
-                logging.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
-
-                if ConfigFile.settings["fL1bCal"] <= 2:
-                    if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
-                        logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
-                        return None
-                elif ConfigFile.settings['fL1bCal'] == 3:
-                    if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
-                        logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
-                        return None
+                instrument_number = os.path.splitext(instrument)[0]
+                sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
+                enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
+                if enabled:
+                    logging.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
+    
+                    if ConfigFile.settings["fL1bCal"] <= 2:
+                        if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
+                            logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
+                            return None
+                    elif ConfigFile.settings['fL1bCal'] == 3:
+                        if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
+                            logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
+                            return None
 
         ## Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and

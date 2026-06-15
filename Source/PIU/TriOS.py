@@ -94,8 +94,8 @@ class TriOS(BaseInstrument):
         light_avg = np.mean(Light, axis=0)  # [ind_nocal == False]
         if nmes > 25:
             light_std = np.std(Light, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
-        elif nmes > 3:
-            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(Light, axis=0) / np.sqrt(nmes))**2)
+        elif nmes > 3: 
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(back_corrected_mesure, axis=0) / np.sqrt(nmes))**2) #
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False

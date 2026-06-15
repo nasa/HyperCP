@@ -116,10 +116,10 @@ class PIUDataStore:
                 # cut all 0s and first pixel
                 self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist()))
                 self.coeff[s]['cal_int']  = cal_int_time    # Calibration integration time (1x float)
-            elif ConfigFile.settings['SensorType'].lower() in ['trios','dalec']:
+            elif ConfigFile.settings['SensorType'].lower() in ['trios','dalec', 'sorad']:
                 gp = root.getGroup(f"{s}_L1AQC")
 
-                if ConfigFile.settings['SensorType'].lower() == 'trios':
+                if ConfigFile.settings['SensorType'].lower() == 'trios' or 'sorad':
                     cal_int_time = int(gp.getDataset(f"BACK_{s}").attributes['IntegrationTime'])
                     self.coeff[s]['int_time'] = np.mean(np.asarray(gp.datasets['INTTIME'].data.tolist())) # FILE AVERAGE sample integration time (1x float)
                 elif ConfigFile.settings['SensorType'].lower() == "dalec":
