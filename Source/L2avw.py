@@ -25,7 +25,10 @@ def L2avw(wavelength, Rrs):
     wave_1nm = np.rot90(wave_1nm,3)
     avw =  np.sum( Rrs_1nm / np.sum( Rrs_1nm/wave_1nm, axis = 0) , axis = 0).tolist()
     lambda_max = wave_1nm[np.argmax(Rrs_1nm, axis=0), 0].tolist()
-    brightness =  np.trapezoid(Rrs_1nm, wave_1nm, axis=0).tolist()
-
+    try:
+        brightness =  np.trapezoid(Rrs_1nm, wave_1nm, axis=0).tolist()
+    except:
+        brightness =  np.trapz(Rrs_1nm, wave_1nm, axis=0).tolist()
+        
     return avw, lambda_max, brightness
 
