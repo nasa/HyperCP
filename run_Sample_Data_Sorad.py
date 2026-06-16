@@ -69,8 +69,10 @@ if PLATFORM.lower() == "manual_trios":
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
     )
-if PLATFORM.lower() == "so-rad": 
-    PATH_ANC = '/users/rsg/tjor/HyperCP_2026/HyperCP_SoRad_2026/Config/Tara2024Wind.sb'
+if PLATFORM.lower() == "sorad": 
+    PATH_ANC = os.path.join(
+        PATH_DATA, "Tara2024Wind.sb",
+    )
 else:
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb",
