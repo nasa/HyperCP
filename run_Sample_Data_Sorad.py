@@ -36,17 +36,19 @@ from Main import Command
 #       export QT_QPA_PLATFORM=offscreen
 
 # Batch options
-MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
-MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
+MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_LEVEL = True  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
 PROC_LEVEL = "L1A"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
 # Dataset options
+PLATFORM =  "Sorad"
+INST_TYPE = "Sorad"  # SEABIRD or TRIOS; defines raw file naming
 # PLATFORM = "pySAS"
-PLATFORM = "Manual_TriOS"
+#PLATFORM = "Manual_TriOS"
 # INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
-INST_TYPE = "TRIOS"
-CRUISE = "FICE22"
+#NST_TYPE = "TRIOS"
+CRUISE = ""
 # L1B_REGIME: Optional. [Default, Class, Full]
 #   Denote FRM processing regime and use appropriately named subdirectories.
 #   This requires a custom Configuration file (e.g., "FICE22_pySAS_Class.cfg"). Set this up in the GUI.
@@ -67,6 +69,8 @@ if PLATFORM.lower() == "manual_trios":
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
     )
+if PLATFORM.lower() == "so-rad": 
+    PATH_ANC = '/users/rsg/tjor/HyperCP_2026/HyperCP_SoRad_2026/Config/Tara2024Wind.sb'
 else:
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb",
@@ -91,6 +95,8 @@ if PLATFORM.lower() == 'pysas':
     PATH_CFG = os.path.join(PATH_HCP, "Config", "sample_SEABIRD_pySAS.cfg")
 elif PLATFORM.lower() == 'manual_trios':
     PATH_CFG = os.path.join(PATH_HCP, "Config", "sample_TriOS_NOTRACKER.cfg")
+elif PLATFORM.lower() == 'sorad':
+    PATH_CFG = os.path.join(PATH_HCP, "Config", "sample_TRIOS_sorad.cfg")    
 else:
     PATH_CFG = os.path.join(PATH_HCP, "Config", f"{CRUISE}.cfg")
 ################################################# END CUSTOM SET UP #################################################
@@ -101,6 +107,8 @@ TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]
 FROM_LEVELS = ["RAW", "L1A", "L1AQC", "L1B", "L1BQC"]
 if INST_TYPE.lower() == "seabird":
     FILE_EXT = [".raw"]  # May need to use ".RAW" sometimes
+if INST_TYPE.lower() == "sorad":
+    FILE_EXT = [".hdf"]  
 else:
     FILE_EXT = [".mlb"]
 FILE_EXT.extend(["_L1A.hdf", "_L1AQC.hdf", "_L1B.hdf", "_L1BQC.hdf"])
