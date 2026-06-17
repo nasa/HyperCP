@@ -1,5 +1,6 @@
 '''GUI to set up processing configuration'''
 import os
+import glob
 import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -35,13 +36,13 @@ class ConfigWindow(QtWidgets.QDialog):
         # sensor type
         sensorTypeLabel = QtWidgets.QLabel("Sensor Type:", self)
         self.sensorTypeComboBox = QtWidgets.QComboBox(self)
-        self.sensorTypeComboBox.addItems(["Choose a sensor ...", "Dalec", "SeaBird", "TriOS", "TriOS Es Only"])
+        self.sensorTypeComboBox.addItems(["Choose a sensor ...", "Dalec", "SeaBird", "TriOS", "TriOS Es Only", "SoRad"])
         CurrentSensor = ConfigFile.settings["SensorType"]
         index = self.sensorTypeComboBox.findText(CurrentSensor,QtCore.Qt.MatchFixedString)
         self.sensorTypeComboBox.setCurrentIndex(index)
         self.sensorTypeComboBox.setEnabled(True)
         self.sensorTypeComboBox.currentIndexChanged.connect(self.sensorTypeChanged)
-        # self.setSensorSettings()
+
         # Calibration Config Settings
         self.addCalibrationFileButton = QtWidgets.QPushButton("Add Factory Cals")
         self.addCalibrationFileButton.clicked.connect(self.addCalibrationFileButtonPressed)
@@ -76,7 +77,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if CurrentSensor.lower() == "seabird":
             self.calibrationFrameTypeComboBox.addItem("ShutterLight")
             self.calibrationFrameTypeComboBox.addItem("ShutterDark")
-        elif CurrentSensor.lower() == "trios":
+        elif CurrentSensor.lower() == "trios" or CurrentSensor.lower() == "sorad":
             self.calibrationFrameTypeComboBox.addItem("LI")
             self.calibrationFrameTypeComboBox.addItem("LT")
             self.calibrationFrameTypeComboBox.addItem("ES")
@@ -1132,8 +1133,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 for src in fnames[0]:
                     (_, filename) = os.path.split(src)
                     dest = os.path.join(self.calibrationPath, filename)
-                    print(src)
-                    print(dest)
+                    print(f'Copying {src} to {dest}')
                     shutil.copy(src, dest)
 
             # Update the ConfigFile and the GUI(?)
@@ -1159,16 +1159,26 @@ class ConfigWindow(QtWidgets.QDialog):
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
         cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
+        
+        #Remove from the Config first
+        del ConfigFile.settings['CalibrationFiles'][os.path.split(cal_fp)[1]]
 
-        if os.path.exists(cal_fp) and cal_fp != '/':  # if cal file removed from empty then does not crash.
-            try:
-                os.remove(cal_fp)
-            except IsADirectoryError:
-                print(f"cannot delete directory \"{cal_fp}\"")
+        if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            coreFile = os.path.split(cal_fp)[1][0:-4]
+            cal_fp = os.path.join(os.path.split(cal_fp)[0], f'*{coreFile}.*')
+            matching_files = glob.glob(cal_fp)
+            for file in matching_files:
+                os.remove(file)
+        else:
+            if os.path.exists(cal_fp) and cal_fp != '/':  # if cal file removed from empty then does not crash.
+                try:
+                    os.remove(cal_fp)
+                except IsADirectoryError:
+                    print(f"cannot delete directory \"{cal_fp}\"")
 
     def getCalibrationSettings(self):
         print("CalibrationEditWindow - getCalibrationSettings")
-        ConfigFile.refreshCalibrationFiles()
+        ConfigFile.refreshCalibrationFiles() # BUG < - imports all files in the Calibration folder...
         calFileName = self.calibrationFileComboBox.currentText()
         calConfig = ConfigFile.getCalibrationConfig(calFileName)
         self.calibrationEnabledCheckBox.blockSignals(True)
@@ -1194,7 +1204,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
 
-        elif CurrentSensor.lower() == "trios":
+        elif CurrentSensor.lower() == "trios" or CurrentSensor.lower() == "sorad":
             comboList = ['LI','LT','ES']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)

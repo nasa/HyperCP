@@ -38,11 +38,8 @@ class Window(QtWidgets.QWidget):
         self.inputDirectory = ""
         self.outputDirectory = ""
         self.ancFileDir = ""
-        # self.options = QtWidgets.QFileDialog.Options()
-        # self.options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
         super().__init__(parent)
-        # self.setStyleSheet("background-color: #e3e6e1;")
 
         icon_path = os.path.join(os.path.dirname(__file__), 'Data', 'Img', 'logo.ico')
         # load_icon = Image.open(icon_path)
@@ -61,19 +58,16 @@ class Window(QtWidgets.QWidget):
         # Confirm that core data files are in place. Download if necessary.
         fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
-            # Utilities.downloadZhangDB(fpfZhang)
             filing.downloadZhangDB(fpfZhang)
 
         # Confirm that core data files are in place. Download if necessary.
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_40.nc")
         if not os.path.exists(fpfZhangLUT):
-            # Utilities.downloadZhangLUT(fpfZhangLUT)
             filing.downloadZhangLUT(fpfZhangLUT)
 
         # Confirm that core data files are in place. Download if necessary.
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_30.nc")
         if not os.path.exists(fpfZhangLUT):
-            # Utilities.downloadZhangLUT(fpfZhangLUT)
             filing.downloadZhangLUT(fpfZhangLUT)
 
         self.initUI()
@@ -83,8 +77,8 @@ class Window(QtWidgets.QWidget):
         # Main window configuration restore
         MainConfig.loadConfig(
             MainConfig.fileName, VERSION
-        )  # VERSION in case it has to make new
-        MainConfig.settings["version"] = VERSION  # VERSION to update if necessary
+        )
+        MainConfig.settings["version"] = VERSION
 
         # Test that current In/Out folders and ancillary file are valid
         if not os.path.isdir(MainConfig.settings["inDir"]):
@@ -98,8 +92,6 @@ class Window(QtWidgets.QWidget):
 
         # Banner
         banner = QtWidgets.QLabel(self)
-        # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        # pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
         pixmap = QtGui.QPixmap(
             os.path.join(CODE_HOME, "Data", "Img", "banner_530x151.png")
         )
@@ -203,8 +195,6 @@ class Window(QtWidgets.QWidget):
         ########################################################################################
         # Add QtWidgets to the Window
         ########################################################################################
-
-        # vBox = vertical box layout
         vBox = QtWidgets.QVBoxLayout()
 
         vBox.addWidget(banner)
@@ -286,7 +276,8 @@ class Window(QtWidgets.QWidget):
         if value != MainConfig.settings['cfgFile']:
             if not MainConfig.settings['cfgFile']:
                 MainConfig.settings['cfgFile'] = value
-            ConfigFile.saveConfig(MainConfig.settings['cfgFile'])
+            if MainConfig.settings['deleteConfig'] is False:
+                ConfigFile.saveConfig(MainConfig.settings['cfgFile'])
             MainConfig.settings["cfgFile"] = value
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
@@ -367,7 +358,6 @@ class Window(QtWidgets.QWidget):
         inputDir = self.inputDirectory
         configPath = os.path.join(CODE_HOME, "Config", configFileName)
         if os.path.isfile(configPath):
-            # ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
         else:
@@ -391,6 +381,7 @@ class Window(QtWidgets.QWidget):
 
             if reply == QtWidgets.QMessageBox.Yes:
                 ConfigFile.deleteConfig(configFileName)
+                print(f'{configFileName} deleted')
         else:
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
@@ -859,18 +850,6 @@ if __name__ == "__main__":
     level = args.level
     ancFile = args.ancFile
     multiLevel = args.multiLevel
-
-
-    # # Close splashscreen
-    # try:
-    #     import platform
-
-    #     if platform.system() in ["Windows", "Linux"]:
-    #         import pyi_splash
-
-    #         pyi_splash.close()
-    # except ImportError:
-    #     pass
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:

@@ -13,7 +13,7 @@ class CalibrationFileReader:
     # reads calibration files stored in directory
     @staticmethod
     def read(fp):
-        ''' Reads a SeaBird factory calibration file with coefficients into the calibrationMap.
+        ''' Reads a factory calibration file with coefficients into the calibrationMap.
             calibrationMap contains calibrationFiles class with CalibrationData sets, each of which 
             has coefficients if calLines != 0 AND dummy != 0.
             Dummy calibrations are paragraphs (CalibrationData sets) for reported data pixels that are uncalibrated.'''

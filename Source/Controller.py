@@ -879,6 +879,8 @@ class Controller:
 
         if level == "L1A":
             srchStr = ['raw', 'mlb', 'txt']
+            if ConfigFile.settings['SensorType'].lower() == 'sorad':
+                srchStr = ['hdf']
         elif level == 'L1AQC':
             srchStr = ['L1A']
         elif level == 'L1B':
