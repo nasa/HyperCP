@@ -318,7 +318,7 @@ class ConfigFile:
 
         newCalibrationFiles = {}
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
-        viableList = ['.cal','.tdf','.ini','']
+        viableList = ['.cal','.tdf','.ini']
 
         for file in files:
             if os.path.splitext(file)[1] in viableList:

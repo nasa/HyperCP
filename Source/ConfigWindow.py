@@ -1159,7 +1159,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
         cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
-        
+
         #Remove from the Config first
         del ConfigFile.settings['CalibrationFiles'][os.path.split(cal_fp)[1]]
 
@@ -1178,7 +1178,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def getCalibrationSettings(self):
         print("CalibrationEditWindow - getCalibrationSettings")
-        ConfigFile.refreshCalibrationFiles() # BUG < - imports all files in the Calibration folder...
+        ConfigFile.refreshCalibrationFiles()
         calFileName = self.calibrationFileComboBox.currentText()
         calConfig = ConfigFile.getCalibrationConfig(calFileName)
         self.calibrationEnabledCheckBox.blockSignals(True)
@@ -1285,8 +1285,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZACheckBox.setDisabled(disabled)
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayLabel.setDisabled(disabled)
-        self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
-        self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
+        if ConfigFile.settings['SensorType'].lower() == 'sorad':
+            self.l1aqcRotatorDelayLineEdit.setDisabled(True)
+            self.l1aqcRotatorDelayCheckBox.setDisabled(True)
+        else:
+            self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
+            self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)

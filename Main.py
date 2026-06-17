@@ -532,16 +532,13 @@ class Window(QtWidgets.QWidget):
                 configFileName, calFiles
             )
         elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
-            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-        # elif ConfigFile.settings["SensorType"].lower() == "dalec":
-        #     calibrationMap = Controller.processCalibrationConfig(
-        #         configFileName, calFiles
-        #     )
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)        
 
         if not calibrationMap:
             print(
-                "No calibration files found. "
-                "Check Config directory for your instrument files."
+                "No calibration files found. \n"
+                "Check Config directory for your instrument files.\n"
+                "Check that calibration files are enabled in the Configuration window.\n"
             )
             return
 

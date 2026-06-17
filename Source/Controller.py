@@ -258,12 +258,16 @@ class Controller:
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
-            
-            elif '.tdf' in key: # accounts for pseudo so-rad tdf
-                if calFiles[key]["enabled"]:
-                    cf.id = key
-                    cf.name = key
-                    calibrationMap[key] = cf
+
+            # elif '.tdf' in key: # accounts for pseudo so-rad tdf
+            #     if calFiles[key]["enabled"]:
+            #         cf.id = key
+            #         cf.name = key
+            #         calibrationMap[key] = cf
+        if ConfigFile.settings['SensorType'].lower() == 'sorad': # accounts for pseudo so-rad tdf
+            cf.id = 'sorad'
+            cf.name = 'sorad'
+            calibrationMap['sorad'] = cf
 
         return calibrationMap
 
