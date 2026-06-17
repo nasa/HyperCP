@@ -1423,13 +1423,23 @@ class ProcessL2:
                         lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
                         rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
                     nlw = rrs * np.array(list(F0_hyper.values()))
-
+                    
                     # update breeakdown with L2 unc components
                     x_breakdown_unc['Lw']  = {k: l2_bd['Lw'][k]  * np.abs(lw)  for k in l2_bd['Lw']}
                     x_breakdown_unc['Rrs'] = {k: l2_bd['Rrs'][k] * np.abs(rrs) for k in l2_bd['Rrs']}
                     x_breakdown_unc['nLw'] = {k: l2_bd['nLw'][k] * np.abs(nlw) for k in l2_bd['nLw']}
 
-                    # x_breakdown_unc.update(l2_bd)
+                    # convert L2 uncertainties back to absolute
+                    es_ = np.array([v[0] for v in x_slice['es'].values()])
+                    li_ = np.array([v[0] for v in x_slice['li'].values()])
+                    lt_ = np.array([v[0] for v in x_slice['lt'].values()])
+                    lw_ = lt_ - rho_val * li_
+                    rrs_ = lw_ / es_
+                    nlw_ = rrs_ * np.array(list(F0_hyper.values()))
+
+                    x_unc['lwUNC']  = x_unc['lwUNC']  * np.abs(lw_) 
+                    x_unc['rrsUNC'] = x_unc['rrsUNC'] * np.abs(rrs_)
+                    x_unc['nlwUNC'] = x_unc['nlwUNC'] * np.abs(nlw_)
 
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
@@ -1456,7 +1466,9 @@ class ProcessL2:
                 if "sample" in k.lower():
                     del x_slice[k]  # samples are no longer needed
                 elif "unc" in k.lower():
-                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)  # transfer instrument uncs to x_unc
+                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)
+                    # get L2 signal and make this absolute again!
+                      # transfer instrument uncs to x_unc
 
             # Extract uncertainties for convolving to satellite bands
             slice_unc = {k: v for k, v in x_unc.items() if k.endswith('UNC_HYPER')}
