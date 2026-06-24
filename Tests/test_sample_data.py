@@ -77,7 +77,7 @@ class TestInsituMarineOpticsDALEC(unittest.TestCase):
         self.cfg_filename = os.path.join(root, 'Config', 'sample_DALEC.cfg')
         self.files = sorted(glob.glob(os.path.join(self.path_to_data, 'RAW', f'*.TXT')))
 
-    def test_seabird_solar_tracker(self):
+    def test_marine_optics_dalec(self):
         from Main import Command
         os.chdir(root)  # Need to switch to root as path in Config files are relative
         for file in self.files:

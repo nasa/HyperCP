@@ -5,7 +5,8 @@ import os
 import shutil
 import threading
 
-from Source import PATH_TO_CONFIG#, PACKAGE_DIR
+from Source import PATH_TO_CONFIG
+from Source.MainConfig import MainConfig
 
 
 class ConfigFile:
@@ -224,6 +225,9 @@ class ConfigFile:
     # Saves the cfg file
     @staticmethod
     def saveConfig(filename):
+        # import traceback
+        print("saveConfig was called from:")
+        # traceback.print_stack() 
         print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
@@ -293,12 +297,12 @@ class ConfigFile:
             if os.path.isfile(seabassPath):
                 os.remove(seabassPath)
         if os.path.isfile(configPath):
-            ConfigFile.filename = filename
-            os.remove(configPath)
             shutil.rmtree(ConfigFile.getCalibrationDirectory())
-        if os.path.isfile(seabassPath):
-            os.remove()
-
+            # Tricky, because the MainConfig pulldown change will save the old config before opening the new one, by default
+            ConfigFile.filename = ''#filename
+            MainConfig.settings['cfgFile'] = ''
+            MainConfig.settings['deleteConfig'] = True
+            os.remove(configPath)
 
     @staticmethod
     def getCalibrationDirectory():
@@ -314,20 +318,21 @@ class ConfigFile:
 
         newCalibrationFiles = {}
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
+        viableList = ['.cal','.tdf','.ini']
 
         for file in files:
-            if file in calibrationFiles:
-                newCalibrationFiles[file] = calibrationFiles[file]
-            else:
-                newCalibrationFiles[file] = {"enabled": 0, "frameType": "Not Required"}
+            if os.path.splitext(file)[1] in viableList:
+                if file in calibrationFiles:
+                    newCalibrationFiles[file] = calibrationFiles[file]
+                else:
+                    newCalibrationFiles[file] = {"enabled": 0, "frameType": "Not Required"}
 
         ConfigFile.settings["CalibrationFiles"] = newCalibrationFiles
 
     @staticmethod
     def setCalibrationConfig(calFileName, enabled, frameType):
         print("ConfigFile - setCalibrationConfig")
-        calibrationFiles = ConfigFile.settings["CalibrationFiles"]
-        calibrationFiles[calFileName] = {"enabled": enabled, "frameType": frameType}
+        ConfigFile.settings["CalibrationFiles"][calFileName] = {"enabled": enabled, "frameType": frameType}
 
     @staticmethod
     def getCalibrationConfig(calFileName):

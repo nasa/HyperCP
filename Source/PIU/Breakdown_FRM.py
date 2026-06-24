@@ -57,7 +57,7 @@ class plottingToolsFRM:
             self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['pert'],   "env perturbations",       rel_to=signal[s_type], colour=self.LABEL_COLORS["env perturbations"])
             self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['clin'],   "non-linearity",           rel_to=signal[s_type], colour=self.LABEL_COLORS["non-linearity"])
             self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['cSl'],    "straylight",              rel_to=signal[s_type], colour=self.LABEL_COLORS["strayLight"])
-            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "radiometric calibration", rel_to=signal[s_type], colour=self.LABEL_COLORS["calibration"])
+            self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['radcal'], "calibration", rel_to=signal[s_type], colour=self.LABEL_COLORS["calibration"])
 
             # post normalisation
             self.plot_spectral_FRM(s_type, wvls, BD_UNCS[s_type]['stab'], "stability", rel_to=signal[s_type], colour=self.LABEL_COLORS["stability"])
@@ -87,7 +87,7 @@ class plottingToolsFRM:
             self.plot_spectral_FRM(meas, wvls, UNC['clin'],   "non-linearity",           rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["non-linearity"])
             self.plot_spectral_FRM(meas, wvls, UNC['pert'],   "env perturbations",       rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["env perturbations"])
             self.plot_spectral_FRM(meas, wvls, UNC['cSl'],    "straylight",              rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["strayLight"])
-            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "radiometric calibration", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["calibration"])
+            self.plot_spectral_FRM(meas, wvls, UNC['radcal'], "calibration", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["calibration"])
 
             # post normalisation
             self.plot_spectral_FRM(meas, wvls, UNC['stab'], "stability", rel_to=signal[meas], ylim=ylim, colour=self.LABEL_COLORS["stability"])
@@ -145,7 +145,7 @@ class plottingToolsFRM:
             plt.plot(x, y, label=f"{name}", color=colour)
             plt.ylabel(f"uncertainty ({unit})")
 
-        plt.title(f"FRM Breakdown: {s}, Solar Zenith: {round(self.sza, 2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
+        plt.title(f"Sensor-Specific - breakdown of {s} uncertainties, solar zenith = {round(self.sza, 2)}")  # provide title with sza which is relevant for uncerstanding cosine uncs
         plt.xlabel("Wavelength (nm)")  # x lable always wavelength in uncertainty plotting in HyperCP
 
         plt.xlim(400,800)  # standard xlim, could be changed when cal/char is updated to better cover UV range
@@ -214,7 +214,7 @@ class plottingToolsFRM:
             # Safety: handle empty or all-zero data
             if not vals or sum(vals) == 0:
                 ax.text(0.5, 0.5, "No data to display", ha='center', va='center', transform=ax.transAxes)
-                plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
+                plt.title(f"{s} Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: 0%", pad=20)
                 plt.axis('off')
                 plt.tight_layout()
                 return
@@ -243,7 +243,7 @@ class plottingToolsFRM:
             ax.invert_yaxis()  # largest at top
             ax.set_xlabel(f"Uncertainty relative to {s} (%)")
             ax.set_ylabel("Contributors")
-            plt.title(f"{s} FRM Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
+            plt.title(f"{s} Sensor-Specific Uncertainty: {wvl_at_indx} nm, Total: {round(combined, 2)}%", pad=20)
 
             # --- Add text explaining calculation of combined uncertainty --- #
             textstr = f"Bars represent relative uncertainty in {s} signal (abscissa) at {wvl_at_indx} nm. " \

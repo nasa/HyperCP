@@ -537,8 +537,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             statsL2['LTave_Light'], statsL2['LTave_Dark'],
             rho,
             statsL2['LIave_Light'], statsL2['LIave_Dark'],
-            # lt, rho, li,
-            # ones, ones,
             PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones,
             ones, ones,
@@ -548,9 +546,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         lw_uncertainties = [
-            # np.abs(statsL2['LTSignal_noise'] * lt),
-            # rhoUNC,
-            # np.abs(statsL2['LISignal_noise'] * li),
             np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
             rhoUNC,
             np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
@@ -568,25 +563,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDSL2['LIpol']
         ]
         lwAbsUnc = Prop_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
-        lwl1b =  lt - rho * li
-        lwmf = Prop_CB.Lw(*lw_means)
-
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.plot(l2Wavelength, lwl1b, label='Lw L1B')
-        # plt.plot(l2Wavelength, lwmf, label='Lw MF')
-        # plt.xlabel('Wavelength')
-        # plt.ylabel('Lw (radiance units)')
-        # plt.legend()
-        # plt.show()
 
         rrs_means = [
-            statsL2['LTave_Light'], statsL2['LTave_Dark'], 
+            statsL2['LTave_Light'], statsL2['LTave_Dark'],
             rho,
             statsL2['LIave_Light'], statsL2['LIave_Dark'],
             statsL2['ESave_Light'], statsL2['ESave_Dark'],
-            # lt, rho, li, es,
-            # ones, ones, ones,
             PDSL2['ESCcal'], PDSL2['LICcal'], PDSL2['LTCcal'],
             ones, ones, ones,
             ones, ones, ones,
@@ -596,10 +578,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ]
 
         rrs_uncertainties = [
-            # np.abs(statsL2['LTSignal_noise'] * lt),
-            # rhoUNC,
-            # np.abs(statsL2['LISignal_noise'] * li),
-            # np.abs(statsL2['ESSignal_noise'] * es),
             np.abs(statsL2['LTstd_Light']), np.abs(statsL2['LTstd_Dark']),
             rhoUNC,
             np.abs(statsL2['LIstd_Light']), np.abs(statsL2['LIstd_Dark']),
@@ -655,7 +633,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         BD_UNCS['Rrs']['pert'] = Prop_CB.Propagate_RRS_HYPER(rrs_means, pert_uncs)
 
-        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst") 
+        # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
+        lw  = Prop_CB.Lw(*lw_means)
+        lwRelUnc = lwAbsUnc / np.abs(lw)
+
+        rrs = Prop_CB.RRS(*rrs_means)
+        rrsRelUnc = rrsAbsUnc / np.abs(rrs)
+
+        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(PDS.mDraws, f0,  None,   None)
         no_unc_rrs = cm.generate_sample(PDS.mDraws, BD_VALS['Rrs'], None,   None)
 
@@ -675,6 +660,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 )
 
         nlwAbsUnc = np.sqrt((rrsAbsUnc**2 * f0**2) + (BD_VALS['Rrs']**2 * f0_unc**2))
+        nlwRelUnc = nlwAbsUnc / np.abs(rrs*f0)
+
+        BD_UNCS['Lw']  = {k: BD_UNCS['Lw'][k]  / np.abs(lw) for k in BD_UNCS['Lw']}  # convert all to relative units
+        BD_UNCS['Rrs'] = {k: BD_UNCS['Rrs'][k] / np.abs(rrs) for k in BD_UNCS['Rrs']}
+        BD_UNCS['nLw'] = {k: BD_UNCS['nLw'][k] / np.abs(rrs*f0) for k in BD_UNCS['nLw']}
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -703,9 +693,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             )
         UNC.update(
             {"rhoUNC_HYPER": {str(k): val for k, val in zip(l2Wavelength, rhoUNC)},
-            "lwUNC": lwAbsUnc,
-             "rrsUNC": rrsAbsUnc,
-             "nlwUNC": nlwAbsUnc}
+            "lwUNC": lwRelUnc,
+             "rrsUNC": rrsRelUnc,
+             "nlwUNC": nlwRelUnc}
         )
 
         return UNC, BD_UNCS
@@ -872,6 +862,47 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         UNCS["nlwUNC"] = nlwDelta
 
         return UNCS
+
+
+    def FRML2ESOnly(self, waveSubset: np.array, xSlice: dict[str, np.array]) -> dict[str, np.array]:
+        """
+        Sames as FRML2 except only process Es signal, which results in band convolution of Es uncertainties only.
+
+        Propagates Lw and Rrs uncertainties if full characterisation available - see D-10 5.3.1
+
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+
+        """
+
+        esSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['esSample'][i].items() if float(key) in waveSubset}
+                                      for i in range(len(xSlice['esSample']))])
+        esSample = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
+
+        # initialise punpy propagation object
+        mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
+        MCP_obj = Propagate(mdraws, cores=1)  # punpy.MCPropagation(mdraws, parallel_cores=1)
+
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
+
+        UNC = {}
+
+        for sensor_key in self._SATELLITES.keys():
+            # now requires MCP_obj to be a Propagate object as def_sensor_mfunc is not a static method
+            if ConfigFile.settings[self._SATELLITES[sensor_key]['config']]:
+                sensor_name = self._SATELLITES[sensor_key]['name']
+                RSR_Bands = self._SATELLITES[sensor_key]['Weight_RSR']
+                sample_es_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key),
+                                                         [esSample, sample_wavelengths])
+                esDeltaBand = MCP_obj.MCP.process_samples(None, sample_es_conv)
+                # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
+                # be returned to ProcessingL2 and used to update xSlice/xUNC
+                UNC[f"esUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+
+        return UNC
 
     @staticmethod
     def interp_and_slice_raw_data(xData, xTimer, yTimer, kind='linear'):

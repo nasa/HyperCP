@@ -5,6 +5,7 @@
 
 # vscode
 .vscode/
+.micromamba/
 
 # conda
 .conda/

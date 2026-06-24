@@ -565,6 +565,9 @@ class CalCharWindow(QtWidgets.QDialog):
         # List the files that are missing according to the selected cal/char regime
         _, missingFilesList = self.missing_FidRadDB_cal_char_files(out_of_thread=False)
 
+        # Extract serial number and cal/char types from list of missing files.
+        serialNumber_calCharTypes = list(set(list(['_'.join(mf.split('_')[1:-1]) for mf in missingFilesList])))
+
         # Nothing to download, return
         if len(missingFilesList) == 0:
             print('All cal./char. files were found under %s for the selected regime, nothing to download' % ConfigFile.getCalibrationDirectory())
@@ -573,7 +576,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # Initialise list to be inputted to the FidRadDB download function
         self.files_to_be_downloaded = []
 
-        for serialNumber_calCharType in missingFilesList:
+        for serialNumber_calCharType in serialNumber_calCharTypes:
 
             # List files available in OCDB/FidRadDB
             cal_char_files_remote = self.available_files_FidRadDB[serialNumber_calCharType]
@@ -794,7 +797,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
                     filesInFidRadDB = self.available_files_FidRadDB[serialNumber_calCharType]
 
-                    filesInLocalDB = sorted([f for f in os.listdir(Path(self.path_FidRadDB)) if (re.match('[C][P][_]%s[_][0-9]{14}[\.][tT][xX][tT]' % serialNumber_calCharType, f) is not None)])
+                    filesInLocalDB = sorted([f for f in os.listdir(Path(self.path_FidRadDB)) if (re.match(r'[C][P][_]%s[_][0-9]{14}[\.][tT][xX][tT]' % serialNumber_calCharType, f) is not None)])
 
                     # Dates of files in FidRadDB and locally
                     filesDatesFidRadDB = np.array([int(f.split('_')[-1].split('.')[0]) for f in filesInFidRadDB])

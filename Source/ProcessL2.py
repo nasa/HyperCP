@@ -1224,8 +1224,12 @@ class ProcessL2:
         # first_band = next(iter(ltSlice))
         # first_band_values = ltSlice[first_band]
         # y=list(range(0,len(first_band_values)))
+  
         stats = False
-        while percent_lt <= 50:
+        while percent_lt <= 100:
+            # Changed to 100% (no glitter filter) to allow sparser data to be processed
+            # Discussed at HCP meeting on 10/06/2026 - it is desirable that `fallback' values of percent_lt
+            # that are relaxed from the config are flagged/recorded in L2 ouput
             percentLtattr[attrEnsInd-1] = str(int(ConfigFile.settings['fL2PercentLt']))
 
             if enable_percent_lt:
@@ -1250,18 +1254,20 @@ class ProcessL2:
             else:
                 nSpecEnd = nSpecStart
 
+
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
+
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
                 percent_lt += 10
             else:
                 break
-
-        if not all([v for v in stats.values()]):  # check if stats was generated and return False if not
+        if ((isinstance(stats, bool) and stats == False) or
+                not all([v for v in stats.values()])):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
-
+       
         node.attributes['PERCENT_LT'] = ",".join(percentLtattr)
         # %% Append Ensemble Size
         for grp in node.groups:
@@ -1382,7 +1388,7 @@ class ProcessL2:
                 # convert uncertainties back into absolute form using the signals recorded from ProcessL1B
                 for k, v in slice_mean.items():
                     # uncertainty as % multiplied by signal in radiometric units
-                    
+
                     x_slice[k.lower() + 'Unc'] = {
                         u[0]: [u[1][0] * np.abs(s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
@@ -1391,22 +1397,52 @@ class ProcessL2:
                 # convert breakdown uncertainties to absolute and run L2 unc propagation
                 x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
                 if es_only:
-                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)   
+                    x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                 else:
                     x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
                     x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
+                    rho_val = rho_scalar if rho_vec is None else rho_vec
                     x_unc, l2_bd = sensor.ClassBasedL2(
-                        PDS, 
-                        stats, 
-                        rho_scalar if rho_vec is None else rho_vec, 
-                        rho_unc, 
-                        F0_hyper, 
-                        F0_unc, 
-                        wavelengths.tolist(), 
+                        PDS,
+                        stats,
+                        rho_val,
+                        rho_unc,
+                        F0_hyper,
+                        F0_unc,
+                        wavelengths.tolist(),
                         x_slice
                     )
-                    x_breakdown_unc.update(l2_bd)
+                    # Patch for rho_val as dict in PR #462
+                    if isinstance(rho_val, dict):
+                        rho_val = np.asarray(list(rho_val.values()), dtype=float)
+
+                        slicedes = np.array([val[0] if k in rho_vec.keys() else -999 for k, val in x_slice['es'].items()])
+                        slicedli = np.array([val[0] if k in rho_vec.keys() else -999 for k, val in x_slice['li'].items()])
+                        slicedlt = np.array([val[0] if k in rho_vec.keys() else -999 for k, val in x_slice['lt'].items()])
+                        lw = slicedli[np.where(slicedli > -999)] - rho_val * slicedlt[np.where(slicedlt > -999)]
+                        rrs = lw / slicedes[np.where(slicedes > -999)]
+                    else:
+                        lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
+                        rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
+                    nlw = rrs * np.array(list(F0_hyper.values()))
+                    
+                    # update breeakdown with L2 unc components
+                    x_breakdown_unc['Lw']  = {k: l2_bd['Lw'][k]  * np.abs(lw)  for k in l2_bd['Lw']}
+                    x_breakdown_unc['Rrs'] = {k: l2_bd['Rrs'][k] * np.abs(rrs) for k in l2_bd['Rrs']}
+                    x_breakdown_unc['nLw'] = {k: l2_bd['nLw'][k] * np.abs(nlw) for k in l2_bd['nLw']}
+
+                    # convert L2 uncertainties back to absolute
+                    es_ = np.array([v[0] for v in x_slice['es'].values()])
+                    li_ = np.array([v[0] for v in x_slice['li'].values()])
+                    lt_ = np.array([v[0] for v in x_slice['lt'].values()])
+                    lw_ = lt_ - rho_val * li_
+                    rrs_ = lw_ / es_
+                    nlw_ = rrs_ * np.array(list(F0_hyper.values()))
+
+                    x_unc['lwUNC']  = x_unc['lwUNC']  * np.abs(lw_) 
+                    x_unc['rrsUNC'] = x_unc['rrsUNC'] * np.abs(rrs_)
+                    x_unc['nlwUNC'] = x_unc['nlwUNC'] * np.abs(nlw_)
 
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
@@ -1419,7 +1455,10 @@ class ProcessL2:
             x_slice['f0'] = F0_hyper
             x_slice['f0_unc'] = F0_unc
             x_slice.update(l1b_unc)
-            x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
+            if es_only:
+                x_unc = sensor.FRML2ESOnly(wavelengths, x_slice)
+            else:
+                x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
         
         # log uncertainty processing time
         logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s")
@@ -1430,7 +1469,9 @@ class ProcessL2:
                 if "sample" in k.lower():
                     del x_slice[k]  # samples are no longer needed
                 elif "unc" in k.lower():
-                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)  # transfer instrument uncs to x_unc
+                    x_unc[f"{k[0:2]}UNC_HYPER"] = x_slice.pop(k)
+                    # get L2 signal and make this absolute again!
+                      # transfer instrument uncs to x_unc
 
             # Extract uncertainties for convolving to satellite bands
             slice_unc = {k: v for k, v in x_unc.items() if k.endswith('UNC_HYPER')}
@@ -1901,11 +1942,13 @@ class ProcessL2:
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
+                    #breakpoint()
                     newGrp.datasets[ds].datasetToColumns()
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
                     node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
-                    node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate']
+                    if ConfigFile.settings['SensorType'].lower() != 'sorad':
+                        node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] # for now, skip sorad (not present)
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

@@ -200,7 +200,12 @@ def plotRadiometry(root, filename, rType, plotDelta = False):
     total = Data.data.shape[0]
     maxRad = 0
     minRad = 0
-    cmap = plt.cm.get_cmap("jet")
+
+    try:
+        cmap = plt.get_cmap("jet")
+    except AttributeError:
+        cmap = plt.cm.get_cmap("jet")
+
     color=iter(cmap(np.linspace(0,1,total)))
 
     # plt.figure(1, figsize=(8,6))
@@ -419,9 +424,11 @@ def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fp):
     # For the sake of MacOS, need to hack the datetimes into panda dataframes for plotting
     dfx = pd.DataFrame(data=xTimer, index=list(range(0,len(xTimer))), columns=['x'])
     # *** HACK: CONVERT datetime column to string and back again - who knows why this works? ***
-    dfx['x'] = pd.to_datetime(dfx['x'].astype(str))
+    # dfx['x'] = pd.to_datetime(dfx['x'].astype(str))
+    dfx['x'] = pd.to_datetime(dfx['x'].astype(str), format='mixed')
     dfy = pd.DataFrame(data=yTimer, index=list(range(0,len(yTimer))), columns=['x'])
-    dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
+    # dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
+    dfy['x'] = pd.to_datetime(dfy['x'].astype(str), format='mixed')
 
     [_,fileName] = os.path.split(fp)
     fileBaseName,_ = fileName.rsplit('.',1)
