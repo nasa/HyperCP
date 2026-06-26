@@ -993,13 +993,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 lw_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.Lw_Conv(*lw_means)  # order is essential here
+            # we run mf after propagating unc so that self._platform and self._wavebands are set with correct sensor and wavebands
+
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = prop_Band_CB.Propagate_RRS_Convolved(
                 rrs_means,
                 rrs_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.RRS_Conv(*rrs_means)  # order is essential here
 
             return Band_Convolved_UNC
         else:

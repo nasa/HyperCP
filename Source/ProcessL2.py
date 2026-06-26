@@ -1441,6 +1441,17 @@ class ProcessL2:
                     x_unc['rrsUNC'] = x_unc['rrsUNC'] * np.abs(rrs_)
                     x_unc['nlwUNC'] = x_unc['nlwUNC'] * np.abs(nlw_)
 
+                    for satellite, vals in satellite_slice_mean.items():
+                        es_band = np.array([v[0] for v in vals['ES'].values()])
+                        li_band = np.array([v[0] for v in vals['LI'].values()])
+                        lt_band = np.array([v[0] for v in vals['LT'].values()])
+
+                        lw_band = lt_band - rho_val*li_band
+                        rrs_band = lw_band / es_band
+
+                        x_unc[f'lwUNC_{satellite}']  *= np.abs(lw_band)
+                        x_unc[f'rrsUNC_{satellite}'] *= np.abs(rrs_band)
+
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
 
