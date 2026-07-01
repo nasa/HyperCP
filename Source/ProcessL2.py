@@ -31,6 +31,7 @@ from Source.utils import dating
 from Source.utils import filtering
 from Source.utils import comparing
 from Source.utils import F0ing
+from Source.utils.uncertainties import unc_management as um
 
 
 class ProcessL2:
@@ -1381,17 +1382,17 @@ class ProcessL2:
                     # uncertainty as % multiplied by signal in radiometric units
                     
                     x_slice[k.lower() + 'Unc'] = {
-                        u[0]: [u[1][0] * np.abs(s[0])] for u, s in
+                        u[0]: [um.convertToAbsolute(u[1][0], s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
 
                 # convert breakdown uncertainties to absolute and run L2 unc propagation
-                x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
+                x_breakdown_unc['ES'] = {k: um.convertToAbsolute(x_breakdown_unc['ES'][k], np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)   
                 else:
-                    x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
-                    x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
+                    x_breakdown_unc['LI'] = {k: um.convertToAbsolute(x_breakdown_unc['LI'][k], np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
+                    x_breakdown_unc['LT'] = {k: um.convertToAbsolute(x_breakdown_unc['LT'][k], np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
                     rho_val = rho_scalar if rho_vec is None else rho_vec
                     x_unc, l2_bd = sensor.ClassBasedL2(
@@ -1409,9 +1410,9 @@ class ProcessL2:
                     nlw = rrs * np.array(list(F0_hyper.values()))
 
                     # update breeakdown with L2 unc components
-                    x_breakdown_unc['Lw']  = {k: l2_bd['Lw'][k]  * np.abs(lw)  for k in l2_bd['Lw']}
-                    x_breakdown_unc['Rrs'] = {k: l2_bd['Rrs'][k] * np.abs(rrs) for k in l2_bd['Rrs']}
-                    x_breakdown_unc['nLw'] = {k: l2_bd['nLw'][k] * np.abs(nlw) for k in l2_bd['nLw']}
+                    x_breakdown_unc['Lw']  = {k: um.convertToAbsolute(l2_bd['Lw'][k], lw)  for k in l2_bd['Lw']}
+                    x_breakdown_unc['Rrs'] = {k: um.convertToAbsolute(l2_bd['Rrs'][k], rrs) for k in l2_bd['Rrs']}
+                    x_breakdown_unc['nLw'] = {k: um.convertToAbsolute(l2_bd['nLw'][k], nlw) for k in l2_bd['nLw']}
 
                     # x_breakdown_unc.update(l2_bd)
 
