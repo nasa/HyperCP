@@ -259,6 +259,16 @@ class Controller:
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
 
+            # elif '.tdf' in key: # accounts for pseudo so-rad tdf
+            #     if calFiles[key]["enabled"]:
+            #         cf.id = key
+            #         cf.name = key
+            #         calibrationMap[key] = cf
+        if ConfigFile.settings['SensorType'].lower() == 'sorad': # accounts for pseudo so-rad tdf
+            cf.id = 'sorad'
+            cf.name = 'sorad'
+            calibrationMap['sorad'] = cf
+
         return calibrationMap
 
     # @staticmethod
@@ -873,6 +883,8 @@ class Controller:
 
         if level == "L1A":
             srchStr = ['raw', 'mlb', 'txt']
+            if ConfigFile.settings['SensorType'].lower() == 'sorad':
+                srchStr = ['hdf']
         elif level == 'L1AQC':
             srchStr = ['L1A']
         elif level == 'L1B':

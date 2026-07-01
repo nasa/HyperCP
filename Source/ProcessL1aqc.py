@@ -178,8 +178,11 @@ class ProcessL1aqc:
         elif ConfigFile.settings['SensorType'].lower() == 'sorad':
             if  gp.id.startswith("sorad"):
                 gp.id = "SunTracker_sorad"
+            else:
+                gp.id = cf.sensorType
         else:
             gp.id = cf.sensorType
+
 
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
@@ -211,7 +214,8 @@ class ProcessL1aqc:
 
         # Reorganize groups with new names
         for gp in node.groups:
-            if not gp.id.startswith('GPS'):
+            # if not gp.id.startswith('GPS'):
+            if not gp.id.startswith('GPS'):# and not gp.id.startswith('sorad'):
                 cf = calibrationMap[gp.attributes["CalFileName"]]
                 ProcessL1aqc.renameGroup(gp,cf)
 
@@ -236,6 +240,7 @@ class ProcessL1aqc:
         ancDateTag = None
         for gp in node.groups:
             if gp.id.startswith('GP'):
+                print(gp.id)
                 ancLat = []
                 ancLon = []
                 gpsDateTime = gp.getDataset('DATETIME').data
@@ -287,11 +292,11 @@ class ProcessL1aqc:
                 ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
 
-                latAnc = []
-                lonAnc = []
+                ancLat = []
+                ancLon = []
                 for i in range(gpsLat.data.shape[0]):
-                    latAnc.append(gpsLat[i])
-                    lonAnc.append(gpsLon[i])
+                    ancLat.append(gpsLat[i])
+                    ancLon.append(gpsLon[i])
 
         if esDateTime is None:
             logging.writeLogFileAndPrint('Required Es data is missing. Check L1A and raw input files. Abort.')
@@ -534,7 +539,7 @@ class ProcessL1aqc:
         # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt value (i.e. angle to vertical),
         # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via
         # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
-        # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
+        # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achieves the desired result of
         # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
@@ -624,7 +629,7 @@ class ProcessL1aqc:
                 logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
                 if start==0 and stop==index: # All records are bad
                     return None
-                
+
                 # Always restore tilt to the group (or ancData) that tilt/pitch/roll came from
                 if tiltGroup is not None:
                     tiltGroup.addDataset('TILT').data = np.array(tilt, dtype=[('NONE', '<f8')])
@@ -633,6 +638,8 @@ class ProcessL1aqc:
                     tiltDS.columnsToDataset()
 
             elif tilt is not None:
+                i = 0
+                start = -1 # start needs to be assigned here if only tilt is provided (no pitch/roll) as is the default for sorad
                 for index, tilti in enumerate(tilt):
                     if tilti > tiltMax:
                         i += 1

@@ -569,7 +569,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         lwAbsUnc = Prop_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
 
         rrs_means = [
-            statsL2['LTave_Light'], statsL2['LTave_Dark'], 
+            statsL2['LTave_Light'], statsL2['LTave_Dark'],
             rho,
             statsL2['LIave_Light'], statsL2['LIave_Dark'],
             statsL2['ESave_Light'], statsL2['ESave_Dark'],
@@ -644,7 +644,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rrs = Prop_CB.RRS(*rrs_means)
         rrsRelUnc = um.convertToRelative(rrsAbsUnc, rrs)
 
-        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst") 
+        sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(PDS.mDraws, f0,  None,   None)
         no_unc_rrs = cm.generate_sample(PDS.mDraws, BD_VALS['Rrs'], None,   None)
 
@@ -867,6 +867,47 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         return UNCS
 
+
+    def FRML2ESOnly(self, waveSubset: np.array, xSlice: dict[str, np.array]) -> dict[str, np.array]:
+        """
+        Sames as FRML2 except only process Es signal, which results in band convolution of Es uncertainties only.
+
+        Propagates Lw and Rrs uncertainties if full characterisation available - see D-10 5.3.1
+
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+
+        """
+
+        esSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['esSample'][i].items() if float(key) in waveSubset}
+                                      for i in range(len(xSlice['esSample']))])
+        esSample = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
+
+        # initialise punpy propagation object
+        mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
+        MCP_obj = Propagate(mdraws, cores=1)  # punpy.MCPropagation(mdraws, parallel_cores=1)
+
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
+
+        UNC = {}
+
+        for sensor_key in self._SATELLITES.keys():
+            # now requires MCP_obj to be a Propagate object as def_sensor_mfunc is not a static method
+            if ConfigFile.settings[self._SATELLITES[sensor_key]['config']]:
+                sensor_name = self._SATELLITES[sensor_key]['name']
+                RSR_Bands = self._SATELLITES[sensor_key]['Weight_RSR']
+                sample_es_conv = MCP_obj.MCP.run_samples(MCP_obj.def_sensor_mfunc(sensor_key),
+                                                         [esSample, sample_wavelengths])
+                esDeltaBand = MCP_obj.MCP.process_samples(None, sample_es_conv)
+                # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
+                # be returned to ProcessingL2 and used to update xSlice/xUNC
+                UNC[f"esUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+
+        return UNC
+
     @staticmethod
     def interp_and_slice_raw_data(xData, xTimer, yTimer, kind='linear'):
         xDataNew = OrderedDict()
@@ -957,13 +998,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 lw_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.Lw_Conv(*lw_means)  # order is essential here
+            # we run mf after propagating unc so that self._platform and self._wavebands are set with correct sensor and wavebands
+
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = prop_Band_CB.Propagate_RRS_Convolved(
                 rrs_means,
                 rrs_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.RRS_Conv(*rrs_means)  # order is essential here
 
             return Band_Convolved_UNC
         else:
