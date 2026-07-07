@@ -80,7 +80,7 @@ class TriOS(BaseInstrument):
             offset_corrected_mesure[n, :] = back_corrected_mesure[n] - offset[n]
 
             # Normalization for integration time
-            if ConfigFile.settings['fL1bCal'] == 3:
+            if ConfigFile.settings['fL1bCal'] == 3:  # if sensor based then we do not normalise
                 Light[n, :] = back_corrected_mesure[n, :]
                 normalised_mesure[n, :] = offset_corrected_mesure[n, :]
             else:  # only apply normalisation to stats if in class based or factory regime
