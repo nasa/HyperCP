@@ -756,7 +756,7 @@ class ProcessL1b:
                 and not gp.id.startswith('PYROMETER') \
                     and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "Not Required":
-                    logging.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
+                    logging.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}, Current type is  {gp.attributes["FrameType"]}. \n Check the FrameType in the CFG file for each calibration file.')
                     break
 
                 if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):

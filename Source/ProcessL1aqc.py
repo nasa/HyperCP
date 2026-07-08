@@ -156,7 +156,17 @@ class ProcessL1aqc:
                     gp.id = "LI_DARK"
                 if cf.sensorType == "LT":
                     gp.id = "LT_DARK"
+            if gp.id.startswith("PLD"):
+                if cf.sensorType == "LI":
+                    gp.id = "LI_DARK"
+                if cf.sensorType == "LT":
+                    gp.id = "LT_DARK"
             if gp.id.startswith("HSL"):
+                if cf.sensorType == "LI":
+                    gp.id = "LI_LIGHT"
+                if cf.sensorType == "LT":
+                    gp.id = "LT_LIGHT"
+            if gp.id.startswith("HPL"):
                 if cf.sensorType == "LI":
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
