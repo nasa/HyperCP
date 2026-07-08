@@ -33,9 +33,9 @@ class CalibrationFile:
         #print("CalibrationFile.read()")
         (_, filename) = os.path.split(f.name)
         self.name = filename
-        if filename.lower().startswith('hed') or filename.lower().startswith('hld'):
+        if filename.lower().startswith('hed') or filename.lower().startswith('hld') or filename.lower().startswith('pld'):
             self.frameType = 'ShutterDark'
-        elif filename.lower().startswith('hse') or filename.lower().startswith('hsl'):
+        elif filename.lower().startswith('hse') or filename.lower().startswith('hsl') or filename.lower().startswith('hpl'):
             self.frameType = 'ShutterLight'
         else:
             self.frameType = 'Not Required'
@@ -52,8 +52,10 @@ class CalibrationFile:
             if len(line) == 0:
                 continue
             if line.startswith("#"):
-                if filename[0:3] in ['HSL','HED','HLD','HSE']:
+                if filename[0:3] in ['HSL','HED','HLD','HSE','HPL','PLD']: # NOTE: HPL and PLD added for HOCR type R08W used as R03A; immersion factor in calibration files set to 1.0
                     # NOTE: Highly presumptuous format requirement here
+                    #if filename[0:3] in ['HPL','PLD']:
+                    #    logging.writeLogFileAndPrint(f"WARNING : calibration file {filename}: is for sensor type R08W. Make sure immersion factor is set to 1 in the calibration file.")
                     if line.startswith("# 20"):
                         try:
                             # This will update with each new calibration date until the last/latest date
@@ -100,6 +102,8 @@ class CalibrationFile:
     # Returns the sensor type
     def getSensorType(self):
         for cd in self.data:
+            # ADD FOR DEBUG
+            print("Sensor type:", cd.type)
             if cd.type == "ES" or \
                cd.type == "LI" or \
                cd.type == "LT" or \
@@ -231,6 +235,8 @@ class CalibrationFile:
             instrumentId.startswith("SATHLD") or \
             instrumentId.startswith("SATHSE") or \
             instrumentId.startswith("SATHSL") or \
+            instrumentId.startswith("SATHPL") or \
+            instrumentId.startswith("SATPLD") or \
             instrumentId.startswith("SATPYR") or \
             instrumentId.startswith("SATNAV") or \
             instrumentId.startswith("$GPRMC") or \

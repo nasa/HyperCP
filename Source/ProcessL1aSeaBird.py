@@ -85,7 +85,11 @@ class ProcessL1aSeaBird:
         for gp in root.groups:
             if gp.id.startswith("HLD"):
                 hld += 1
+            if gp.id.startswith("PLD"):
+                hld += 1
             if gp.id.startswith("HSL"):
+                hsl += 1
+            if gp.id.startswith("HPL"):
                 hsl += 1
             if gp.id.startswith("HSE"):
                 hse += 1
