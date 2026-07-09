@@ -63,8 +63,6 @@ Data/Sample_Data/pySAS/*
 Data/Sample_Data/SolarTracker/*
 !Data/Sample_Data/SolarTracker/RAW
 !Data/Sample_Data/SolarTracker/RAW/*
-!Data/Sample_Data/SolarTracker/Instrument_Characterization*/
-!Data/Sample_Data/SolarTracker/Instrument_Characterization*/*
 !Data/Sample_Data/SolarTracker/*Ancillary.sb
 Data/Sample_Data/SoRad/*
 !Data/Sample_Data/SoRad/RAW

@@ -1292,8 +1292,12 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
             self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleLabel.setDisabled(disabled)
-        self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
-        self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
+        if ConfigFile.settings['SensorType'].lower() == 'sorad':
+            self.l1aqcRotatorAngleCheckBox.setDisabled(True)
+            self.l1aqcRotatorAngleMinLabel.setDisabled(True)
+        else:
+            self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
+            self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLineEdit.setDisabled(disabled)
         self.l1aqcRotatorAngleMaxLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleMaxLineEdit.setDisabled(disabled)
@@ -1360,7 +1364,7 @@ class ConfigWindow(QtWidgets.QDialog):
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
-        if sensor.lower() in ['trios', 'trios es only'] or sensor.lower() == 'dalec':
+        if sensor.lower() in ['trios', 'trios es only','dalec','sorad']:
             self.l1aqcDeglitchCheckBox.setChecked(False)
             self.l1aqcDeglitchCheckBox.setEnabled(False)
             self.l1aqcDeglitchLabel.setEnabled(False)
