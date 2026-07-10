@@ -1261,7 +1261,7 @@ class ProcessL2:
                 percent_lt += 10
             else:
                 break
-        if ((isinstance(stats, bool) and stats == False) or
+        if ((isinstance(stats, bool) and stats is False) or  # possibly unnecessary - if stats is not an array then the process failed
                 not all([v for v in stats.values()])):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False

@@ -336,17 +336,20 @@ class unc_management:
         
         """
 
+        if isinstance(abs_unc, float):
+            return abs_unc / np.abs(signal)
+
         pct = []
         for i, u in enumerate(abs_unc):
             if signal[i] == 0:  # ignore wavelengths where we do not have an output
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
             elif signal[i] > 0:
                 pct.append(
-                    u/signal[i]
+                    u / signal[i]
                 )
             else:
                 pct.append(
-                    u/np.abs(signal[i])
+                    u / np.abs(signal[i])
                 )
         return np.array(pct)  # convert to np array so we can use numpy broadcasting
     
@@ -359,15 +362,17 @@ class unc_management:
         :param signal: value that v1 is relative to
         
         """
-
-        pct = []
-        for i, u in enumerate(rel_unc):
-            if signal[i] >= 0:  # ignore wavelengths where we do not have an output
-                pct.append(
-                    u*signal[i]
-                )
-            else:
-                pct.append(
-                    u*np.abs(signal[i])
-                )  # put zero there instead of np.nan, it will be easy to avoid in plotting
-        return np.array(pct)
+        if isinstance(rel_unc, float):
+            return rel_unc * np.abs(signal)
+        else:
+            pct = []
+            for i, u in enumerate(rel_unc):
+                if signal[i] >= 0:  # ignore wavelengths where we do not have an output
+                    pct.append(
+                        u * signal[i]
+                    )
+                else:
+                    pct.append(
+                        u * np.abs(signal[i])
+                    )  # put zero there instead of np.nan, it will be easy to avoid in plotting
+            return np.array(pct)

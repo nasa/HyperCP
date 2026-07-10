@@ -638,7 +638,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
         lw  = Prop_CB.Lw(*lw_means)
-        from Source.utils.comparing import getpct
         lwRelUnc = um.convertToRelative(lwAbsUnc, lw)
 
         rrs = Prop_CB.RRS(*rrs_means)
