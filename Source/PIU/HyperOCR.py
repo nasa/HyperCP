@@ -282,7 +282,7 @@ class HyperOCR(BaseInstrument):
                         sample_zen_ang,
                         sample_sol_zen,
                         sample_zen_avg_coserror
-                        ]
+                    ]
                 )
                 sample_cos_corr = prop.run_samples(
                     mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]

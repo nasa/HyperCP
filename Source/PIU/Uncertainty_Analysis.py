@@ -584,7 +584,7 @@ class Propagate:
 
         lw = lt_signal - (rhoVec*li_signal)
         lw[np.where(lw < 0)] = 0
-        return lw/es_signal
+        return np.array([lw[i]/es_signal[i] if es_signal[i] != 0 else 0 for i in range(len(es_signal))])
 
     def RRS_Conv(self, LTLIGHT, LTDARK, rhoVec, LILIGHT, LIDARK, ESLIGHT, ESDARK, c_es, c_li, c_lt, cstab_es, cstab_li, cstab_lt, clin_es, clin_li, clin_lt, cstray_es, cstray_li, cstray_lt,
             cT_es, cT_li, cT_lt, cpol_li, cpol_lt, ccos):
@@ -602,7 +602,7 @@ class Propagate:
 
         lw = ltConv - (rhoConv*liConv)
         lw[np.where(lw < 0)] = 0
-        return lw/esConv  # calculate Rrs
+        return  np.array([lw[i]/esConv[i] if esConv[i] != 0 else 0 for i in range(len(esConv))])
 
     @staticmethod
     def Lw_FRM(lt, rho, li):
