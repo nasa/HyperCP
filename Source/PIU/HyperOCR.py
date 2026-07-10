@@ -85,7 +85,7 @@ class HyperOCR(BaseInstrument):
                 std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(Ddata) / np.sqrt(Nd))**2))
             else:
                 writeLogFileAndPrint("too few scans to make meaningful statistics")
-                return False
+                raise ValueError
 
             ave_light.append(np.average(Ldata))
             ave_dark.append(np.average(Ddata))
