@@ -1446,12 +1446,18 @@ class ProcessL2:
                         es_band = np.array([v[0] for v in vals['ES'].values()])
                         li_band = np.array([v[0] for v in vals['LI'].values()])
                         lt_band = np.array([v[0] for v in vals['LT'].values()])
+                        rho_band = np.array(list(convolve_to_satellite[satellite](rho_vec).values())).flatten()
 
-                        lw_band = lt_band - rho_val*li_band
+                        lw_band = lt_band - rho_band*li_band
                         rrs_band = lw_band / es_band
-
+                        try:
+                            f0_band = np.array([satellite_f0[satellite[:-1]][str(v)] for v in satellite_bands_subset[satellite[:-1]]])
+                            nlw_band = rrs_band * f0_band
+                        except ValueError:
+                            print("here")
                         x_unc[f'lwUNC_{satellite}']  *= np.abs(lw_band)
                         x_unc[f'rrsUNC_{satellite}'] *= np.abs(rrs_band)
+                        x_unc[f'rrsUNC_{satellite}'] *= np.abs(nlw_band)
 
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
