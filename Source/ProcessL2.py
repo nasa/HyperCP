@@ -1451,7 +1451,11 @@ class ProcessL2:
                         lw_band = lt_band - rho_band*li_band
                         rrs_band = lw_band / es_band
                         try:
-                            f0_band = np.array([satellite_f0[satellite[:-1]][str(v)] for v in satellite_bands_subset[satellite[:-1]]])
+                            f0_band = np.zeros(len(vals['ES'].keys()))
+                            for i, v in enumerate(satellite_bands_subset[satellite[:-1]]):
+                                if str(v) in vals['ES'].keys():
+                                    # we must ensure the band is included in radiometry selection
+                                    f0_band[i] = satellite_f0[satellite[:-1]][str(v)]
                             nlw_band = rrs_band * f0_band
                         except ValueError:
                             print("here")
