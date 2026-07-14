@@ -85,7 +85,7 @@ class HyperOCR(BaseInstrument):
                 std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(Ddata) / np.sqrt(Nd))**2))
             else:
                 writeLogFileAndPrint("too few scans to make meaningful statistics")
-                return False
+                raise ValueError
 
             ave_light.append(np.average(Ldata))
             ave_dark.append(np.average(Ddata))
@@ -282,7 +282,7 @@ class HyperOCR(BaseInstrument):
                         sample_zen_ang,
                         sample_sol_zen,
                         sample_zen_avg_coserror
-                        ]
+                    ]
                 )
                 sample_cos_corr = prop.run_samples(
                     mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr_comp, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
