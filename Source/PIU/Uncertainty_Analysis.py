@@ -592,8 +592,13 @@ class Propagate:
         lt_signal = (LTLIGHT - LTDARK) * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         lw = lt_signal - (rhoVec*li_signal)
-        lw[np.where(lw < 0)] = 0
-        return lw/es_signal
+        # lw[np.where(lw < 0)] = 0
+        msk = np.where(es_signal == 0)
+        rrs = lw/es_signal
+        rrs[msk] = 0
+
+        return rrs
+
 
     def RRS_Conv(self, LTLIGHT, LTDARK, rhoVec, LILIGHT, LIDARK, ESLIGHT, ESDARK, c_es, c_li, c_lt, cstab_es, cstab_li, cstab_lt, clin_es, clin_li, clin_lt, cstray_es, cstray_li, cstray_lt,
             cT_es, cT_li, cT_lt, cpol_li, cpol_lt, ccos):
@@ -610,8 +615,11 @@ class Propagate:
         rhoConv = func(rhoVec, self._wavebands)
 
         lw = ltConv - (rhoConv*liConv)
-        lw[np.where(lw < 0)] = 0
-        return lw/esConv  # calculate Rrs
+        # lw[np.where(lw < 0)] = 0
+        msk = np.where(esConv == 0)
+        rrsConv = lw/esConv
+        rrsConv[msk] = 0
+        return  rrsConv
 
     @staticmethod
     def Lw_FRM(lt, rho, li):

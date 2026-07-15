@@ -507,6 +507,7 @@ class SolveLPU:
         if s.upper() == "ES":  # irradiance does not use a Panel
             return LAMP_mag / (S1*10)
         else:  # Radiance
+            np.seterr(divide='ignore')
             return (LAMP_mag * np.mean(sample_PANEL, axis=0)) / (np.pi*S1*10)
 
     def temperature(self, LPU_UNCS: dict[str, np.array], PDS: PIUDataStore, s: str, radcal_signal) -> dict[str, np.array]:

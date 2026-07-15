@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import pandas as pd
+from typing import Union
 
 # Source files
 from Source.HDFRoot import HDFRoot
@@ -331,3 +332,54 @@ class unc_management:
                     new_ds.datasetToColumns()
                     unc_group.removeDataset(ds.id)  # remove  dataset
         return True
+
+    @staticmethod
+    def convertToRelative(abs_unc: Union[list, np.array, float, int], signal: Union[list, np.array, float, int]) -> np.array:
+        """
+        gets the percentage of v1 out of v2: (v1/v2) * 100%
+        
+        :param abs_unc: value to be made relative
+        :param signal: value that v1 is relative to
+        
+        """
+
+        if isinstance(abs_unc, float):
+            return abs_unc / np.abs(signal)
+
+        pct = []
+        for i, u in enumerate(abs_unc):
+            if signal[i] == 0:  # ignore wavelengths where we do not have an output
+                pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
+            elif signal[i] > 0:
+                pct.append(
+                    u / signal[i]
+                )
+            else:
+                pct.append(
+                    u / np.abs(signal[i])
+                )
+        return np.array(pct)  # convert to np array so we can use numpy broadcasting
+    
+    @staticmethod
+    def convertToAbsolute(rel_unc: Union[list, np.array, float, int], signal: Union[list, np.array, float, int]) -> np.array:
+        """
+        gets the percentage of v1 out of v2: (v1/v2) * 100%
+        
+        :param rel_unc: value to be made relative
+        :param signal: value that v1 is relative to
+        
+        """
+        if isinstance(rel_unc, float):
+            return rel_unc * np.abs(signal)
+        else:
+            pct = []
+            for i, u in enumerate(rel_unc):
+                if signal[i] >= 0:  # ignore wavelengths where we do not have an output
+                    pct.append(
+                        u * signal[i]
+                    )
+                else:
+                    pct.append(
+                        u * np.abs(signal[i])
+                    )  # put zero there instead of np.nan, it will be easy to avoid in plotting
+            return np.array(pct)

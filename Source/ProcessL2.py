@@ -35,6 +35,7 @@ from Source.utils import dating
 from Source.utils import filtering
 from Source.utils import comparing
 from Source.utils import F0ing
+from Source.utils.uncertainties import unc_management as um
 
 
 class ProcessL2:
@@ -1263,7 +1264,7 @@ class ProcessL2:
                 percent_lt += 10
             else:
                 break
-        if ((isinstance(stats, bool) and stats == False) or
+        if ((isinstance(stats, bool) and stats is False) or  # possibly unnecessary - if stats is not an array then the process failed
                 not all([v for v in stats.values()])):  # check if stats was generated and return False if not
             logging.writeLogFileAndPrint("statistics not (fully) generated")
             return False
@@ -1390,17 +1391,17 @@ class ProcessL2:
                     # uncertainty as % multiplied by signal in radiometric units
 
                     x_slice[k.lower() + 'Unc'] = {
-                        u[0]: [u[1][0] * np.abs(s[0])] for u, s in
+                        u[0]: [um.convertToAbsolute(u[1][0], s[0])] for u, s in
                         zip(x_slice[k.lower() + 'Unc'].items(), v.values())
                     }
 
                 # convert breakdown uncertainties to absolute and run L2 unc propagation
-                x_breakdown_unc['ES'] = {k: x_breakdown_unc['ES'][k] * np.abs(np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
+                x_breakdown_unc['ES'] = {k: um.convertToAbsolute(x_breakdown_unc['ES'][k], np.array([val[0] for val in x_slice['es'].values()])) for k in x_breakdown_unc['ES']}  # convert back to absolute
                 if es_only:
                     x_unc = sensor.ClassBasedL2ESOnly(wavelengths.tolist(), x_slice)
                 else:
-                    x_breakdown_unc['LI'] = {k: x_breakdown_unc['LI'][k] * np.abs(np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
-                    x_breakdown_unc['LT'] = {k: x_breakdown_unc['LT'][k] * np.abs(np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
+                    x_breakdown_unc['LI'] = {k: um.convertToAbsolute(x_breakdown_unc['LI'][k], np.array([val[0] for val in x_slice['li'].values()])) for k in x_breakdown_unc['LI']}
+                    x_breakdown_unc['LT'] = {k: um.convertToAbsolute(x_breakdown_unc['LT'][k], np.array([val[0] for val in x_slice['lt'].values()])) for k in x_breakdown_unc['LT']}
 
                     rho_val = rho_scalar if rho_vec is None else rho_vec
                     x_unc, l2_bd = sensor.ClassBasedL2(
@@ -1428,9 +1429,9 @@ class ProcessL2:
                     nlw = rrs * np.array(list(F0_hyper.values()))
                     
                     # update breeakdown with L2 unc components
-                    x_breakdown_unc['Lw']  = {k: l2_bd['Lw'][k]  * np.abs(lw)  for k in l2_bd['Lw']}
-                    x_breakdown_unc['Rrs'] = {k: l2_bd['Rrs'][k] * np.abs(rrs) for k in l2_bd['Rrs']}
-                    x_breakdown_unc['nLw'] = {k: l2_bd['nLw'][k] * np.abs(nlw) for k in l2_bd['nLw']}
+                    x_breakdown_unc['Lw']  = {k: um.convertToAbsolute(l2_bd['Lw'][k], lw)  for k in l2_bd['Lw']}
+                    x_breakdown_unc['Rrs'] = {k: um.convertToAbsolute(l2_bd['Rrs'][k], rrs) for k in l2_bd['Rrs']}
+                    x_breakdown_unc['nLw'] = {k: um.convertToAbsolute(l2_bd['nLw'][k], nlw) for k in l2_bd['nLw']}
 
                     # convert L2 uncertainties back to absolute
                     es_ = np.array([v[0] for v in x_slice['es'].values()])
@@ -1440,20 +1441,30 @@ class ProcessL2:
                     rrs_ = lw_ / es_
                     nlw_ = rrs_ * np.array(list(F0_hyper.values()))
 
-                    x_unc['lwUNC']  = x_unc['lwUNC']  * np.abs(lw_) 
-                    x_unc['rrsUNC'] = x_unc['rrsUNC'] * np.abs(rrs_)
-                    x_unc['nlwUNC'] = x_unc['nlwUNC'] * np.abs(nlw_)
+                    x_unc['lwUNC']  *= np.abs(lw_)
+                    x_unc['rrsUNC'] *= np.abs(rrs_)
+                    x_unc['nlwUNC'] *= np.abs(nlw_)
 
                     for satellite, vals in satellite_slice_mean.items():
                         es_band = np.array([v[0] for v in vals['ES'].values()])
                         li_band = np.array([v[0] for v in vals['LI'].values()])
                         lt_band = np.array([v[0] for v in vals['LT'].values()])
+                        rho_band = np.array(list(convolve_to_satellite[satellite](rho_vec).values())).flatten()
 
-                        lw_band = lt_band - rho_val*li_band
+                        lw_band = lt_band - rho_band*li_band
                         rrs_band = lw_band / es_band
-
+                        try:
+                            f0_band = np.zeros(len(vals['ES'].keys()))
+                            for i, v in enumerate(satellite_bands_subset[satellite[:-1]]):
+                                if str(v) in vals['ES'].keys():
+                                    # we must ensure the band is included in radiometry selection
+                                    f0_band[i] = satellite_f0[satellite[:-1]][str(v)]
+                            nlw_band = rrs_band * f0_band
+                        except ValueError:
+                            print("here")
                         x_unc[f'lwUNC_{satellite}']  *= np.abs(lw_band)
                         x_unc[f'rrsUNC_{satellite}'] *= np.abs(rrs_band)
+                        x_unc[f'rrsUNC_{satellite}'] *= np.abs(nlw_band)
 
             except NotImplementedError:
                 pass  # we expect TriOS factory and DALEC to raise this.
