@@ -116,10 +116,12 @@ class ConfigFile:
         # Multical config defaults
         ConfigFile.settings['MultiCal'] = 0 # 0: most recent prior to acquisition, 1: pre-post average, 2: choose cal
         for multiCalOpt in ['preCal', 'postCal', 'chooseCal']:
+            ConfigFile.settings['%s_defined' % multiCalOpt] = False
             for sensorType in ['ES', 'LT', 'LI']:
                 # RADCAL filename instead if selected in Source/CalCharWindow.py options.
                 ConfigFile.settings['%s_%s' % (multiCalOpt, sensorType)] = None
-
+        ConfigFile.settings['pre_postCal_defined'] = False
+        ConfigFile.settings['pre_post_check'] = {}
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0

@@ -177,6 +177,8 @@ class ProcessL1b:
             # Choose the most recent (applicable to sensor-specific characterisations)
             chosen_file_idx = np.argmax(available_files_calTime_seconds)
             chosen_file = available_files[chosen_file_idx]
+        elif rule == 'pre_post':
+            print('Wait')
 
         return chosen_file, chosen_file_idx
 
@@ -261,10 +263,7 @@ class ProcessL1b:
                         else:
                             root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
 
-                    elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post average
-
-                        # TODO Not implemented! But pre- and post- cals are at least read into the HDF file
-                        raise NotImplementedError("pre/post cal average is not implemented yet.")
+                    elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post
 
                         # Read preCal into gp
                         preCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("preCal_%s" % sensorType))
@@ -278,7 +277,23 @@ class ProcessL1b:
                             raise ValueError('Post-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(postCal, gp)
 
-                        ###### TO BE CONTINUED #######
+                        available_files_prePost = preCal + postCal
+
+                        available_files_calTime0_prePost = [os.path.basename(f).split('_')[-1].split('.')[0] for f in available_files_prePost]
+                        available_files_calTime_seconds_prePost = np.array([datetime.strptime(t, '%Y%m%d%H%M%S').timestamp() for t in available_files_calTime0_prePost])
+
+                        # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
+                        chosen_file, idx = ProcessL1b.choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds_prePost, available_files_prePost,rule='most_recent_prior_acquisition')
+
+                        if (chosen_file is None) and (idx is None):
+                            raise ValueError(f'No available cal/char files prior to measurement acquisition for serial-number/cal-char type {serialNumber_calCharType}: ')
+
+                        filing.read_char(chosen_file, gp)
+                        gp.attributes[f'{sensorType}_{calCharType}_file'] = os.path.split(chosen_file)[-1]
+                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+                            root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0_prePost[idx]
+                        else:
+                            root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0_prePost[idx]
 
                     elif ConfigFile.settings["MultiCal"] == 2: # Choose-cal
 
