@@ -2,10 +2,12 @@
 import numpy as np
 import json
 import logging 
+import os
 
 from Source.HDFRoot import HDFRoot
 from Source.ProcessL1aTriOS import ProcessL1aTriOS
 from Source.MainConfig import MainConfig
+import Source.utils.filing as filing
 
 class ProcessL1aSoRad:
     '''Process L1A SoRad. 
@@ -56,6 +58,7 @@ class ProcessL1aSoRad:
         # Add wavelength coeffs and calibrations to each sensor group
         # This uses sections of the `formatting_instrument' function in ProcesssL1aTriOs
         for gp in root.groups:
+                print(gp.id.split('_')[0])
                 if gp.id.split('_')[0] == 'SAM': # selects sensor group
                 
                     # assign `sensor_id', `sensor' and `name' labels used in ProcesssL1aTriOS
@@ -108,6 +111,13 @@ class ProcessL1aSoRad:
                     C1.columns["1"] = back.values[:,2]
                     C1.columnsToDataset()
                     ProcessL1aTriOS.get_attr(metaback,C1)
-                    
-        breakpoint()
+                 
+                    # breakpoint()
+                    file_name = input_path.split('/')[-1][:-6]
+                    outFFP = []
+                    outFFP.append(os.path.join(output_path, f'{file_name}_L1A.hdf'))
+                    root.attributes["L1A_FILENAME"] = outFFP[-1]
+                    filing.checkOutputFiles(outFFP[-1])
+
+
         return root, output_path
