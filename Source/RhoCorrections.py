@@ -236,6 +236,20 @@ class RhoCorrections:
 
         return rhoVector, rhoDelta
 
+
+    #TODO: Add D'Alimonte et al. (2026) static method here:
+    @staticmethod
+    def DAlimonteCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
+        """
+        PLACEHOLDER
+        """
+        logging.writeLogFileAndPrint('UNDER DEVELOPMENT. Please use another glint correction.')
+        return None, None
+               
+
+
+
+
     @staticmethod
     def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, sva, nwb) -> np.array:
         """
@@ -282,30 +296,6 @@ class RhoCorrections:
                     )
                 print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
             else:
-                # zhang_interp = spin.interpn(
-                #     points=(
-                #         LUT.wind.values,
-                #         LUT.aot.values,
-                #         LUT.sza.values.astype(np.float64),
-                #         LUT.relAz.values.astype(np.float64),
-                #         LUT.sal.values.astype(np.float64),
-                #         LUT.SST.values.astype(np.float64),
-                #         LUT.wavelength.values
-                #     ),
-                #     values=LUT.Glint.values,
-                #     xi=(
-                #         ws,
-                #         aod,
-                #         sza,
-                #         rel_az,
-                #         sal,
-                #         wt,
-                #         nwb
-                #     ),
-                #     method="cubic",
-                #     bounds_error=False,
-                #     fill_value=None,
-                # )
                 zhang_interp = spin.interpn(
                     points=(
                         LUT.wind.values,
