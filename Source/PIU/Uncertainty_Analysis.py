@@ -146,15 +146,17 @@ class Propagate:
             corr_between = None
 
 
-        unc = self.MCP.propagate_random(self.instruments,
-                                        mean_vals,
-                                        uncertainties,
-                                        corr_between=corr_between,
-                                        corr_x=corr_list,
-                                        output_vars=3,
-                                        # pdf_shape="truncated_gaussian",
-                                        # pdf_params={"min": 0},
-                                        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            unc = self.MCP.propagate_random(self.instruments,
+                                            mean_vals,
+                                            uncertainties,
+                                            corr_between=corr_between,
+                                            corr_x=corr_list,
+                                            output_vars=3,
+                                            # pdf_shape="truncated_gaussian",
+                                            # pdf_params={"min": 0},
+                                            )
 
         # separate uncertainties and sensor values from their lists - for clarity
         Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
@@ -186,11 +188,13 @@ class Propagate:
             corr_between = self.corr_matrix_Default_Lw
         else:
             corr_between = None
-        return self.MCP.propagate_standard(self.Lw,
-                                         mean_vals,
-                                         uncertainties,
-                                         corr_between=corr_between,
-                                         corr_x=corr_list)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            return self.MCP.propagate_standard(self.Lw,
+                                            mean_vals,
+                                            uncertainties,
+                                            corr_between=corr_between,
+                                            corr_x=corr_list)
 
     def Propagate_Lw_Convolved(self, mean_vals: list[np.array], uncertainties: list[np.array],
                           platform: str, wavebands: np.array) -> np.array:
@@ -225,23 +229,27 @@ class Propagate:
         sys_unc[np.where(np.array(corr_list, dtype=str) == 'rand')] = 0.0
 
         # propagate random and systematic uncertainties separately
-        random = self.MCP.propagate_random(
-            self.Lw_Conv,
-            mean_vals,
-            rnd_unc,
-            corr_between=self.corr_matrix_Default_Lw,
-            # pdf_shape="truncated_gaussian",
-            # pdf_params={"min": 0},
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            random = self.MCP.propagate_random(
+                self.Lw_Conv,
+                mean_vals,
+                rnd_unc,
+                corr_between=self.corr_matrix_Default_Lw,
+                # pdf_shape="truncated_gaussian",
+                # pdf_params={"min": 0},
+            )
 
-        systematic = self.MCP.propagate_systematic(
-            self.Lw_Conv,
-            mean_vals,
-            sys_unc,
-            corr_between=self.corr_matrix_Default_Lw,
-            # pdf_shape="truncated_gaussian",
-            # pdf_params={"min": 0},
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            systematic = self.MCP.propagate_systematic(
+                self.Lw_Conv,
+                mean_vals,
+                sys_unc,
+                corr_between=self.corr_matrix_Default_Lw,
+                # pdf_shape="truncated_gaussian",
+                # pdf_params={"min": 0},
+            )
 
         return np.sqrt(random ** 2 + systematic ** 2)
 
@@ -272,15 +280,17 @@ class Propagate:
             corr_between = self.corr_matrix_Default_RRS
         else:
             corr_between = None
-        return self.MCP.propagate_standard(
-            self.RRS,
-            mean_vals,
-            uncertainties,
-            corr_between=corr_between,
-            corr_x=corr_list,
-            # pdf_shape="truncated_gaussian",
-            # pdf_params={"min": 0},
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            return self.MCP.propagate_standard(
+                self.RRS,
+                mean_vals,
+                uncertainties,
+                corr_between=corr_between,
+                corr_x=corr_list,
+                # pdf_shape="truncated_gaussian",
+                # pdf_params={"min": 0},
+            )
 
     def Propagate_RRS_Convolved(self, mean_vals: list[np.array], uncertainties: list[np.array], platform: str,
                                 wavebands: np.array) -> np.array:
@@ -573,8 +583,13 @@ class Propagate:
         lt_signal = (LTLIGHT - LTDARK) * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         lw = lt_signal - (rhoVec*li_signal)
-        lw[np.where(lw < 0)] = 0
-        return lw/es_signal
+        # lw[np.where(lw < 0)] = 0
+        msk = np.where(es_signal == 0)
+        rrs = lw/es_signal
+        rrs[msk] = 0
+
+        return rrs
+
 
     def RRS_Conv(self, LTLIGHT, LTDARK, rhoVec, LILIGHT, LIDARK, ESLIGHT, ESDARK, c_es, c_li, c_lt, cstab_es, cstab_li, cstab_lt, clin_es, clin_li, clin_lt, cstray_es, cstray_li, cstray_lt,
             cT_es, cT_li, cT_lt, cpol_li, cpol_lt, ccos):
@@ -591,8 +606,11 @@ class Propagate:
         rhoConv = func(rhoVec, self._wavebands)
 
         lw = ltConv - (rhoConv*liConv)
-        lw[np.where(lw < 0)] = 0
-        return lw/esConv  # calculate Rrs
+        # lw[np.where(lw < 0)] = 0
+        msk = np.where(esConv == 0)
+        rrsConv = lw/esConv
+        rrsConv[msk] = 0
+        return  rrsConv
 
     @staticmethod
     def Lw_FRM(lt, rho, li):

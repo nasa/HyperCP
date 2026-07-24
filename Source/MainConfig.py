@@ -63,3 +63,4 @@ class MainConfig:
         MainConfig.settings["ancFileDir"] = './Data/Sample_Data'
         MainConfig.settings["ancFile"] = ""
         MainConfig.settings["popQuery"] = 0
+        MainConfig.settings["deleteConfig"] = False

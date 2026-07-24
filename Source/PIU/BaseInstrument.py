@@ -24,6 +24,7 @@ from Source.PIU.Breakdown_CB import PlotMaths
 from Source.PIU.Breakdown_FRM import SolveLPU
 from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
 from Source.PIU.utils import utils
+from Source.utils.uncertainties import unc_management as um
 
 # UTILITIES
 from Source.utils.loggingHCP import writeLogFileAndPrint
@@ -336,18 +337,21 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             warnings.filterwarnings("ignore", message="divide by zero encountered in divide")
 
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
-            ES_unc = es_unc / np.abs(es)
-            LI_unc = li_unc / np.abs(li)
-            LT_unc = lt_unc / np.abs(lt)
+            ES_unc = um.convertToRelative(es_unc, es)
+            LI_unc = um.convertToRelative(li_unc, li)
+            LT_unc = um.convertToRelative(lt_unc, lt)
+            # ES_unc = es_unc / np.abs(es)
+            # LI_unc = li_unc / np.abs(li)
+            # LT_unc = lt_unc / np.abs(lt)
 
             # then propagate perturbation uncertainty
             pert_uncs = np.zeros_like(np.asarray(uncertainties))
             pert_uncs[0:6] = [
-                np.abs(stats['ES']["Signal_std"][PDS.l1ACommonCalPix] * stats['ES']['ave_Light'][PDS.l1ACommonCalPix]),
+                um.convertToAbsolute(stats['ES']["Signal_std"][PDS.l1ACommonCalPix], stats['ES']['ave_Light'][PDS.l1ACommonCalPix]),
                 zeroes,
-                np.abs(stats['LI']["Signal_std"][PDS.l1ACommonCalPix] * stats['LI']['ave_Light'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
+                um.convertToAbsolute(stats['LI']["Signal_std"][PDS.l1ACommonCalPix], stats['LI']['ave_Light'][PDS.l1ACommonCalPix]) if 'LI' in PDS.uncs else zeroes,
                 zeroes,
-                np.abs(stats['LT']["Signal_std"][PDS.l1ACommonCalPix] * stats['LT']['ave_Light'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
+                um.convertToAbsolute(stats['LT']["Signal_std"][PDS.l1ACommonCalPix], stats['LT']['ave_Light'][PDS.l1ACommonCalPix]) if 'LT' in PDS.uncs else zeroes,
                 zeroes
             ]
             (
@@ -356,9 +360,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 BD_UNCS['LT']['pert'],
             ) = Prop_CB.propagate_Instrument_Uncertainty(means, pert_uncs)
 
-            BD_UNCS['ES'] = {k: BD_UNCS['ES'][k] / np.abs(es) for k in BD_UNCS['ES']}  # convert all to relative units
-            BD_UNCS['LI'] = {k: BD_UNCS['LI'][k] / np.abs(li) for k in BD_UNCS['LI']}
-            BD_UNCS['LT'] = {k: BD_UNCS['LT'][k] / np.abs(lt) for k in BD_UNCS['LT']}
+            BD_UNCS['ES'] = {k: um.convertToRelative(BD_UNCS['ES'][k], es) for k in BD_UNCS['ES']}  # convert all to relative units
+            BD_UNCS['LI'] = {k: um.convertToRelative(BD_UNCS['LI'][k], li) for k in BD_UNCS['LI']}
+            BD_UNCS['LT'] = {k: um.convertToRelative(BD_UNCS['LT'][k], lt) for k in BD_UNCS['LT']}
 
         # interpolation step - bringing uncertainties to common L2 wavebands from radiometric calibration wavebands.
         l2_wvl = np.asarray(list(stats['ES']['Signal_std_Interpolated'].keys()),
@@ -610,10 +614,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         zeroes = np.zeros_like(ones)
         pert_uncs = np.zeros_like(np.asarray(lw_uncertainties))
         pert_uncs[0:5] = [
-            np.abs(statsL2['LTSignal_std']) * statsL2['LTave_Light'] if 'LT' in PDS.uncs else zeroes,
+            np.abs(statsL2['LTSignal_std']) * np.abs(statsL2['LTave_Light']) if 'LT' in PDS.uncs else zeroes,
             zeroes,
             zeroes,
-            np.abs(statsL2['LISignal_std']) * statsL2['LIave_Light'] if 'LI' in PDS.uncs else zeroes,
+            np.abs(statsL2['LISignal_std']) * np.abs(statsL2['LIave_Light']) if 'LI' in PDS.uncs else zeroes,
             zeroes,
         ]
 
@@ -621,12 +625,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         pert_uncs = np.zeros_like(np.asarray(rrs_uncertainties))
         pert_uncs[0:7] = [
-            np.abs(statsL2['LTSignal_std']) * statsL2['LTave_Light'] if 'LT' in PDS.uncs else zeroes,
+            np.abs(statsL2['LTSignal_std']) * np.abs(statsL2['LTave_Light']) if 'LT' in PDS.uncs else zeroes,
             np.zeros_like(ones),
             np.zeros_like(ones),
-            np.abs(statsL2['LISignal_std']) * statsL2['LIave_Light'] if 'LI' in PDS.uncs else zeroes,
+            np.abs(statsL2['LISignal_std']) * np.abs(statsL2['LIave_Light']) if 'LI' in PDS.uncs else zeroes,
             np.zeros_like(ones),
-            np.abs(statsL2['ESSignal_std']) * statsL2['ESave_Light'],
+            np.abs(statsL2['ESSignal_std']) * np.abs(statsL2['ESave_Light']),
             np.zeros_like(ones),
         ]
 
@@ -634,10 +638,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
         lw  = Prop_CB.Lw(*lw_means)
-        lwRelUnc = lwAbsUnc / np.abs(lw)
+        lwRelUnc = um.convertToRelative(lwAbsUnc, lw)
 
         rrs = Prop_CB.RRS(*rrs_means)
-        rrsRelUnc = rrsAbsUnc / np.abs(rrs)
+        rrsRelUnc = um.convertToRelative(rrsAbsUnc, rrs)
 
         sample_f0 = cm.generate_sample(PDS.mDraws, f0,  f0_unc, "syst")
         no_unc_f0  = cm.generate_sample(PDS.mDraws, f0,  None,   None)
@@ -659,12 +663,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 )
 
         nlwAbsUnc = np.sqrt((rrsAbsUnc**2 * f0**2) + (BD_VALS['Rrs']**2 * f0_unc**2))
-        nlwRelUnc = nlwAbsUnc / np.abs(rrs*f0)
+        nlwRelUnc = um.convertToRelative(nlwAbsUnc, rrs*f0)
 
-        BD_UNCS['Lw']  = {k: BD_UNCS['Lw'][k]  / np.abs(lw) for k in BD_UNCS['Lw']}  # convert all to relative units
-        BD_UNCS['Rrs'] = {k: BD_UNCS['Rrs'][k] / np.abs(rrs) for k in BD_UNCS['Rrs']}
-        BD_UNCS['nLw'] = {k: BD_UNCS['nLw'][k] / np.abs(rrs*f0) for k in BD_UNCS['nLw']}
-
+        BD_UNCS['Lw']  = {k: um.convertToRelative(BD_UNCS['Lw'][k],  lw)     for k in BD_UNCS['Lw']}  # convert all to relative units
+        BD_UNCS['Rrs'] = {k: um.convertToRelative(BD_UNCS['Rrs'][k], rrs)    for k in BD_UNCS['Rrs']}
+        BD_UNCS['nLw'] = {k: um.convertToRelative(BD_UNCS['nLw'][k], rrs*f0) for k in BD_UNCS['nLw']}
+       
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
         esUNC_band = np.array([i[0] for i in xSlice['esUnc'].values()])
@@ -993,13 +997,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 lw_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.Lw_Conv(*lw_means)  # order is essential here
+            # we run mf after propagating unc so that self._platform and self._wavebands are set with correct sensor and wavebands
+
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = prop_Band_CB.Propagate_RRS_Convolved(
                 rrs_means,
                 rrs_uncertainties,
                 sensor_key,
                 waveSubset
-            )
+            ) / prop_Band_CB.RRS_Conv(*rrs_means)  # order is essential here
 
             return Band_Convolved_UNC
         else:

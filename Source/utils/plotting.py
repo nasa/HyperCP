@@ -200,7 +200,12 @@ def plotRadiometry(root, filename, rType, plotDelta = False):
     total = Data.data.shape[0]
     maxRad = 0
     minRad = 0
-    cmap = plt.cm.get_cmap("jet")
+
+    try:
+        cmap = plt.get_cmap("jet")
+    except AttributeError:
+        cmap = plt.cm.get_cmap("jet")
+
     color=iter(cmap(np.linspace(0,1,total)))
 
     # plt.figure(1, figsize=(8,6))

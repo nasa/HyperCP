@@ -182,7 +182,7 @@ class ProcessL1aqc:
                 gp.id = cf.sensorType
         else:
             gp.id = cf.sensorType
-     
+
 
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
@@ -214,7 +214,8 @@ class ProcessL1aqc:
 
         # Reorganize groups with new names
         for gp in node.groups:
-            if not gp.id.startswith('GPS'):
+            # if not gp.id.startswith('GPS'):
+            if not gp.id.startswith('GPS'):# and not gp.id.startswith('sorad')
                 cf = calibrationMap[gp.attributes["CalFileName"]]
                 ProcessL1aqc.renameGroup(gp,cf)
 
@@ -269,7 +270,7 @@ class ProcessL1aqc:
                         gpsStatus = gp.getDataset('STATUS')
                     else:
                         gpsStatus = gp.getDataset('FIXQUAL')
-                       
+
             elif gp.id.startswith('ES'):
                 esDateTime = gp.getDataset('DATETIME').data
             elif gp.id.startswith('SATTHS'):
@@ -290,13 +291,13 @@ class ProcessL1aqc:
 
                 ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
-                
+
                 ancLat = []
                 ancLon = []
                 for i in range(gpsLat.data.shape[0]):
                     ancLat.append(gpsLat[i])
                     ancLon.append(gpsLon[i])
-         
+
         if esDateTime is None:
             logging.writeLogFileAndPrint('Required Es data is missing. Check L1A and raw input files. Abort.')
             return None
@@ -628,7 +629,7 @@ class ProcessL1aqc:
                 logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
                 if start==0 and stop==index: # All records are bad
                     return None
-                
+
                 # Always restore tilt to the group (or ancData) that tilt/pitch/roll came from
                 if tiltGroup is not None:
                     tiltGroup.addDataset('TILT').data = np.array(tilt, dtype=[('NONE', '<f8')])
@@ -637,7 +638,8 @@ class ProcessL1aqc:
                     tiltDS.columnsToDataset()
 
             elif tilt is not None:
-                start = -1 # start needs to be assigned here if only tilt is provided (no pitch/roll) as is the default for sorad 
+                i = 0
+                start = -1 # start needs to be assigned here if only tilt is provided (no pitch/roll) as is the default for sorad
                 for index, tilti in enumerate(tilt):
                     if tilti > tiltMax:
                         i += 1
@@ -676,7 +678,6 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
         if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSunTracker"]:
             gp = None
             for group in node.groups:

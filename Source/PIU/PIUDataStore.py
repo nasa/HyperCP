@@ -304,10 +304,10 @@ class PIUDataStore:
             # each value has 4 numbers azi = 0, azi = 90, -zen, +zen which need their TU uncertainties combining
             total_coserror_err = np.sqrt(
                 self.uncs[s_type]['cos']**2 +
-                self.uncs[s_type]['cos_90']**2 +
-                self.uncs[s_type]['cos'][:, ::-1]**2 +
-                self.uncs[s_type]['cos_90'][:, ::-1]**2
-                )
+                self.uncs[s_type]['cos_90']**2 # +  # i think this is double counting
+                # self.uncs[s_type]['cos'][:, ::-1]**2 +
+                # self.uncs[s_type]['cos_90'][:, ::-1]**2
+            )
 
             # comparing cos_error for symetric zenith (ideally would be 0)
             zen_avg_coserr = (azi_avg_coserr + azi_avg_coserr[:, ::-1]) / 2.

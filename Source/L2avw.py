@@ -28,6 +28,7 @@ def L2avw(wavelength, Rrs):
     try:
         brightness =  np.trapezoid(Rrs_1nm, wave_1nm, axis=0).tolist()
     except:
+        # trapz deprecated in numpy 2.0.0
         brightness =  np.trapz(Rrs_1nm, wave_1nm, axis=0).tolist()
         
     return avw, lambda_max, brightness
