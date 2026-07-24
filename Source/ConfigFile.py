@@ -116,10 +116,13 @@ class ConfigFile:
         # Multical config defaults
         ConfigFile.settings['MultiCal'] = 0 # 0: most recent prior to acquisition, 1: pre-post average, 2: choose cal
         for multiCalOpt in ['preCal', 'postCal', 'chooseCal']:
+            ConfigFile.settings['%s_defined' % multiCalOpt] = False
             for sensorType in ['ES', 'LT', 'LI']:
                 # RADCAL filename instead if selected in Source/CalCharWindow.py options.
-                ConfigFile.settings[f'{multiCalOpt}_{sensorType}'] = None
-
+                ConfigFile.settings['%s_%s' % (multiCalOpt, sensorType)] = None
+        ConfigFile.settings['pre_postCal_defined'] = False
+        # pre-/post-cal check status (defined for each sensorType)
+        ConfigFile.settings['pre_post_check'] = {}
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
@@ -148,8 +151,7 @@ class ConfigFile:
         ConfigFile.settings["bL2EnablePercentLt"] = 1
         ConfigFile.settings["fL2PercentLt"] = 10 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
-        # ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["bL2D26Rho"] = 0 # D'Alimonte et al. in progress
+        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
@@ -228,7 +230,7 @@ class ConfigFile:
     def saveConfig(filename):
         # import traceback
         print("saveConfig was called from:")
-        # traceback.print_stack()
+        # traceback.print_stack() 
         print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
@@ -340,3 +342,4 @@ class ConfigFile:
         print("ConfigFile - getCalibrationConfig")
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
         return calibrationFiles[calFileName]
+    
