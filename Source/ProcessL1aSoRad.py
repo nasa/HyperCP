@@ -78,9 +78,8 @@ class ProcessL1aSoRad:
                 # add name as attributes
                 gp.attributes['CalFileName'] = 'SAM_' + name + '.ini'
              
-
-                #gpsGroup.addDataset("DATETAG")
-                #gpsGroup.datasets["DATETAG"].data = np.array(dateTag.data, dtype=[('NONE', '<f8')])
+                #  The dtype needs to be f for INTTIME (it is i8 in So-Rad L0HDF)
+                gp.datasets["INTTIME"].data =np.array((gp.datasets["INTTIME"].data).astype(int), dtype=[('NONE', '<f8')])
                 
                 # Append wavelength coeffs (c0,c1,c2,c3) from ini file
                 ProcessL1aTriOS.attr_ini(cal_path + sensor_id, gp)
