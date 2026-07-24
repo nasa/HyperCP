@@ -12,28 +12,18 @@ import Source.utils.filing as filing
 class ProcessL1aSoRad:
     '''Process L1A SoRad. 
     
-    For now, ProcessL1a So-rad, is a function that reads pre-formatted L1A hdf file.
-
-    Currently developed for the "L1A" version of raw HDF data from Tom (presumably mimicking geoserver conversion), 
-    and not yet "L0" HDF data directly off the So-Rad.
+    This function converts a So-Rad L0.HDF (obtianed either via `direct download' 
+    or using the MONDA pypi package https://pypi.org/project/monda/ (WORK STILL TO BE COMPLETED)
         
-    '''
-    # TODO: Test on L0 HDF data 
+    It includes:
+        - Appending calibration file information
+        - Harmonization of data formats/types to L1A.hdf standard
+        - Assigning wavelength bins and sensor types (LI, ES, LT) to L0 data
     
-    # @staticmethod -  old `L1A'
-    # def processL1a(input_path, output_path, calibrationMap):
-        
-    #   root = HDFRoot.readHDF5(input_path)
-    #  print('Reading hdf file' + str(input_path))
-
-        # Test for the erroneous sorad group attribute in Tom's raw HDF
-    #   for gp in root.groups:
-    #      if gp.id == 'sorad':
-    #         if gp.attributes['CalFileName'] == 'sorad.tdf':
-    #            gp.attributes['CalFileName'] = 'sorad'
-
-    # return root, output_path
-        
+    Where possible, functions are re-used from ProcessL1ATriOS. 
+    
+    '''
+    
     def processL1a(input_path, output_path, calibrationMap):
   
         root = HDFRoot.readHDF5(input_path)
@@ -57,14 +47,14 @@ class ProcessL1aSoRad:
         # Add wavelength coeffs and calibrations to each sensor group
         # This uses sections of the `formatting_instrument' function in ProcesssL1aTriOs
         for gp in root.groups:
-            # re-define TIMETAG2 and DATETAG as integers (they are floats in So-Rad L0HDF)      
-            # factor 1000 due to how ms were defined in so-rad L0-HDF
+            # re-define TIMETAG2 and DATETAG as `integer float 8' (they are floating point deccimals in So-Rad L0HDF)      
+            # factor 1000 due to how millisecs were defined in So-rad L0-HDF
             gp.datasets["TIMETAG2"].data = np.array((gp.datasets["TIMETAG2"].data)*1000, dtype=[('NONE', '<f8')]) 
             gp.datasets["DATETAG"].data = np.array((gp.datasets["DATETAG"].data).astype(int), dtype=[('NONE', '<f8')])
 
             if gp.id.split('_')[0] == 'SAM': # selects sensor group to appemnd cal info
                 # assign `sensor_id', `sensor' and `name' labels used in ProcesssL1aTriOS
-                sensor_id = gp.id  # e.g. 'SAM_8729.ini'   
+                sensor_id = gp.id # e.g. 'SAM_8729.ini'   
                 
                 with open(configPath, 'r', encoding="utf-8") as fc:
                     text = fc.read()
@@ -113,7 +103,7 @@ class ProcessL1aSoRad:
                 if metacal is None:
                     logging.writeLogFileAndPrint("Error reading calibration file")
                     return None,None
-                # C1 = gp.addDataset('BACK_'+ sensor,data=back[[1,2]].astype(np.float64))
+                # C1 = gp.addDataset('BACK_'+ sensor,data=back[[1,2]].astype(np.float64)) # Carried over from Processs L1ATriOS
                 C1 = gp.addDataset('BACK_' + sensor)
                 C1.columns["0"] = back.values[:,1]
                 C1.columns["1"] = back.values[:,2]
@@ -129,7 +119,7 @@ class ProcessL1aSoRad:
                 gp.datasets["REL_AZ"].data = np.array((gp.datasets["REL_AZ"].data).astype(int), dtype=[('NONE', '<f8')])
                 gp.datasets["GPS_SPEED"].data = np.array((gp.datasets["GPS_SPEED"].data).astype(int), dtype=[('NONE', '<f8')])
                   
-                
+            # write file (FPP snytax has been re-used, even though it us not needed here)   
             file_name = input_path.split('/')[-1][:-6]
             outFFP = []
             outFFP.append(os.path.join(output_path, f'{file_name}_L1A.hdf'))
