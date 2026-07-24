@@ -38,8 +38,7 @@ class ProcessL1aSoRad:
   
         root = HDFRoot.readHDF5(input_path)
         print('Reading hdf file' + str(input_path))
-        
-        # Line 24 in ProcessL1aTriOS)
+    
         configPath = MainConfig.settings['cfgPath']
         cal_path = configPath[0:configPath.rfind('.')] + '_Calibration/'
     
@@ -58,13 +57,12 @@ class ProcessL1aSoRad:
         # Add wavelength coeffs and calibrations to each sensor group
         # This uses sections of the `formatting_instrument' function in ProcesssL1aTriOs
         for gp in root.groups:
-            
-            # re-define TIMETAG2 and DATETAG as integers (they are non-integers in So-Rad L0HDF)      
-            gp.datasets["TIMETAG2"].data = np.array((gp.datasets["TIMETAG2"].data)*1000, dtype=[('NONE', '<f8')])
+            # re-define TIMETAG2 and DATETAG as integers (they are floats in So-Rad L0HDF)      
+            # factor 1000 due to how ms were defined in so-rad L0-HDF
+            gp.datasets["TIMETAG2"].data = np.array((gp.datasets["TIMETAG2"].data)*1000, dtype=[('NONE', '<f8')]) 
             gp.datasets["DATETAG"].data = np.array((gp.datasets["DATETAG"].data).astype(int), dtype=[('NONE', '<f8')])
 
             if gp.id.split('_')[0] == 'SAM': # selects sensor group to appemnd cal info
-            
                 # assign `sensor_id', `sensor' and `name' labels used in ProcesssL1aTriOS
                 sensor_id = gp.id  # e.g. 'SAM_8729.ini'   
                 
@@ -78,7 +76,7 @@ class ProcessL1aSoRad:
                 # add name as attributes
                 gp.attributes['CalFileName'] = 'SAM_' + name + '.ini'
              
-                #  The dtype needs to be f for INTTIME (it is i8 in So-Rad L0HDF)
+                #  Redefined dtype for float  (this is int in So-Rad L0)
                 gp.datasets["INTTIME"].data =np.array((gp.datasets["INTTIME"].data).astype(int), dtype=[('NONE', '<f8')])
                 
                 # Append wavelength coeffs (c0,c1,c2,c3) from ini file
@@ -121,13 +119,21 @@ class ProcessL1aSoRad:
                 C1.columns["1"] = back.values[:,2]
                 C1.columnsToDataset()
                 ProcessL1aTriOS.get_attr(metaback,C1)
-             
-                # breakpoint()
-                file_name = input_path.split('/')[-1][:-6]
-                outFFP = []
-                outFFP.append(os.path.join(output_path, f'{file_name}_L1A.hdf'))
-                root.attributes["L1A_FILENAME"] = outFFP[-1]
-                filing.checkOutputFiles(outFFP[-1])
-
+         
+            elif gp.id.split('_')[0] == 'sorad':
+                #  Need to convert to f8 format (f32 in Sorad L0 HDF)
+                gp.datasets["LATITUDE"].data = np.array((gp.datasets["LATITUDE"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["LONGITUDE"].data = np.array((gp.datasets["LONGITUDE"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["TILT_STD"].data = np.array((gp.datasets["TILT_STD"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["TILT"].data = np.array((gp.datasets["TILT"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["REL_AZ"].data = np.array((gp.datasets["REL_AZ"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["GPS_SPEED"].data = np.array((gp.datasets["GPS_SPEED"].data).astype(int), dtype=[('NONE', '<f8')])
+                  
+                
+            file_name = input_path.split('/')[-1][:-6]
+            outFFP = []
+            outFFP.append(os.path.join(output_path, f'{file_name}_L1A.hdf'))
+            root.attributes["L1A_FILENAME"] = outFFP[-1]
+            filing.checkOutputFiles(outFFP[-1])
 
         return root, output_path

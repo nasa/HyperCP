@@ -91,6 +91,7 @@ class ProcessL1b_Interp:
                 newAncGroup.attributes['GPS_Source'] = gpsGroup.attributes['CalFileName']
                 
         elif STGroup is not None and STGroup.id.endswith("sorad") == True: 
+           
             # This is the case where GPS is part of a suntracker group for sorad
             ProcessL1b_Interp.convertDataset(STGroup, "LATITUDE", newAncGroup, "LATITUDE")
             ProcessL1b_Interp.convertDataset(STGroup, "LONGITUDE", newAncGroup, "LONGITUDE")
@@ -376,14 +377,14 @@ class ProcessL1b_Interp:
             the sensor dataset. This also adds a temporary column in the sensor data
             array for datetime to be used in interpolation. This is later removed, as
             HDF5 does not support datetime. '''
-
+    
         dataset = group.getDataset(datasetName)
         dateData = group.getDataset("DATETAG")
         timeData = group.getDataset("TIMETAG2")
         dateTimeData = group.getDataset("DATETIME")
 
         # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_METADATA
-        if group.id.startswith("GP"):
+        if group.id.startswith("GP") :
             if group.id == "GPS_MSDA":
                 if newDatasetName == "LATITUDE":
                     # for i in range(dataset.data.shape[0]):
