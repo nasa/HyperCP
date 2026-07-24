@@ -118,7 +118,7 @@ class ConfigFile:
         for multiCalOpt in ['preCal', 'postCal', 'chooseCal']:
             for sensorType in ['ES', 'LT', 'LI']:
                 # RADCAL filename instead if selected in Source/CalCharWindow.py options.
-                ConfigFile.settings['%s_%s' % (multiCalOpt, sensorType)] = None
+                ConfigFile.settings[f'{multiCalOpt}_{sensorType}'] = None
 
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
@@ -148,7 +148,8 @@ class ConfigFile:
         ConfigFile.settings["bL2EnablePercentLt"] = 1
         ConfigFile.settings["fL2PercentLt"] = 10 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
-        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
+        # ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
+        ConfigFile.settings["bL2D26Rho"] = 0 # D'Alimonte et al. in progress
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
@@ -227,7 +228,7 @@ class ConfigFile:
     def saveConfig(filename):
         # import traceback
         print("saveConfig was called from:")
-        # traceback.print_stack() 
+        # traceback.print_stack()
         print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
@@ -339,4 +340,3 @@ class ConfigFile:
         print("ConfigFile - getCalibrationConfig")
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
         return calibrationFiles[calFileName]
-    

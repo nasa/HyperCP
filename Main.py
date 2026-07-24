@@ -532,7 +532,7 @@ class Window(QtWidgets.QWidget):
                 configFileName, calFiles
             )
         elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
-            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)        
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles) 
 
         if not calibrationMap:
             print(
