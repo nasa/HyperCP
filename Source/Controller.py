@@ -407,7 +407,6 @@ class Controller:
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
             return None
-
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
@@ -674,6 +673,7 @@ class Controller:
                 filing.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
+                
                 root = Controller.processL1bqc(inFilePath, outFilePath)
                 # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
