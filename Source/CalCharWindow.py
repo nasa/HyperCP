@@ -4,13 +4,32 @@ import glob
 import shutil
 import re
 from pathlib import Path
-import threading
+from datetime import datetime
 import urllib.request
 
 import numpy as np
+import pandas as pd
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+
+import threading
+import urllib.request
+
+
+# Wrap the original urlopen with a fixed timeout argument (must be before ocdb import)
+# TODO: Ask OCDB team to implement a timeout option
+time_out = 5
+original_urlopen = urllib.request.urlopen
+def urlopen_default_timeout(*args, **kwargs):
+    print('Modified urlopen called to enforce timeout of %s seconds' % time_out)
+    if 'timeout' in kwargs:
+        return urllib.request.urlopen(*args, **kwargs)  # If timeout is already specified, use it
+    return original_urlopen(*args, **kwargs, timeout=time_out)
+urllib.request.urlopen = urlopen_default_timeout
 
 from ocdb.api.OCDBApi import new_api, OCDBApi
 
@@ -30,6 +49,37 @@ def urlopen_default_timeout(*args, **kwargs):
         return urllib.request.urlopen(*args, **kwargs)  # If timeout is already specified, use it
     return original_urlopen(*args, **kwargs, timeout=time_out)
 urllib.request.urlopen = urlopen_default_timeout
+
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super().__init__(fig)
+
+
+class mplWindow(QtWidgets.QDialog):
+    ''' Object for matplotlib figures in pop-up winodows'''
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Set window properties
+        self.setWindowTitle("Pre/Post Calibration Drift Check")
+        self.setModal(False)
+        self.resize(800, 600)
+
+        # Create layout
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+
+        # Create matplotlib canvas
+        self.sc = MplCanvas(self, width=8, height=6, dpi=100)
+        layout.addWidget(self.sc)
+
+        # Add close button
+        close_button = QtWidgets.QPushButton("Close")
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button)
 
 class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
@@ -192,52 +242,66 @@ class CalCharWindow(QtWidgets.QDialog):
         self.calFileMostRecent.setAutoExclusive(False)
         self.calFileMostRecent.clicked.connect(lambda: self.MultiCalOptions('most_recent'))
 
-        # Option 2: Pre and post average
-        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations")
+        # Option 2: Pre and post check
+        self.calFilePrePost = QtWidgets.QRadioButton("Use pre- and post- calibrations: Check consistency, and use closest to acquisition time")
         self.calFilePrePost.setAutoExclusive(False)
         self.calFilePrePost.clicked.connect(lambda: self.MultiCalOptions('pre_post'))
+        self.CheckPrePostButton = QtWidgets.QPushButton("Check pre-/post-cal consistency")
+        self.CheckPrePostButton.setAutoExclusive(False)
+        self.CheckPrePostButton.clicked.connect(lambda: self.check_pre_post_CalDrift())
 
-        self.addPreCalButton = QtWidgets.QPushButton("Choose (3) pre-cal files:")
+        self.CheckPrePostLineEdit = QtWidgets.QLineEdit(self)
+        self.CheckPrePostLineEdit.setDisabled(True)
+
+        self.addPreCalButton = QtWidgets.QPushButton("Choose (%s) pre-cal file(s):" % ConfigFile.settings['num_of_sensors'])
         self.addPreCalButton.clicked.connect(lambda: self.ChooseCalFiles('preCal'))
 
         self.PreCalLineEdit = QtWidgets.QLineEdit(self)
         self.PreCalLineEdit.setDisabled(True)
-        PreCal_defined = (ConfigFile.settings['preCal_ES'] is not None) and (ConfigFile.settings['preCal_LT'] is not None) and (ConfigFile.settings['preCal_LI'] is not None)
-        if PreCal_defined:
-            self.PreCalLineEdit.setText('Already selected')
-        else:
-            self.PreCalLineEdit.setText('Not selected')
 
-        self.addPostCalButton = QtWidgets.QPushButton("Choose (3) post-cal files:")
+        self.addPostCalButton = QtWidgets.QPushButton("Choose (%s) post-cal file(s):" % ConfigFile.settings['num_of_sensors'])
         self.addPostCalButton.clicked.connect(lambda: self.ChooseCalFiles('postCal'))
 
         self.PostCalLineEdit = QtWidgets.QLineEdit(self)
         self.PostCalLineEdit.setDisabled(True)
-        PostCal_defined = (ConfigFile.settings['postCal_ES'] is not None) and (ConfigFile.settings['postCal_LT'] is not None) and (ConfigFile.settings['postCal_LI'] is not None)
-        if PostCal_defined:
-            self.PostCalLineEdit.setText('Already selected')
-        else:
-            self.PostCalLineEdit.setText('Not selected')
+
+        self.pre_post_cal_status()
+
+        ###
+        for cal_time in ['pre','post']:
+            if ConfigFile.settings['%sCal_defined' % cal_time]:
+                if cal_time == 'pre':
+                    self.PreCalLineEdit.setText('Correctly selected')
+                elif cal_time == 'post':
+                    self.PostCalLineEdit.setText('Correctly selected')
+            else:
+                if cal_time == 'pre':
+                    self.PreCalLineEdit.setText('Not selected')
+                elif cal_time == 'post':
+                    self.PostCalLineEdit.setText('Not selected')
+
+        self.update_postCal()
 
         # Option 3: Choose a given cal
-        self.calFileChoose = QtWidgets.QRadioButton("Use specific calibration files")
+        self.calFileChoose = QtWidgets.QRadioButton("Use specific calibration files (regardless of calibration and acquisition times)")
         self.calFileChoose.setAutoExclusive(False)
         self.calFileChoose.clicked.connect(lambda: self.MultiCalOptions('choose'))
 
-        self.addChooseCalButton = QtWidgets.QPushButton("Choose (3) cal files:")
+        self.addChooseCalButton = QtWidgets.QPushButton("Choose (%s) cal file(s):" % ConfigFile.settings['num_of_sensors'])
         self.addChooseCalButton.clicked.connect(lambda: self.ChooseCalFiles('chooseCal'))
         self.ChooseCalLineEdit = QtWidgets.QLineEdit(self)
         self.ChooseCalLineEdit.setDisabled(True)
         ChooseCal_defined = (ConfigFile.settings['chooseCal_ES'] is not None) and (ConfigFile.settings['chooseCal_LT'] is not None) and (ConfigFile.settings['chooseCal_LI'] is not None)
         if ChooseCal_defined:
-            self.ChooseCalLineEdit.setText('Already selected')
+            self.ChooseCalLineEdit.setText('Correctly selected')
         else:
             self.ChooseCalLineEdit.setText('Not selected')
 
-        # TODO Average of pre and post disabled as still not implemented
+        #
         self.calFilePrePost.setDisabled(True)
         self.addPreCalButton.setDisabled(True)
         self.addPostCalButton.setDisabled(True)
+        self.CheckPrePostButton.setDisabled(True)
 
         # Save and close
         self.saveButton = QtWidgets.QPushButton("Save/Close")
@@ -317,7 +381,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # Most recent
         VBox.addWidget(self.calFileMostRecent)
 
-        # Pre - Post average
+        # Pre - Post check
         VBox.addWidget(self.calFilePrePost)
         CalHBox5 = QtWidgets.QHBoxLayout()
         CalHBox5.addWidget(self.addPreCalButton)
@@ -325,6 +389,11 @@ class CalCharWindow(QtWidgets.QDialog):
         CalHBox5.addWidget(self.addPostCalButton)
         CalHBox5.addWidget(self.PostCalLineEdit)
         VBox.addLayout(CalHBox5)
+
+        CalHBox5_2 = QtWidgets.QHBoxLayout()
+        CalHBox5_2.addWidget(self.CheckPrePostButton)
+        CalHBox5_2.addWidget(self.CheckPrePostLineEdit)
+        VBox.addLayout(CalHBox5_2)
 
         # Choose other
         VBox.addWidget(self.calFileChoose)
@@ -422,6 +491,13 @@ class CalCharWindow(QtWidgets.QDialog):
             # FRM regimes not yet implemented, forcing factory mode.
             ConfigFile.settings["fL1bCal"] = 1
 
+        #num_of_sensors
+        n = 0
+        for sensor_type in ['ES', 'LI', 'LT']:
+            if ConfigFile.settings['serialNumber'].get(sensor_type) is not None:
+                n += 1
+        ConfigFile.settings['num_of_sensors'] = n
+
     def ThermalStatusUpdate(self):
         if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
@@ -493,7 +569,7 @@ class CalCharWindow(QtWidgets.QDialog):
             self.FidRadDBdownload.setDisabled(False)
 
             self.calFileMostRecent.setDisabled(False)
-            # self.calFilePrePost.setDisabled(False) TODO: commented as not yet implemented
+            self.calFilePrePost.setDisabled(False)
             self.calFileChoose.setDisabled(False)
 
         elif ConfigFile.settings["fL1bCal"] == 3:
@@ -505,8 +581,11 @@ class CalCharWindow(QtWidgets.QDialog):
             self.FidRadDBdownload.setDisabled(False)
 
             self.calFileMostRecent.setDisabled(False)
-            # self.calFilePrePost.setDisabled(False) TODO: commented as not yet implemented
+            self.calFilePrePost.setDisabled(False)
             self.calFileChoose.setDisabled(False)
+
+        # COMMENT TO TEST
+        # self.calFilePrePost.setDisabled(True)
 
         self.missing_FidRadDB_cal_char_files()
 
@@ -883,9 +962,9 @@ class CalCharWindow(QtWidgets.QDialog):
 
             self.addPreCalButton.setDisabled(True)
             self.addPostCalButton.setDisabled(True)
+            self.CheckPrePostButton.setDisabled(True)
             self.addChooseCalButton.setDisabled(True)
         elif option_multical == 'pre_post':
-            # NB: unreachable (disabled)
             ConfigFile.settings['MultiCal'] = 1
 
             self.calFileMostRecent.setChecked(False)
@@ -893,7 +972,15 @@ class CalCharWindow(QtWidgets.QDialog):
             self.calFileChoose.setChecked(False)
 
             self.addPreCalButton.setDisabled(False)
-            self.addPostCalButton.setDisabled(False)
+
+            self.update_postCal()
+
+            # Check button disabled unless pre- and post-cal files are defined
+            if ConfigFile.settings['pre_postCal_defined']:
+                self.CheckPrePostButton.setDisabled(False)
+            else:
+                self.CheckPrePostButton.setDisabled(True)
+
             self.addChooseCalButton.setDisabled(True)
         elif option_multical == 'choose':
             ConfigFile.settings['MultiCal'] = 2
@@ -904,6 +991,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
             self.addPreCalButton.setDisabled(True)
             self.addPostCalButton.setDisabled(True)
+            self.CheckPrePostButton.setDisabled(True)
             self.addChooseCalButton.setDisabled(False)
 
     def ChooseCalFiles(self,option_cal_char_file):
@@ -924,7 +1012,7 @@ class CalCharWindow(QtWidgets.QDialog):
             calFileStr = "calibration"
 
         file_paths = []
-        # For each requeted
+        # For each requested
         for sensorType, serialNumber in ConfigFile.settings['serialNumber'].items():
 
             # Collect file paths from selected files...
@@ -955,7 +1043,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
             # Check correctness of selection
             if len(calChar0) == 0: # files missing
-                selectCorrectStr = selectCorrectStr + '%s (Serial nr. %s): RADCAL not selected! <br><br>' % (sensorType, serialNumber)
+                selectCorrectStr = selectCorrectStr + '%s (%s): RADCAL not selected! <br><br>' % (sensorType, serialNumber)
                 selectCorrect = False
                 ConfigFile.settings['%s_%s' % (option_cal_char_file, sensorType)] = None
             elif len(calChar0) > 1: # multiple RADCALS for same sensor were selected
@@ -977,12 +1065,22 @@ class CalCharWindow(QtWidgets.QDialog):
         if option_cal_char_file == 'preCal':
             self.PreCalLineEdit.setText(selectCorrectStr)
             self.PreCalLineEdit.setCursorPosition(0)
+            self.pre_post_cal_status()
         elif option_cal_char_file == 'postCal':
             self.PostCalLineEdit.setText(selectCorrectStr)
             self.PostCalLineEdit.setCursorPosition(0)
+            self.pre_post_cal_status()
         elif option_cal_char_file in 'chooseCal':
             self.ChooseCalLineEdit.setText(selectCorrectStr)
             self.ChooseCalLineEdit.setCursorPosition(0)
+
+        # Check button disabled unless pre- and post-cal files are defined
+        if ConfigFile.settings['pre_postCal_defined']:
+            self.CheckPrePostButton.setDisabled(False)
+        else:
+            self.CheckPrePostButton.setDisabled(True)
+
+        self.update_postCal()
 
         # Copy it to calPath if not selected from there.
         for file in file_paths:
@@ -990,6 +1088,243 @@ class CalCharWindow(QtWidgets.QDialog):
             if not dest.exists():
                 print(f'Copying {os.path.basename(file)} to {ConfigFile.getCalibrationDirectory()}')
                 shutil.copy(file, dest)
+
+    def pre_post_cal_status(self):
+        '''
+        Check if pre- and post-cals were properly selected and enable the corresponding buttons...
+        :return:
+        '''
+
+
+        # Check if pre and post cals are defined for each sensor
+        for cal_time in ['pre', 'post']:
+            ConfigFile.settings['%sCal_defined' % cal_time] = True
+            for sensor_type in ['ES', 'LI', 'LT']:
+                if ConfigFile.settings['serialNumber'].get(sensor_type) is not None:
+                    if ConfigFile.settings['%sCal_%s' % (cal_time,sensor_type)] is None:
+                        ConfigFile.settings['%sCal_defined' % cal_time] = False
+
+        # pre_postCal_defined?
+        ConfigFile.settings['pre_postCal_defined'] = ConfigFile.settings['preCal_defined'] and ConfigFile.settings['postCal_defined']
+
+        # Update pre-post check button
+        if ConfigFile.settings['pre_postCal_defined']:
+            self.CheckPrePostLineEdit.setText('Click button to check.')
+        elif (not ConfigFile.settings['preCal_defined']) and (not ConfigFile.settings['postCal_defined']):
+            self.CheckPrePostLineEdit.setText('Select pre- and post- cals first.')
+        elif not ConfigFile.settings['preCal_defined']:
+            self.CheckPrePostLineEdit.setText('Select pre- cals first.')
+        elif not ConfigFile.settings['postCal_defined']:
+            self.CheckPrePostLineEdit.setText('Select post- cals first.')
+
+    def update_postCal(self):
+        '''
+        Check:
+        if:
+            pre-cals are defined
+            pre-cals are previous to post-cals
+        then:
+            post-cal button enabled
+        ... and update corresponding line edits..
+        :return:
+        '''
+
+        # Default post cal line edit
+        pre_cal_first_str = 'Select Pre-Cal first'
+
+        # Check if pre-cal defined and update select button and line edit ...
+        if ConfigFile.settings['preCal_defined']:
+            self.addPostCalButton.setDisabled(False)
+            if self.PostCalLineEdit.text() == pre_cal_first_str:
+                self.PostCalLineEdit.setText('Not selected')
+        else:
+            self.addPostCalButton.setDisabled(True)
+            self.PostCalLineEdit.setText(pre_cal_first_str)
+            for sensorType in ConfigFile.settings['neededCalCharsFRM'].keys():
+                ConfigFile.settings['postCal_%s' % sensorType] = None
+
+        # Check if t(post-cal) > t(pre-cal) for each sensor and update line edits and butons respectively
+        post_wrong = []
+        post_later_str = ''
+        for sensorType in ConfigFile.settings['neededCalCharsFRM'].keys():
+            preCalFile = ConfigFile.settings.get('preCal_%s' % sensorType)
+            postCalFile = ConfigFile.settings.get('postCal_%s' % sensorType)
+            # Skip check if no pre-/post-cal files
+            if (preCalFile is None) or (postCalFile is None):
+                continue
+            else:
+                # Extract date from RADCAL filenames
+                date0 = os.path.basename(preCalFile).split('_RADCAL_')[1][:-4]
+                date1 = os.path.basename(postCalFile).split('_RADCAL_')[1][:-4]
+
+                # Transform to date objects
+                date0_ts = datetime.strptime(date0, '%Y%m%d%H%M%S')
+                date1_ts = datetime.strptime(date1, '%Y%m%d%H%M%S')
+
+                # Time check....
+                if date0_ts >= date1_ts:
+                    if post_later_str == '':
+                        post_later_str += ' %s: Post-cal should be posterior to pre-cal. Select again!'
+
+                    post_wrong = post_wrong + [sensorType]
+
+                    ConfigFile.settings['postCal_%s' % sensorType] = None
+
+        # post_later_str != '' here means an issue was spotted... then disable the check button.
+        if post_later_str != '':
+            post_later_str = post_later_str % ', '.join(post_wrong)
+            self.PostCalLineEdit.setText(post_later_str)
+            self.CheckPrePostButton.setDisabled(True)
+
+    def check_pre_post_CalDrift(self):
+        '''
+        Take pre- and post- cals to determine whether they fall within expected
+        Let:
+         - R1 and R2 be responsivities associated to a given sensor,
+         - u(R1), u(R2) the respective (k=2) uncertainties,
+         - dt the time difference between the two calibrations,
+        we estimate an acceptable "drift uncertainty" (k=1) as  1%<R1,R2>dT, where
+            <R1,R2> is the mean responsivity
+
+        then compute a En-score (k=2) (ISO 13528:2022) accounting for drift as:
+        En = (R1-R2)/sqrt(u(R1)^2 + u(R2)^2 + (2*1%<R1,R2>dT)^2)
+            - NB: for simplicity we do not consider covariances between R1 and R2
+
+        To test consistency:
+            if |En|[400 nm - 700 nm] <= 1 ---> R1 and R2 are considered consistent within uncertainties and expected drift.
+            if |En|[400 nm - 700 nm] > 1 ---> R1 and R2 are considered inconsistent
+
+        For each pair of responsivities and for sensor (Li, Lt, Es) a plot pops up showing the results of the test
+            - If the test passes for all sensors in the full [400-700] nm range, then "check passed" should show
+            - If it fails for any of these cases, then a WARNING is issued to the user, but processing can continue
+
+        :return:
+        '''
+
+        # Summarise check status for each sensor
+        check_passed = {}
+
+        # Wavelength range
+        vis = [400, 700]
+
+        # Cal file columns
+        cols = ['Nr.', 'wavelength[nm]', 'responsivity', 'uncertainty', 'dark1', 'dark2', 'raw1', 'stdev1', 'raw2', 'stdev2']
+
+        # Perform test and plots for each sensor
+        for sensorType in ConfigFile.settings['neededCalCharsFRM'].keys():
+
+            # Get serial number, and get cal files from the chosen pre and post cals
+            serialNumber = ConfigFile.settings['serialNumber'][sensorType]
+            calFiles = {}
+            cals = {}
+            calFiles[0]  = ConfigFile.settings['preCal_%s'  % sensorType]
+            calFiles[1]  = ConfigFile.settings['postCal_%s' % sensorType]
+
+            # Get cal dates from cal file names
+            date0 = os.path.basename(calFiles[0]).split('_RADCAL_')[1][:-4]
+            date1 = os.path.basename(calFiles[1]).split('_RADCAL_')[1][:-4]
+
+            # Convert dates to time
+            date0_ts = datetime.strptime(date0, '%Y%m%d%H%M%S')
+            date1_ts = datetime.strptime(date1, '%Y%m%d%H%M%S')
+
+            # Convert to "readable" time to show in the plots
+            date0_str= date0_ts.strftime('%Y-%m-%dT%H:%M:%S')
+            date1_str= date1_ts.strftime('%Y-%m-%dT%H:%M:%S')
+
+            # Time difference in years
+            delta_t = (date1_ts - date0_ts).days / 365.2425
+
+            # Read cal coefficients from cal files into "cals" dictionary
+            for calnum in [0,1]:
+
+                # Open Cal file
+                with open(calFiles[calnum], 'r') as file:
+                    lines = file.readlines()
+
+                # Range of lines of interest
+                startline = [ln for ln,l in enumerate(lines) if l=='[CALDATA]\n'][0] +1
+                endline = len(lines)-[ln for ln,l in enumerate(lines) if l=='[END_OF_CALDATA]\n'][0]
+
+                # Read into pandas dataframe
+                cals[calnum]  = pd.read_csv(calFiles[calnum], names=cols, skiprows=startline, skipfooter=endline, engine='python', sep='\t')
+
+                # Extract the wavelengths of interest
+                cals[calnum] = cals[calnum].loc[(cals[calnum]['wavelength[nm]']>=vis[0]) & (cals[calnum]['wavelength[nm]']<=vis[1]),['wavelength[nm]', 'responsivity', 'uncertainty']]
+
+                # Get absolute uncertainty
+                cals[calnum]['uncertainty_abs'] = cals[calnum]['uncertainty']*cals[calnum]['responsivity']/100
+
+            # Compute the "tolerable drift" term
+            # Factor 0.01 ---> 1% tolerable drift per year at k=1
+            # Factor 2 --->  to transform to k=2
+            drift_r1r2 = 2* (0.01 * (cals[0]['responsivity'] + cals[1]['responsivity'])/2) * delta_t
+            corrected_En_score =  (cals[0]['responsivity'] - cals[1]['responsivity']) / np.sqrt(cals[0]['uncertainty_abs']**2 + cals[1]['uncertainty_abs']**2 + drift_r1r2**2)
+
+            # Perform En test
+            excessiveDrift = np.abs(corrected_En_score) >= 1
+
+            # Fill output dictionary with result of the test
+            check_passed[sensorType] = bool(~ np.any(excessiveDrift))
+
+            # Printout statement
+            check_status = ('%s: Check PASSED!' % sensorType) if check_passed[sensorType] else ('%s: Check FAILED. INSPECT BEFORE RUNNING HYPERCP' % sensorType)
+
+            ### Plotting ###
+
+            # Initialise plot
+            plot_window = mplWindow(self)  # Pass parent
+            plot_window.sc.axes.clear()  # Clear any existing plots
+            fig = plot_window.sc.figure
+            fig.clear()
+
+            # ax1: Plot R1 and R2 responsivities with respective k=2 uncertainties
+            ax1 = fig.add_subplot(2, 1, 1)
+            ax1.set_title(check_status)
+            ax1.fill_between(cals[0]['wavelength[nm]'], cals[0]['responsivity'] - cals[0]['uncertainty_abs'], cals[0]['responsivity'] + cals[0]['uncertainty_abs'], alpha=0.5, color='m')
+            ax1.plot(cals[0]['wavelength[nm]'],cals[0]['responsivity'], color='m', label='Pre-cal responsivity, sensor %s, date %s' % (serialNumber, date0_str))
+            ax1.fill_between(cals[0]['wavelength[nm]'], cals[1]['responsivity'] - cals[1]['uncertainty_abs'], cals[1]['responsivity'] + cals[1]['uncertainty_abs'], alpha=0.5, color='c')
+            ax1.plot(cals[0]['wavelength[nm]'],cals[1]['responsivity'], color='c', label='Post-cal responsivity, sensor %s, date %s' % (serialNumber, date1_str))
+            ax1.legend()
+            ax1.set_ylabel('Responsivities,r[a. u.]')
+
+            # ax2: Plot En scores
+            ax2 = fig.add_subplot(2, 1, 2)
+            ax2.plot(cals[0]['wavelength[nm]'], corrected_En_score, label='Temporal-drift-corrected ' + r'$E_{n}$' + '-score = ' + r'$\frac{r_1-r_2}{\sqrt{(\Delta r_1)^2+(\Delta r_2)^2 + (2 \times 1\%\overline{r} \times \Delta t )^2}}$')
+            ax2.axhline(y=-1, color='red', linestyle='--', linewidth=1.5, alpha=0.7, label=r'$E_{n}$' + '-score acceptable range')
+            ax2.axhline(y= 1, color='red', linestyle='--', linewidth=1.5, alpha=0.7)
+
+            # Change to RED wherever |En| > 1
+            if np.any(excessiveDrift):
+                ax2.plot(cals[0]['wavelength[nm]'][excessiveDrift], corrected_En_score[excessiveDrift], label='Out of consistency range!', color='r', markersize=5)
+
+            ax2.legend()
+            ax2.set_ylabel(r'$E_{n}$' + '-score [unitless]')
+            ax2.set_xlabel('Wavelength [nm]')
+            ax2.set_ylim(-3, 3)
+
+            # Draw and show
+            plot_window.sc.draw()
+            plot_window.show()  # Keep the window open
+            plot_window.raise_()  # Bring to front
+
+        # Summary of check status passed to ConfigFile.settings
+        ConfigFile.settings['pre_post_check'] = check_passed
+
+        # Compose printout string to show in cal-char window (in CheckPrePostLineEdit)
+        check_out_str = ''; failed_for = []
+        for sensorType, check_status in check_passed.items():
+            if not check_status:
+                if check_out_str == '':
+                    check_out_str = 'Check FAILED for: %s. INSPECT pre-/post-cals BEFORE running HyperCP'
+                failed_for = failed_for + [sensorType.capitalize()]
+        if check_out_str == '':
+            check_out_str = 'Check PASSED!'
+        else:
+            check_out_str = check_out_str % ', '.join(failed_for)
+
+        # Send prinout string to cal char window
+        self.CheckPrePostLineEdit.setText(check_out_str)
 
     def saveButtonPressed(self):
         '''
@@ -1026,7 +1361,7 @@ class CalCharWindow(QtWidgets.QDialog):
                         break
 
             if not pre_postCal_complete:
-                QtWidgets.QMessageBox.warning(None, "Missing files", "If mean of pre- and post-calibration selected, please select all pre-cal and post-cal files for %s!" % sensorTypes_str)
+                QtWidgets.QMessageBox.warning(None, "Missing files", "If pre- and post-calibration selected, please select all pre-cal and post-cal files for %s!" % sensorTypes_str)
                 closeFlag = False
         elif ConfigFile.settings['MultiCal'] == 2:
             chooseCal_complete = True
