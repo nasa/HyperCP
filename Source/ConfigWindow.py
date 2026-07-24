@@ -1369,10 +1369,14 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcDeglitchCheckBox.setEnabled(False)
             self.l1aqcDeglitchLabel.setEnabled(False)
             self.l1aqcAnomalyButton.setEnabled(False)
+            self.l1aqcPlotDeglitchLabel.setEnabled(False)
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(False)
         elif sensor.lower() == 'seabird':
             self.l1aqcDeglitchCheckBox.setEnabled(True)
             self.l1aqcDeglitchLabel.setEnabled(True)
             self.l1aqcAnomalyButton.setEnabled(True)
+            self.l1aqcPlotDeglitchLabel.setEnabled(True)
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(True)
 
         disabled = not self.l1aqcDeglitchCheckBox.isChecked()
         if disabled:

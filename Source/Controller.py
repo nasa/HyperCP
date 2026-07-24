@@ -265,6 +265,7 @@ class Controller:
             #         cf.name = key
             #         calibrationMap[key] = cf
         if ConfigFile.settings['SensorType'].lower() == 'sorad': # accounts for pseudo so-rad tdf
+            cf = CalibrationFile()
             cf.id = 'sorad'
             cf.name = 'sorad'
             calibrationMap['sorad'] = cf
@@ -451,7 +452,7 @@ class Controller:
             return None
 
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL1bqc.processL1bqc(root)        
+        root = ProcessL1bqc.processL1bqc(root)
 
         # Write output file
         if root is not None:
@@ -493,7 +494,7 @@ class Controller:
                 and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
             ):
                 plotting.plotUncertainties(node, filename)
-            
+
             if ConfigFile.settings['bL2PlotRrs']==1:
                 if ConfigFile.settings["SensorType"].lower() == "trios es only":
                     logging.writeLogFileAndPrint("Rrs plot is not available for TriOS ES-Only. Skipping plot.")
@@ -584,7 +585,7 @@ class Controller:
             # inFilePath is a singleton filepath string
             inFilePath = os.path.abspath(inFilePath)
             inFileName = os.path.split(inFilePath)[1]
-   
+
         # Grab input name and extension
         fileName,extension = os.path.splitext(inFileName)
 
@@ -673,7 +674,7 @@ class Controller:
                 filing.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
-                
+
                 root = Controller.processL1bqc(inFilePath, outFilePath)
                 # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
@@ -851,7 +852,7 @@ class Controller:
                     L1A_complete = True
 
             if L1A_complete:
-   
+
                 inFileName = os.path.split(fp)[1]
                 if ConfigFile.settings["SensorType"].lower() in ["trios", "trios es only"]:
                     # For TriOS, need to parse the L1A names, not L0
