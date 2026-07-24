@@ -1947,7 +1947,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-        # ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
         ConfigFile.settings["bL23CRho"] = int(self.RhoRadioButton3C.isChecked())
         ConfigFile.settings["bL2Z17Rho"] = int(self.RhoRadioButtonZhang.isChecked())
         ConfigFile.settings["bL2M99Rho"] = int(self.RhoRadioButtonDefault.isChecked())

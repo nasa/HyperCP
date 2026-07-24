@@ -151,7 +151,7 @@ class ConfigFile:
         ConfigFile.settings["bL2EnablePercentLt"] = 1
         ConfigFile.settings["fL2PercentLt"] = 10 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
-        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
+        ConfigFile.settings["bL2D26Rho"] = 0 # D'Alimonte et al. in progress
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1

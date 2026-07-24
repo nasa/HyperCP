@@ -1550,7 +1550,6 @@ class ProcessL2:
     @staticmethod
     def calculate_rho_sky_for_ensemble(wavelengths, data_slice_mean, anc_slice):
         # Get Configuration
-        # rho_default = float(ConfigFile.settings["fL2RhoSky"]) # Not used
         rhoVector, rhoScalar, rhoUNC = None, None, None
         anc_slice['REL_AZ'] = np.abs(anc_slice['REL_AZ'])
         if int(ConfigFile.settings["bL23CRho"]):
