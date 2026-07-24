@@ -69,6 +69,7 @@ if PLATFORM.lower() == "manual_trios":
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
     )
+    
 if PLATFORM.lower() == "sorad": 
     PATH_ANC = os.path.join(
         PATH_DATA, "Tara2024Wind.sb",
