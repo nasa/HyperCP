@@ -497,7 +497,7 @@ class ProcessL1aqc:
         #   Does not appear to apply to current instruments (i.e., no gp.id=="GPS")
         gps = False
         for gp in node.groups:
-            if gp.id == "GPS":
+            if gp.id == "GPS": # Does not apply to DALEC_GPS
                 gps = True
                 timeStamp = gp.getDataset("DATETIME").data
 
