@@ -1420,9 +1420,17 @@ class ProcessL2:
                         slicedlt = np.array([val[0] if k in rho_vec.keys() else -999 for k, val in x_slice['lt'].items()])
                         lw = slicedli[np.where(slicedli > -999)] - rho_val * slicedlt[np.where(slicedlt > -999)]
                         rrs = lw / slicedes[np.where(slicedes > -999)]
+
+                        es_ = slicedes[np.where(slicedes > -999)] - rho_val * slicedes[np.where(slicedes > -999)]
+                        li_ = slicedli[np.where(slicedes > -999)] - rho_val * slicedli[np.where(slicedli > -999)]
+                        lt_ = slicedlt[np.where(slicedes > -999)] - rho_val * slicedlt[np.where(slicedlt > -999)]
                     else:
                         lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
                         rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
+
+                        es_ = np.array([v[0] for v in x_slice['es'].values()])
+                        li_ = np.array([v[0] for v in x_slice['li'].values()])
+                        lt_ = np.array([v[0] for v in x_slice['lt'].values()])
                         
                     nlw = rrs * np.array(list(F0_hyper.values()))
                     
@@ -1432,9 +1440,9 @@ class ProcessL2:
                     x_breakdown_unc['nLw'] = {k: um.convertToAbsolute(l2_bd['nLw'][k], nlw) for k in l2_bd['nLw']}
 
                     # convert L2 uncertainties back to absolute
-                    es_ = np.array([v[0] for v in x_slice['es'].values()])
-                    li_ = np.array([v[0] for v in x_slice['li'].values()])
-                    lt_ = np.array([v[0] for v in x_slice['lt'].values()])
+                    # es_ = np.array([v[0] for v in x_slice['es'].values()])
+                    # li_ = np.array([v[0] for v in x_slice['li'].values()])
+                    # lt_ = np.array([v[0] for v in x_slice['lt'].values()])
                     lw_ = lt_ - rho_val * li_
                     rrs_ = lw_ / es_
                     nlw_ = rrs_ * np.array(list(F0_hyper.values()))
