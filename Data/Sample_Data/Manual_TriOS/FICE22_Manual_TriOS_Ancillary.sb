@@ -1,0 +1,54 @@
+/begin_header
+/investigators=Giorgio_DallOlmo
+/affiliations=Plymouth_Marine_Laboratory
+/contact=gdal@pml.ac.uk
+/experiment=FRM4SOC2
+/cruise=FICE22
+/platform=AAOT
+/data_file_name=FICE_TriOS_Ancillary_TrueRelAz_V2.sb
+/documents=FICE_TriOS_Ancillary_TrueRelAz_V2.sb
+/calibration_files=notapplicable.txt
+/data_type=above_water
+/data_status=final
+/start_date=20220714
+/end_date=20220721
+/start_time=08:45:00[GMT]
+/end_time=09:00:00[GMT]
+/north_latitude=45.314[DEG]
+/south_latitude=45.314[DEG]
+/east_longitude=12.508[DEG]
+/west_longitude=12.508[DEG]
+/water_depth=17
+/measurement_depth=0
+/missing=-9999
+/delimiter=comma
+! 
+! COMMENTS
+!
+! FRM4SOC-2 Field InterComparison Experiment (FICE)
+! July 11 - 21, 2022
+! Acqua Alta Oceanographic Tower (AAOT), CNR-ISMAR
+! 
+! RelAz refers to solar-sensor relative azimuth angle. AOT is AOT(550).
+!
+! Ancillary data from: % https://www.comune.venezia.it/content/3-piattaforma-ISMAR-CNR
+! and field notes.
+!
+! Manually operated TriOS triplet. Height: ~15 m, Tower color: Red/yellow.
+!
+/fields=station,year,month,day,hour,minute,second,lat,lon,At,Wt,wind,wdir,waveht,cloud,sal,aot,relAz
+/units=none,yyyy,mo,dd,hh,mn,ss,degrees,degrees,degreesC,degreesC,m/s,degrees,m,%,psu,unitless,degrees
+/end_header
+32,2022,07,19,08,00,00,45.314,12.508,26.3,26.1,4.3,44,0.3,0,37.661,0.1129,135.0
+32,2022,07,19,08,05,00,45.314,12.508,26.5,26.1,4.2,43,0.3,0,37.661,0.1129,135.0
+-9999,2022,07,19,08,10,00,45.314,12.508,26.4,26.2,3.9,42,0.3,-9999,37.678,0.1129,-9999.0
+-9999,2022,07,19,08,15,00,45.314,12.508,26.5,26.3,3.6,47,0.3,-9999,37.678,0.1129,135.0
+33,2022,07,19,08,20,00,45.314,12.508,26.6,26.3,3.6,48,0.3,0,37.676,0.1129,135.0
+33,2022,07,19,08,25,00,45.314,12.508,26.5,26.3,3.6,51,0.3,0,37.676,0.1129,135.0
+-9999,2022,07,19,08,30,00,45.314,12.508,26.6,26.3,3.7,46,0.3,-9999,37.683,0.1129,-9999.0
+-9999,2022,07,19,08,35,00,45.314,12.508,26.4,26.4,4.1,45,0.3,-9999,37.683,0.1129,135.0
+34,2022,07,19,08,40,00,45.314,12.508,26.4,26.2,4.1,44,0.3,0,37.688,0.1129,135.0
+34,2022,07,19,08,45,00,45.314,12.508,26.4,26.2,3.9,40,0.3,0,37.688,0.1129,-9999.0
+35,2022,07,19,08,50,00,45.314,12.508,26.3,26.3,3.8,44,0.3,0,37.697,0.1129,135.0
+35,2022,07,19,08,55,00,45.314,12.508,26.6,26.2,3.8,46,0.3,0,37.697,0.1129,-9999.0
+36,2022,07,19,09,00,00,45.314,12.508,26.6,26.4,3.6,45,0.3,0,37.695,0.1129,135.0

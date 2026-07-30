@@ -1554,13 +1554,14 @@ class ProcessL2:
     @staticmethod
     def calculate_rho_sky_for_ensemble(wavelengths, data_slice_mean, anc_slice):
         # Get Configuration
-        # rho_default = float(ConfigFile.settings["fL2RhoSky"]) # Not used
         rhoVector, rhoScalar, rhoUNC = None, None, None
         anc_slice['REL_AZ'] = np.abs(anc_slice['REL_AZ'])
         if int(ConfigFile.settings["bL23CRho"]):
             method = 'three_c_rho'
         elif int(ConfigFile.settings["bL2Z17Rho"]):
             method = 'zhang_rho'
+        elif int(ConfigFile.settings["bL2D26Rho"]):
+            method = 'dAlimonte_rho'
         else:
             method = 'mobley_rho'
 
@@ -1615,6 +1616,14 @@ class ProcessL2:
                                                          anc_slice['SZA'], anc_slice['SST'], anc_slice['SALINITY'],
                                                          anc_slice['REL_AZ'],
                                                          SVA, wavelengths, rho_uncertainty_obj)
+
+
+        elif method == "dAlimonte_rho":
+            #TODO: Populate this placeholder call to Propagate and RhoCorrections.D26Corr
+            rhoVector, rhoUNC = None,None
+
+
+
         elif method == "mobley_rho":
             if ConfigFile.settings["bL2RhoUnc10"] == 0:
                 # Full Mobley 1999 model from LUT

@@ -215,7 +215,7 @@ class ProcessL1aqc:
         # Reorganize groups with new names
         for gp in node.groups:
             # if not gp.id.startswith('GPS'):
-            if not gp.id.startswith('GPS'):# and not gp.id.startswith('sorad'):
+            if not gp.id.startswith('GPS'):# and not gp.id.startswith('sorad')
                 cf = calibrationMap[gp.attributes["CalFileName"]]
                 ProcessL1aqc.renameGroup(gp,cf)
 
@@ -497,7 +497,7 @@ class ProcessL1aqc:
         #   Does not appear to apply to current instruments (i.e., no gp.id=="GPS")
         gps = False
         for gp in node.groups:
-            if gp.id == "GPS":
+            if gp.id == "GPS": # Does not apply to DALEC_GPS
                 gps = True
                 timeStamp = gp.getDataset("DATETIME").data
 
@@ -678,7 +678,6 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
         if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSunTracker"]:
             gp = None
             for group in node.groups:

@@ -218,7 +218,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bSublabel1 = QtWidgets.QLabel(" Dark offsets, calibrations and corrections. Interpolate", self)
         l1bSublabel2 = QtWidgets.QLabel("  to common timestamps and wavebands.", self)
 
-        l1bSublabel3 = QtWidgets.QLabel("   Ancillary data are required for Zhang glint correction and", self)
+        l1bSublabel3 = QtWidgets.QLabel("   Ancillary data are required for most glint corrections and", self)
         l1bSublabel4 = QtWidgets.QLabel("   can fill in wind for M99 and QC. Select database download:", self)
 
         # Reset button for ancillary source credentials
@@ -432,19 +432,20 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButton3C = QtWidgets.QRadioButton("3C [beta test]")
+        self.RhoRadioButton3C = QtWidgets.QRadioButton("3C ρ [beta test]")
         self.RhoRadioButton3C.setAutoExclusive(False)
         if ConfigFile.settings["bL23CRho"]==1:
             self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButton3C.clicked.connect(self.l2RhoRadioButton3CClicked)
         self.RhoRadioButton3C.setDisabled(True)
 
-        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2023) ρ")
-        self.RhoRadioButtonYour.setAutoExclusive(False)
-        self.RhoRadioButtonYour.setDisabled(True)
-        # if ConfigFile.settings["bL2YourRho"]==1:
-        #     self.RhoRadioButtonYour.setChecked(True)
-        # self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)
+        self.RhoRadioButtonDAlimonte = QtWidgets.QRadioButton("D'Alimonte et al. (2026) ρ")
+        self.RhoRadioButtonDAlimonte.setAutoExclusive(False)
+        # TODO: Disable for public roll-out while under development
+        # self.RhoRadioButtonDAlimonte.setDisabled(True)
+        if ConfigFile.settings["bL2D26Rho"]==1:
+            self.RhoRadioButtonDAlimonte.setChecked(True)
+        self.RhoRadioButtonDAlimonte.clicked.connect(self.l2RhoRadioButtonDAlimonteClicked)
 
         # Initialization of ancillary buttons NB: placed here because must come after Zhang button definition!
         # NB : the following are NOT "elif" blocks because bL1bGetAnc can change after each block.
@@ -485,7 +486,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RhoUnc10CheckBoxUpdate()
 
         #   L2 NIR AtmoCorr
-        l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
+        self.l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
         self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
@@ -868,7 +869,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Third Vertical box
         VBox3 = QtWidgets.QVBoxLayout()
-        # VBox3.setContentsMargins(0,0,0,0)        
+        # VBox3.setContentsMargins(0,0,0,0)
         # VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
          #  Spectral Outlier Filter
@@ -965,7 +966,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
         RhoHBox3.addWidget(self.RhoRadioButton3C)
-        # RhoHBox3.addWidget(self.RhoRadioButtonYour)
+        RhoHBox3.addWidget(self.RhoRadioButtonDAlimonte)
         VBox3.addLayout(RhoHBox3)
 
         #   Rho Uncertainty
@@ -981,12 +982,11 @@ class ConfigWindow(QtWidgets.QDialog):
 
          #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
-        NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
+        NIRCorrectionHBox.addWidget(self.l2NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
         VBox4.addLayout(NIRCorrectionHBox)
         VBox4.addWidget(self.SimpleNIRRadioButton)
         VBox4.addWidget(self.SimSpecNIRRadioButton)
-        # VBox3.addWidget(self.YourNIRRadioButton)
 
         #   L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
@@ -1369,10 +1369,14 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcDeglitchCheckBox.setEnabled(False)
             self.l1aqcDeglitchLabel.setEnabled(False)
             self.l1aqcAnomalyButton.setEnabled(False)
+            self.l1aqcPlotDeglitchLabel.setEnabled(False)
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(False)
         elif sensor.lower() == 'seabird':
             self.l1aqcDeglitchCheckBox.setEnabled(True)
             self.l1aqcDeglitchLabel.setEnabled(True)
             self.l1aqcAnomalyButton.setEnabled(True)
+            self.l1aqcPlotDeglitchLabel.setEnabled(True)
+            self.l1aqcPlotDeglitchCheckBox.setEnabled(True)
 
         disabled = not self.l1aqcDeglitchCheckBox.isChecked()
         if disabled:
@@ -1422,8 +1426,8 @@ class ConfigWindow(QtWidgets.QDialog):
             elif ancillarySource == 'ECMWF_ADS':
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
-            # self.RhoRadioButton3C.setDisabled(1)
             self.RhoRadioButton3C.setDisabled(0)
+            self.RhoRadioButtonDAlimonte.setDisabled(0)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
@@ -1460,15 +1464,19 @@ class ConfigWindow(QtWidgets.QDialog):
         # NB: This is not the same as an "if not ancillarySource": bL1bGetAnc = 0 is set after "l1bGetAncUntickIfNoCredentials" is triggered.
         if ConfigFile.settings["bL1bGetAnc"] == 0:
             self.l1bGetAncResetButton.setDisabled(True)
-            self.RhoRadioButtonZhang.setChecked(0)
-            self.RhoRadioButtonZhang.setDisabled(1)
-            self.RhoRadioButton3C.setChecked(0)
-            self.RhoRadioButton3C.setDisabled(1)
-            self.RhoRadioButtonDefault.setChecked(1)
+            self.RhoRadioButtonZhang.setChecked(True)
+            self.RhoRadioButtonZhang.setDisabled(True)
+            self.RhoRadioButton3C.setChecked(False)
+            self.RhoRadioButton3C.setDisabled(True)
+            self.RhoRadioButtonDAlimonte.setChecked(False)
+            self.RhoRadioButtonDAlimonte.setDisabled(True)
+
+            self.RhoRadioButtonDefault.setChecked(True)
 
             print("ConfigWindow - l2RhoCorrection set to M99")
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
+            ConfigFile.settings["bL2D26Rho"] = 0
             ConfigFile.settings["bL2M99Rho"] = 1
 
     def l1bGetAncCheckBoxUpdate(self,ancillarySource):
@@ -1506,15 +1514,19 @@ class ConfigWindow(QtWidgets.QDialog):
         # Disable reset credentials if everything unticked
         if ConfigFile.settings["bL1bGetAnc"] == 0:
             self.l1bGetAncResetButton.setDisabled(True)
-            self.RhoRadioButtonZhang.setChecked(0)
-            self.RhoRadioButtonZhang.setDisabled(1)
-            self.RhoRadioButton3C.setChecked(0)
-            self.RhoRadioButton3C.setDisabled(1)
-            self.RhoRadioButtonDefault.setChecked(1)
+            self.RhoRadioButtonZhang.setChecked(False)
+            self.RhoRadioButtonZhang.setDisabled(True)
+            self.RhoRadioButton3C.setChecked(False)
+            self.RhoRadioButton3C.setDisabled(True)
+            self.RhoRadioButtonDAlimonte.setChecked(False)
+            self.RhoRadioButtonDAlimonte.setDisabled(True)
+
+            self.RhoRadioButtonDefault.setChecked(True)
 
             print("ConfigWindow - l2RhoCorrection set to M99")
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
+            ConfigFile.settings["bL2D26Rho"] = 0
             ConfigFile.settings["bL2M99Rho"] = 1
         else:
             self.l1bGetAncResetButton.setDisabled(False)
@@ -1620,44 +1632,82 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnablePercentLt"] = 1
 
     def l2RhoRadioButton3CClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Groetsch et al.")
+        print("ConfigWindow - l2RhoCorrection set to 3C")
         self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(False)
+        self.RhoRadioButtonDAlimonte.setChecked(False)
         ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 0
+        ConfigFile.settings["bL2D26Rho"] = 0
+        self.l2RhoUpdate()
 
     def l2RhoRadioButtonZhangClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Zhang")
+        print("ConfigWindow - l2RhoCorrection set to Zhang et al. 2017")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonDefault.setChecked(False)
+        self.RhoRadioButtonDAlimonte.setChecked(False)
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 1
         ConfigFile.settings["bL2M99Rho"] = 0
+        ConfigFile.settings["bL2D26Rho"] = 0
         if ConfigFile.settings["fL1bqcSZAMax"] > 60:
             print("###### SZA outside Zhang model limits; adjusting. ########")
             ConfigFile.settings["fL1bqcSZAMax"] = 60
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
+        self.l2RhoUpdate()
 
     def l2RhoRadioButtonDefaultClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Default")
+        print("ConfigWindow - l2RhoCorrection set to Mobley 1999")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(True)
+        self.RhoRadioButtonDAlimonte.setChecked(False)
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
+        ConfigFile.settings["bL2D26Rho"] = 0
+        self.l2RhoUpdate()
 
-    def l2RhoRadioButtonYourClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Default. You have not submitted your method.")
+    def l2RhoRadioButtonDAlimonteClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to D'Alimonte et al. 2026")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
-        self.RhoRadioButtonYour.setChecked(True)
+        self.RhoRadioButtonDefault.setChecked(False)
+        self.RhoRadioButtonDAlimonte.setChecked(True)
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
-        ConfigFile.settings["bL2M99Rho"] = 1 # This is a mock up. Use Default
+        ConfigFile.settings["bL2M99Rho"] = 0
+        ConfigFile.settings["bL2D26Rho"] = 1
+        self.l2RhoUpdate()
+
+    def l2RhoUpdate(self):
+        if ConfigFile.settings["bL2D26Rho"] == 1:
+            # Based on the recommendation of Davide et al., we deactivate both glitter and NIR residual corrections
+            ConfigFile.settings["bL2EnablePercentLt"] = 0
+            ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+            ConfigFile.settings["bL2PerformNIRCorrection"] = 0
+            self.l2NIRCorrectionLabel.setDisabled(True)
+            self.SimpleNIRRadioButton.setChecked(False)
+            self.SimpleNIRRadioButton.setDisabled(True)
+            self.SimSpecNIRRadioButton.setChecked(False)
+            self.SimSpecNIRRadioButton.setDisabled(True)
+
+            self.l2EnablePercentLtLabel.setDisabled(True)
+            self.l2PercentLtLabel.setDisabled(True)
+            self.l2EnablePercentLtCheckBox.setChecked(False)
+            self.l2PercentLtLineEdit.setDisabled(True)
+        else:
+            self.l2NIRCorrectionLabel.setDisabled(False)
+            self.SimpleNIRRadioButton.setDisabled(False)
+            self.SimSpecNIRRadioButton.setDisabled(False)
+
+            self.l2EnablePercentLtLabel.setDisabled(False)
+            self.l2PercentLtLabel.setDisabled(False)
+            self.l2PercentLtLineEdit.setDisabled(False)
+
 
     def l2RhoUnc10CheckBoxUpdate(self):
         print("ConfigWindow - l2RhoUnc10CheckBoxUpdate")
@@ -1671,29 +1721,21 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
-        # self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+
     def l2SimSpecNIRRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to SimSpec")
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
-        # self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
-    # def l2YourNIRRadioButtonClicked(self):
-    #     print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
-    #     self.SimpleNIRRadioButton.setChecked(True)
-    #     self.SimSpecNIRRadioButton.setChecked(False)
-    #     # self.YourNIRRadioButton.setChecked(True)
-    #     ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
-    #     ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
         disabled = not self.l2NIRCorrectionCheckBox.isChecked()
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
-        # self.YourNIRRadioButton.setDisabled(True)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0
         else:
@@ -1909,7 +1951,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-        # ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
         ConfigFile.settings["bL23CRho"] = int(self.RhoRadioButton3C.isChecked())
         ConfigFile.settings["bL2Z17Rho"] = int(self.RhoRadioButtonZhang.isChecked())
         ConfigFile.settings["bL2M99Rho"] = int(self.RhoRadioButtonDefault.isChecked())

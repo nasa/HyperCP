@@ -2,11 +2,13 @@
     or by editing ./Config/[yourconfig].cfg JSON file."""
 
 import multiprocessing
+from functools import partial
 import os
 import glob
 import time
 
 from Main import Command
+from Source.ConfigFile import ConfigFile
 
 # Run scripted call to single-level or multi-level (L0 - L2) command line calls to HyperCP
 # from terminal. Recommend making a copy for your own purposes. This file is tracked with
@@ -21,56 +23,104 @@ from Main import Command
 #       have been provided in the HyperCP repository. The configuration file (./Config/[sample].cfg) can
 #       also be edited by hand.
 # NOTE: Multithreading is available to run multiple files simulataneously.
-#       Multithreading for manually acquired TriOS (.mlb) raw files (e.g., multi-level) is now supported
 # NOTE: This script cannot be run on the same repository simultaneously with alternate configurations.
 # NOTE: By default this processes all files in the PROC_LEVEL -1 level directory to PROC_LEVEL directory.
 #
-# D. Aurin NASA/GSFC Aug 2024
-
-################################################### CUSTOM SET UP ###################################################
-# Block use of screen for QT if necessary
-# NOTE: if you get the following error, read on...
-#       qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found
-# NOTE: The following needs to be run in the parent shell, so cannot be spawned from here. Prior to running this script,
-# run the following in the shell:
+# D. Aurin NASA/GSFC Aug 2026
+# 
+#   BUG: Block use of screen for QT if necessary
+#   If you get the following error, read on:
+#
+#       "qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found"
+#
+#   The following needs to be run in the parent shell, so cannot be spawned from here. Prior to running this script,
+#   run the following in the shell:
 #       export QT_QPA_PLATFORM=offscreen
 
-# Batch options
-MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
-MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
-CLOBBER = True      # True overwrites existing files
-PROC_LEVEL = "L1A"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
+################################################### CUSTOM SET UP ###################################################
 
-# Dataset options
-# PLATFORM = "pySAS"
-PLATFORM = "Manual_TriOS"
-# INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
-INST_TYPE = "TRIOS"
-CRUISE = "FICE22"
-# L1B_REGIME: Optional. [Default, Class, Full]
+# Batch options #
+
+MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_LEVEL = True  # Process raw (L0) to Level-2 (L2)
+CLOBBER = True      # True overwrites existing files
+PROC_LEVEL = "L2"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
+
+# Dataset options #
+
+# PLATFORM = "pySAS" # case-sensitive for ancillary file naming
+# PLATFORM = "SolarTracker"
+# PLATFORM = "Manual_TriOS"
+# PLATFORM = "ES_Only"
+PLATFORM = "DALEC"
+# PLATFORM = "SoRad"
+
+CRUISE = "FICE22" # Here mainly used for ancillary file name
+
+# L1B_REGIME: Optional. [Factory, Class, Sensor]
 #   Denote FRM processing regime and use appropriately named subdirectories.
 #   This requires a custom Configuration file (e.g., "FICE22_pySAS_Class.cfg"). Set this up in the GUI.
-L1B_REGIME = ""
+L1B_REGIME = "" # Leave this blank unless you want to process in multiple regimes. Only changes folders, not the configuration file.
 
-# L2_VERSION: Optional. [M99NN, M99MA, M99SimSpec, Z17NN, etc.]
-#   Denote a special output path for Level-2 processing alternatives.
-L2_VERSION = ""
+# L2_VERSION: Glint options [M99NN, M99MA, M99SS, Z17NN, etc.] One or more.
+#   M99: Mobley 1999 glint
+#   Z17: Zhang et al. 2017 glint
+#   3C: 3C glint (e.g. Groetsch et al. 2017)
+#   NN: No NIR residual correction
+#   SS: Similarity Spectrum (Ruddick et al.) NIR correction
+#   MA: Mueller and Austin 1995 NIR correction
+#   Alters the configuration file and designates a special output path for Level-2 processing alternatives.
+#
+#   I tend to run this script once on multilevel M99NN L0-2C, then move L1A-L1BQC and related folders back up to PATH_DATA,
+#       and run single level L2 for the rest of the options.
+L2_VERSIONS = ['M99NN']
+# L2_VERSIONS = ['M99MA','M99NN',"M99SS","Z17MA","Z17NN","Z17SS"] # NOTE: Configuration file is automatically updated based on this
+
+# STATIONS: True to extract station data at L2 based on ancillary file
+STATIONS = [False]
+# STATIONS = [True,False]         # NOTE: Configuration file is automatically updated based on this
 
 #################################
-## PATH options
+## PATH options. Edit this block for processing your own data outside the HyerCP repository
 PATH_HCP = os.path.dirname(os.path.abspath(__file__))  # Path to HyperCP repository on host
-# PATH_DATA = f"{PATH_OS}/Projects/HyperPACE/field_data/HyperSAS/{CRUISE}"  # Top level data directory containing RAW/ and ancillary file.
+# PATH_DATA = f"{PATH_OS}/My/Data/Directory/{CRUISE}"  # Top level data directory containing RAW/ and ancillary file.
 PATH_DATA = os.path.join(PATH_HCP,'Data','Sample_Data',PLATFORM)
 ##################################
 
+################################################# END CUSTOM SET UP #################################################
+
+
+PATH_ANC = ""
 if PLATFORM.lower() == "manual_trios":
     PATH_ANC = os.path.join(
-        PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
-    )
+        PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb")
+    RAW_TYPE = "MSDA" # Defines the type of raw data expected. Not case-sensitive.
+    CONFIG_NAME = "sample_TRIOS_NOTRACKER.cfg"
+elif PLATFORM.lower() == "pysas" or PLATFORM.lower() == "solartracker":
+    RAW_TYPE = "SeaBird"
+    if PLATFORM.lower() == 'pysas':
+        # Set these up in advance in the GUI.
+        CONFIG_NAME = "sample_SEABIRD_pySAS.cfg"
+    else:
+        CONFIG_NAME = "sample_SEABIRD_SOLARTRACKER.cfg"
+elif PLATFORM.lower() == "es_only":
+    RAW_TYPE = "MSDA"
+    CONFIG_NAME = "sample_TRIOS_ESONLY.cfg"
+elif PLATFORM.lower() == "dalec":
+    RAW_TYPE = "IMO"
+    CONFIG_NAME = "sample_DALEC.cfg"
+elif PLATFORM.lower() == "sorad":
+    RAW_TYPE = "PML"
+    CONFIG_NAME = "sample_TRIOS_SoRad.cfg"
 else:
+    RAW_TYPE = ""
+    CONFIG_NAME = f"{CRUISE}.cfg"
+
+PATH_CFG = os.path.join(PATH_HCP, "Config", CONFIG_NAME)
+
+if PLATFORM.lower() != "manual_trios":
     PATH_ANC = os.path.join(
-        PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb",
-    )
+            PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb")
 
 if MULTI_LEVEL or PROC_LEVEL == "L1A":
     PATH_INPUT = PATH_DATA
@@ -82,27 +132,26 @@ PATH_OUTPUT = os.path.join(PATH_DATA, L1B_REGIME)
 # Add output directory if necessary (ignore data level directories)
 if os.path.isdir(PATH_OUTPUT) is False:
     os.mkdir(PATH_OUTPUT)
-    PATH_OUTPUT = os.path.join(PATH_DATA, L1B_REGIME, L2_VERSION)
+    PATH_OUTPUT = os.path.join(PATH_DATA, L1B_REGIME, L2_VERSIONS)
     if os.path.isdir(PATH_OUTPUT) is False:
         os.mkdir(PATH_OUTPUT)
 
-# Set these up in advance in the GUI. One config file for each REGIME, edited for each VERSION.
-if PLATFORM.lower() == 'pysas':
-    PATH_CFG = os.path.join(PATH_HCP, "Config", "sample_SEABIRD_pySAS.cfg")
-elif PLATFORM.lower() == 'manual_trios':
-    PATH_CFG = os.path.join(PATH_HCP, "Config", "sample_TriOS_NOTRACKER.cfg")
-else:
-    PATH_CFG = os.path.join(PATH_HCP, "Config", f"{CRUISE}.cfg")
-################################################# END CUSTOM SET UP #################################################
 os.environ["HYPERINSPACE_CMD"] = "true"
 
 ## Setup remaining globals ##
 TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]
 FROM_LEVELS = ["RAW", "L1A", "L1AQC", "L1B", "L1BQC"]
-if INST_TYPE.lower() == "seabird":
+if RAW_TYPE.lower() == "seabird":
     FILE_EXT = [".raw"]  # May need to use ".RAW" sometimes
-else:
+elif RAW_TYPE.lower() == "msda":
     FILE_EXT = [".mlb"]
+elif RAW_TYPE.lower() == "imo":
+    FILE_EXT = [".TXT"]
+elif RAW_TYPE.lower() == "pml":
+    FILE_EXT = [".hdf"]
+else:
+    FILE_EXT = []
+
 FILE_EXT.extend(["_L1A.hdf", "_L1AQC.hdf", "_L1B.hdf", "_L1BQC.hdf"])
 
 if not MULTI_LEVEL:
@@ -111,46 +160,83 @@ if not MULTI_LEVEL:
     FROM_LEVELS = [FROM_LEVELS[iOutput]]
     FILE_EXT = [FILE_EXT[iOutput]]
 
+def adjust_config(config, version, stations):
+    ConfigFile.loadConfig(config)
 
-def run_Command(fp_input_files):
+    if stations:
+        ConfigFile.settings["bL2Stations"] = 1
+    else:
+        ConfigFile.settings["bL2Stations"] = 0
+
+    if version.startswith('M99'):
+        ConfigFile.settings["bL23CRho"] = 0
+        ConfigFile.settings["bL2Z17Rho"] = 0
+        ConfigFile.settings["bL2M99Rho"] = 1
+    elif version.startswith('Z17'):
+        ConfigFile.settings["bL23CRho"] = 0
+        ConfigFile.settings["bL2Z17Rho"] = 1
+        ConfigFile.settings["bL2M99Rho"] = 0
+    elif version.startswith('3C'):
+        ConfigFile.settings["bL23CRho"] = 1
+        ConfigFile.settings["bL2Z17Rho"] = 0
+        ConfigFile.settings["bL2M99Rho"] = 0
+
+    if version.endswith('MA'):
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 1
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mobley 1999 adapted to minimum 700-800, not 750 nm
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0 # Ruddick 2005, Ruddick 2006 similarity spectrum
+    elif version.endswith('NN'):
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 0
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+    elif version.endswith('SS'):
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 1
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+
+    ConfigFile.saveConfig(config)
+
+
+def run_Command(inputFiles,outPath):
     """Run either directly or using multiprocessor pool below."""
-    #   fp_input_files is a string unless TriOS RAW, then list.
+    #   inputFiles is a string unles TriOS RAW, then list.
 
-    # This will skip the file if either 1) the result exists and no CLOBBER, or
-    #   2) the Level failed and produced a report.
+    # This will skip the file if either 1) the result exists and no CLOBBER, or 2) the Level failed and produced a report.
     # Override with CLOBBER, above.
-    to_skip = {level: [os.path.basename(fp).split("_" + level)[0]
-            for fp in glob.glob(os.path.join(PATH_OUTPUT, level, "*"))]
+    to_skip = {
+        level: [
+            os.path.basename(fp).split("_" + level)[0]
+            for fp in glob.glob(os.path.join(outPath, level, "*"))
+        ]
         + [
             os.path.basename(fp).split("_" + level)[0]
-            for fp in glob.glob(
-                os.path.join(PATH_OUTPUT, "Reports", f"*_{level}_fail.pdf"))
+            for fp in glob.glob(os.path.join(outPath, "Reports", f"*_{level}_fail.pdf"))
         ]
-        for level in TO_LEVELS}
+        for level in TO_LEVELS
+    }
 
     if MULTI_LEVEL:
-        # One or more files. (fp_input_files is a list of one or more files)
+        # One or more files. (inputFiles is a list of one or more files)
         from_level = FROM_LEVELS[0]
-        to_level = "L1A"
-        # inputFileBase = fp_input_files  # Full-path file list of all in L1A
-        test = [
-            os.path.exists(fp_input_files[i])
-            for i, x in enumerate(fp_input_files)
-            if os.path.exists(x)
-        ]
+        to_level = 'L1A'
+        final_level = 'L2'
+        inputFileBase = inputFiles        # Full-path file
+        test = [os.path.exists(inputFileBase[i])
+                for i, x in enumerate(inputFiles)
+                if os.path.exists(x)]
         if not test:
             print("***********************************")
-            print(f"*** [{fp_input_files}] STOPPED PROCESSING ***")
-            print(f"Bad input path: {fp_input_files}")
+            print(f"*** [{inputFileBase}] STOPPED PROCESSING ***")
+            print(f"Bad input path: {inputFiles}")
             print("***********************************")
             return
-        inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # single file no path
-        test = [v for v in to_skip[to_level] if v in inputFileBase]
-        if (test and not CLOBBER):
+        inputFileBase = os.path.splitext(os.path.basename(inputFiles))[0]     # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'
+        if RAW_TYPE.lower() == 'seabird' and inputFileBase in to_skip[final_level] and not CLOBBER:
             print("************************************************")
-            print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {to_level} ***")
+            print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {final_level} ***")
             print("************************************************")
         else:
+            # NOTE: When running multi-level, it has to start over at raw, even if L1A exists.
             print("************************************************")
             print(f"*** [{inputFileBase}] PROCESSING L0 - L2 ***")
             print("************************************************")
@@ -158,34 +244,25 @@ def run_Command(fp_input_files):
             Command(
                 PATH_CFG,
                 from_level,
-                fp_input_files,
-                PATH_OUTPUT,
+                inputFiles,
+                outPath,
                 to_level,
                 PATH_ANC,
-                MULTI_LEVEL,
-            )
+                MULTI_LEVEL)
 
     else:
-        # One file at a time with or without multithread. (fp_input_files is a string of one file)
-        for from_level, to_level, ext in zip(FROM_LEVELS, TO_LEVELS, FILE_EXT):
-            if from_level == 'RAW' and INST_TYPE.lower() == 'trios':
-                inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # single file no path
-                test = [
-                    os.path.exists(fp_input_files[i])
-                    for i, x in enumerate(fp_input_files)
-                    if os.path.exists(x)
-                    ]
-            else:
-                inputFileBase = os.path.splitext(os.path.basename(fp_input_files))[0]
-                test = os.path.exists(fp_input_files)
+        # One file at a time with or without multithread. (inputFiles is a string of one file)
+        for from_level, to_level, _ in zip(FROM_LEVELS, TO_LEVELS, FILE_EXT):
+            # inputFileBase = os.path.splitext(os.path.basename(inputFiles))[0]     # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'
+            inputFileBase = os.path.basename(inputFiles).split("_" + from_level)[0] # 'FRM4SOC2_FICE22_NASA_20220715_120000, 1614100, etc.
+            test = os.path.exists(inputFiles)
             if not test:
                 print("***********************************")
                 print(f"*** [{inputFileBase}] STOPPED PROCESSING ***")
-                print(f"Bad input path: {fp_input_files}")
+                print(f"Bad input path: {inputFiles}")
                 print("***********************************")
                 break
-            test = [v for v in to_skip[to_level] if v in inputFileBase]
-            if test and not CLOBBER:
+            if inputFileBase in to_skip[to_level] and not CLOBBER:
                 print("************************************************")
                 print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {to_level} ***")
                 print("************************************************")
@@ -197,70 +274,95 @@ def run_Command(fp_input_files):
             Command(
                 PATH_CFG,
                 from_level,
-                fp_input_files,
-                PATH_OUTPUT,
+                inputFiles,
+                outPath,
                 to_level,
                 PATH_ANC,
-                MULTI_LEVEL,
-            )
+                MULTI_LEVEL
+                )
 
 
-def worker(fp_input_files):
-    # fp_input_files is a list unless multitasking, in which case it's a string, unless it's TriOS RAW
-    if isinstance(fp_input_files, list):
-        if INST_TYPE.lower() == "trios" and (MULTI_LEVEL or 'RAW' in FROM_LEVELS):
-            print(f"### Processing {fp_input_files} ...")
-            run_Command(fp_input_files)
+def worker(fpf,pathOut):
+    # fpf is a list unless multitasking, in which case it's a string, unless it's TriOS RAW
+    if isinstance(fpf, list):
+        if RAW_TYPE.lower() == "trios" and MULTI_LEVEL:
+            print(f"### Processing {fpf} ...")
+            run_Command(fpf,pathOut)
         else:
-            for file in fp_input_files:
+            file = None
+            for file in fpf:
                 print(f"### Processing {os.path.basename(file)} ...")
-                run_Command(file)
+                run_Command(file,pathOut)
             print(f"### Finished {os.path.basename(file)}")
     else:
-        print(f"### Multithread Processing {os.path.basename(fp_input_files)} ...")
-        run_Command(fp_input_files)
-        print(f"### Finished {os.path.basename(fp_input_files)}")
+        print(f"### Multithread Processing {os.path.basename(fpf)} ...")
+        run_Command(fpf,pathOut)
+        print(f"### Finished {os.path.basename(fpf)}")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     t0Single = time.time()
+    for STATION in STATIONS:
+        for L2_VERSION in L2_VERSIONS:
+            # PATH_OUTPUT does not require folder names of data levels. HyperCP will automate that.
+            if PROC_LEVEL == 'L2':
+                PATH_OUTPUT = os.path.join(PATH_DATA,L1B_REGIME,L2_VERSION)
+            else:
+                PATH_OUTPUT = os.path.join(PATH_DATA,L1B_REGIME)
+            if os.path.isdir(PATH_OUTPUT) is False:
+                os.mkdir(PATH_OUTPUT)
 
-    # Input list of one or more elements:
-    fpf_input = sorted(
-        glob.glob(os.path.join(PATH_INPUT, FROM_LEVELS[0], f"*{FILE_EXT[0]}"))
-    )
+            # Adjust the configuration file to reflect the L2 variant and whether stations are being run.
+            adjust_config(CONFIG_NAME, L2_VERSION,STATION)
 
-    if fpf_input:
-        print(f"Processing {fpf_input}")
-        print(f"Using configuration {PATH_CFG}")
-        print(f"with ancillary data {PATH_ANC}")
+            t1Single = time.time()
 
-        if MULTI_TASK:
-            # If Z17 correction is enabled in L2, a significant amount of
-            #   memory is used (~3GB) for each process so you may not be able to
-            #   use all cores of the system with problems.
-            with multiprocessing.Pool(4) as pool:
-                if INST_TYPE.lower() == 'trios' and FROM_LEVELS[0] == 'RAW':
-                    # Here we need a list of three files for each raw collection, or maybe a list of list triplets
-                    fpf_input_triplets = []
-                    for item in fpf_input:
-                        inputFileBase = os.path.splitext(os.path.basename(item))[0]
-                        timeStamp = inputFileBase[len(inputFileBase)-15:-1] # Subject to string error for non-compliant filenames
-                        index = [i for i,x in enumerate(fpf_input) if timeStamp in x]
-                        fpf_input_triplet = [fpf_input[x] for x in index]
-                        fpf_input_triplets.append(fpf_input_triplet)
+            # Input list of one or more elements:
+            fp_input_files = sorted(
+                glob.glob(os.path.join(PATH_INPUT, FROM_LEVELS[0], f"*{FILE_EXT[0]}")))
+            if not fp_input_files:
+                FILE_EXT = [".RAW"]
+                fp_input_files = sorted(
+                    glob.glob(os.path.join(PATH_INPUT, FROM_LEVELS[0], f"*{FILE_EXT[0]}")))
 
-                    unique_fpf_input_triplets = [list(x) for x in set(tuple(x) for x in fpf_input_triplets)]
-                    pool.map(worker, unique_fpf_input_triplets)
+
+            # # NOTE: For debugging VVV
+            # fp_input_files = [fp_input_files[0]]
+
+            partial_worker = partial(worker,pathOut=PATH_OUTPUT)
+
+            if fp_input_files:
+                print(f"Processing {fp_input_files}")
+                print(f"Using configuration {PATH_CFG}")
+                print(f"with ancillary data {PATH_ANC}")
+
+                if MULTI_TASK:
+                    # If Z17 correction is enabled in L2, a significant amount of
+                    #   memory is used (~3GB) for each process so you may not be able to
+                    #   use all cores of the system without problems.
+                    with multiprocessing.Pool(4) as pool:
+                        # One file (string) at a time to worker
+                        pool.map(
+                            partial_worker, fp_input_files
+                        )
                 else:
-                    # One file (string) at a time to worker
-                    pool.map(worker, fpf_input)
+                    # List of one or more files
+                    worker(fp_input_files,PATH_OUTPUT)
+
+                t2Single = time.time()
+                print(f"Time elapsed: {str(round((t2Single-t1Single)/60))} minutes")
+
+            else:
+                print(f"No input files found {os.path.join(PATH_INPUT, FROM_LEVELS[0], FILE_EXT[0])}")
+                t2Single = time.time()
+        t3Single = time.time()
+
+        mesg = f"Global batch time elapsed: {str(round((t2Single-t1Single)/60))} minutes"
+        print(mesg)
+        if STATION:
+            with open(PATH_OUTPUT + 'batchlog_stations.txt', 'w', encoding="utf-8") as logFile:
+                logFile.write(mesg + "\n")
         else:
-            # List of one or more files
-            worker(fpf_input)
+            with open(PATH_OUTPUT + 'batchlog_no_stations.txt', 'w', encoding="utf-8") as logFile:
+                logFile.write(mesg + "\n")
 
-        t1Single = time.time()
-        print(f"Overall time elapsed: {str(round((t1Single-t0Single)/60))} minutes")
-
-    else:
-        print("No input files found")

@@ -338,7 +338,7 @@ class ProcessL1bTriOS:
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
             if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
-                newGroup = node.addGroup(gp.id+'_L1AQC')
+                newGroup = node.addGroup(gp.id + '_L1AQC')
                 newGroup.copy(gp)
                 for ds in newGroup.datasets:
                     if ds == 'DATETIME':

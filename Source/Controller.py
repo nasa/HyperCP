@@ -265,6 +265,7 @@ class Controller:
             #         cf.name = key
             #         calibrationMap[key] = cf
         if ConfigFile.settings['SensorType'].lower() == 'sorad': # accounts for pseudo so-rad tdf
+            cf = CalibrationFile()
             cf.id = 'sorad'
             cf.name = 'sorad'
             calibrationMap['sorad'] = cf
@@ -407,7 +408,6 @@ class Controller:
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
             return None
-
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
@@ -452,7 +452,7 @@ class Controller:
             return None
 
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL1bqc.processL1bqc(root)        
+        root = ProcessL1bqc.processL1bqc(root)
 
         # Write output file
         if root is not None:
@@ -494,7 +494,7 @@ class Controller:
                 and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
             ):
                 plotting.plotUncertainties(node, filename)
-            
+
             if ConfigFile.settings['bL2PlotRrs']==1:
                 if ConfigFile.settings["SensorType"].lower() == "trios es only":
                     logging.writeLogFileAndPrint("Rrs plot is not available for TriOS ES-Only. Skipping plot.")
@@ -674,6 +674,7 @@ class Controller:
                 filing.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
+
                 root = Controller.processL1bqc(inFilePath, outFilePath)
                 # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
@@ -851,16 +852,18 @@ class Controller:
                     L1A_complete = True
 
             if L1A_complete:
+
                 inFileName = os.path.split(fp)[1]
-                if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
+                if ConfigFile.settings["SensorType"].lower() in ["trios", "trios es only"]:
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
+                elif ConfigFile.settings["SensorType"].lower() == 'sorad':
+                    fileName = os.path.join('L1A', fp.split('/')[-1][0:-7] + '_L1A.hdf')
                 else:
                     # Going from L0 to L1A, need to account for the underscore
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
                 if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC'):
-
                     inFileName = os.path.split(fp)[1]
                     fileName = os.path.join('L1AQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1AQC.hdf')
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
