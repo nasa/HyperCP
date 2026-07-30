@@ -50,10 +50,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.deleteCalibrationFileButton.clicked.connect(self.deleteCalibrationFileButtonPressed)
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
-        print("Calibration Files:")
+        # print("Calibration Files:")
         self.calibrationFileComboBox = QtWidgets.QComboBox(self)
-        for file in calFiles:
-            print(file)
+        # for file in calFiles:
+        #     print(file)
         self.calibrationFileComboBox.addItems(sorted(calFiles.keys()))
         fsm = QtWidgets.QFileSystemModel()
         fsm.setNameFilters(["*.cal", "*.tdf", "*.ini", ".dat"])
@@ -1112,10 +1112,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
     ###############################################################
     def addCalibrationFileButtonPressed(self):
-        print("CalibrationEditWindow - Add Calibration File Pressed")
+        # print("CalibrationEditWindow - Add Calibration File Pressed")
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files",\
                     options=QtWidgets.QFileDialog.DontUseNativeDialog)
-        print(fnames)
+        # print(fnames)
 
         if any(fnames):
             if ".sip" in fnames[0][0]:
@@ -1157,7 +1157,7 @@ class ConfigWindow(QtWidgets.QDialog):
                     ConfigFile.setCalibrationConfig(calFileName, enabled, frameType)
 
     def deleteCalibrationFileButtonPressed(self):
-        print("CalibrationEditWindow - Remove Calibration File Pressed")
+        # print("CalibrationEditWindow - Remove Calibration File Pressed")
         cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
 
         #Remove from the Config first
@@ -1177,7 +1177,7 @@ class ConfigWindow(QtWidgets.QDialog):
                     print(f"cannot delete directory \"{cal_fp}\"")
 
     def getCalibrationSettings(self):
-        print("CalibrationEditWindow - getCalibrationSettings")
+        # print("CalibrationEditWindow - getCalibrationSettings")
         ConfigFile.refreshCalibrationFiles()
         calFileName = self.calibrationFileComboBox.currentText()
         calConfig = ConfigFile.getCalibrationConfig(calFileName)
@@ -1192,7 +1192,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationFrameTypeComboBox.blockSignals(False)
 
     def sensorTypeChanged(self):
-        print("CalibrationEditWindow - Sensor Type Changed")
+        # print("CalibrationEditWindow - Sensor Type Changed")
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
@@ -1220,15 +1220,15 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.addItems(comboList)
 
     def setCalibrationSettings(self):
-        print("CalibrationEditWindow - setCalibrationSettings")
+        # print("CalibrationEditWindow - setCalibrationSettings")
         calFileName = self.calibrationFileComboBox.currentText()
         enabled = self.calibrationEnabledCheckBox.isChecked()
         frameType = self.calibrationFrameTypeComboBox.currentText()
         ConfigFile.setCalibrationConfig(calFileName, enabled, frameType)
 
     def calibrationFileChanged(self, i):
-        print("CalibrationEditWindow - Calibration File Changed")
-        print("Current index",i,"selection changed ", self.calibrationFileComboBox.currentText())
+        # print("CalibrationEditWindow - Calibration File Changed")
+        # print("Current index",i,"selection changed ", self.calibrationFileComboBox.currentText())
         calFileName = self.calibrationFileComboBox.currentText()
         calPath = os.path.join(self.calibrationPath, calFileName)
         if os.path.isfile(calPath):
@@ -1240,17 +1240,17 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.setEnabled(False)
 
     def calibrationEnabledStateChanged(self):
-        print("CalibrationEditWindow - Calibration Enabled State Changed")
-        print(self.calibrationEnabledCheckBox.isChecked())
+        # print("CalibrationEditWindow - Calibration Enabled State Changed")
+        # print(self.calibrationEnabledCheckBox.isChecked())
         self.setCalibrationSettings()
 
     def calibrationFrameTypeChanged(self, i):
-        print("CalibrationEditWindow - Calibration Frame Type Changed")
-        print("Current index",i,"selection changed ", self.calibrationFrameTypeComboBox.currentText())
+        # print("CalibrationEditWindow - Calibration Frame Type Changed")
+        # print("Current index",i,"selection changed ", self.calibrationFrameTypeComboBox.currentText())
         self.setCalibrationSettings()
 
     def l1aCleanSZACheckBoxUpdate(self):
-        print("ConfigWindow - l1aCleanSZAAngleCheckBoxUpdate")
+        # print("ConfigWindow - l1aCleanSZAAngleCheckBoxUpdate")
 
         disabled = not self.l1aCleanSZACheckBox.isChecked()
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
@@ -1260,7 +1260,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aCleanSZA"] = 1
 
     def l1aCODCheckBoxUpdate(self):
-        print("ConfigWindow - l1aCODAngleCheckBoxUpdate")
+        # print("ConfigWindow - l1aCODAngleCheckBoxUpdate")
 
         sensor = self.sensorTypeComboBox.currentText()
         if sensor.lower() == 'trios':
@@ -1278,7 +1278,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aCOD"] = 1
 
     def l1aqcSunTrackerCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcSunTrackerCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcSunTrackerCheckBoxUpdate")
 
         disabled = not self.l1aqcSunTrackerCheckBox.isChecked()
         self.l1aCleanSZAMaxLabel.setDisabled(disabled)
@@ -1311,7 +1311,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcSunTracker"] = 1
 
     def l1aqcRotatorDelayCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
 
         disabled = not self.l1aqcRotatorDelayCheckBox.isChecked()
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
@@ -1321,7 +1321,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcRotatorDelay"] = 1
 
     def l1aqcCleanPitchRollCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcCleanPitchRollCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcCleanPitchRollCheckBoxUpdate")
 
         disabled = not self.l1aqcCleanPitchRollCheckBox.isChecked()
         self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
@@ -1332,7 +1332,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1
 
     def l1aqcRotatorAngleCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcRotatorAngleCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcRotatorAngleCheckBoxUpdate")
 
         disabled = not self.l1aqcRotatorAngleCheckBox.isChecked()
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
@@ -1345,7 +1345,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcRotatorAngle"] = 1
 
     def l1aqcCleanSunAngleCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcCleanSunAngleCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcCleanSunAngleCheckBoxUpdate")
 
         disabled = not self.l1aqcCleanSunAngleCheckBox.isChecked()
         self.l1aqcSunAngleMinLabel.setDisabled(disabled)
@@ -1358,7 +1358,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcCleanSunAngle"] = 1
 
     def l1aqcDeglitchCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcDeglitchCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcDeglitchCheckBoxUpdate")
 
         # Confirm SeaBird
         sensor = self.sensorTypeComboBox.currentText()
@@ -1386,7 +1386,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcDeglitch"] = 1
 
     def l1aqcPlotDeglitchCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcPlotDeglitchCheckBoxUpdate")
+        # print("ConfigWindow - l1aqcPlotDeglitchCheckBoxUpdate")
 
         # Confirm SeaBird
         sensor = self.sensorTypeComboBox.currentText()
@@ -1407,7 +1407,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcPlotDeglitch"] = 1
 
     def l1aqcAnomalyButtonPressed(self):
-        print("CalibrationEditWindow - Launching anomaly analysis module")
+        # print("CalibrationEditWindow - Launching anomaly analysis module")
         ConfigWindow.refreshConfig(self)
         anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
         anomAnalDialog.show()
@@ -1473,7 +1473,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.RhoRadioButtonDefault.setChecked(True)
 
-            print("ConfigWindow - l2RhoCorrection set to M99")
+            # print("ConfigWindow - l2RhoCorrection set to M99")
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
             ConfigFile.settings["bL2D26Rho"] = 0
@@ -1499,12 +1499,12 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncCheckBox1.setChecked(False)
 
         if self.l1bGetAncCheckBox1.isChecked():
-            print("ConfigWindow - l1bGetAncCheckBoxUpdate GMAO MERRA2")
+            # print("ConfigWindow - l1bGetAncCheckBoxUpdate GMAO MERRA2")
             ConfigFile.settings["bL1bGetAnc"] = 1
             GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
         elif self.l1bGetAncCheckBox2.isChecked():
-            print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF CAMS")
+            # print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF CAMS")
             ConfigFile.settings["bL1bGetAnc"] = 2
             GetAnc_credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
@@ -1523,7 +1523,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.RhoRadioButtonDefault.setChecked(True)
 
-            print("ConfigWindow - l2RhoCorrection set to M99")
+            # print("ConfigWindow - l2RhoCorrection set to M99")
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
             ConfigFile.settings["bL2D26Rho"] = 0
@@ -1532,7 +1532,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncResetButton.setDisabled(False)
 
     def l1bCalCharButtonPressed(self):
-        print("OC Products Dialogue")
+        # print("OC Products Dialogue")
 
         ConfigWindow.refreshConfig(self)
         CalCharWindowDialog = CalCharWindow(self.name,self)
@@ -1540,14 +1540,14 @@ class ConfigWindow(QtWidgets.QDialog):
         CalCharWindowDialog.show()
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
-        print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
+        # print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
         if self.l1bPlotTimeInterpCheckBox.isChecked():
             ConfigFile.settings["bL1bPlotTimeInterp"] = 1
         else:
             ConfigFile.settings["bL1bPlotTimeInterp"] = 0
 
     def l1bqcLtUVNIRCheckBoxUpdate(self):
-        print("ConfigWindow - l2UVNIRCheckBoxUpdate")
+        # print("ConfigWindow - l2UVNIRCheckBoxUpdate")
 
         if self.l1bqcLtUVNIRCheckBox.isChecked():
             ConfigFile.settings["bL1bqcLtUVNIR"] = 1
@@ -1555,7 +1555,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1bqcLtUVNIR"] = 0
 
     def l1bqcSpecQualityCheckBoxUpdate(self):
-        print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
+        # print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
 
         disabled = not self.l1bqcSpecQualityCheckBox.isChecked()
         self.l1bqcSpecFilterLiLabel.setDisabled(disabled)
@@ -1575,7 +1575,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
 
     def l1bqcSpecQualityCheckPlotBoxUpdate(self):
-        print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
+        # print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
 
         disabled = not self.l1bqcSpecQualityCheckPlotBox.isChecked()
         if disabled:
@@ -1584,7 +1584,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
 
     def l1bqcQualityFlagCheckBoxUpdate(self):
-        print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
+        # print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
 
         disabled = not self.l1bqcQualityFlagCheckBox.isChecked()
         self.l1bqcCloudFlagLabel.setDisabled(disabled)
@@ -1601,19 +1601,19 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnableQualityFlags"] = 1
 
     def l2SVARadioButtonDefaultClicked(self):
-        print("ConfigWindow - l2SVA set to 40")
+        # print("ConfigWindow - l2SVA set to 40")
         self.SVARadioButtonDefault.setChecked(True)
         self.SVARadioButton30.setChecked(False)
         ConfigFile.settings["fL2SVA"] = 40
 
     def l2SVARadioButton30Clicked(self):
-        print("ConfigWindow - l2SVA set to 30")
+        # print("ConfigWindow - l2SVA set to 30")
         self.SVARadioButtonDefault.setChecked(False)
         self.SVARadioButton30.setChecked(True)
         ConfigFile.settings["fL2SVA"] = 30
 
     def l2StationsCheckBoxUpdate(self):
-        print("ConfigWindow - l2StationsCheckBoxUpdate")
+        # print("ConfigWindow - l2StationsCheckBoxUpdate")
         disabled = not self.l2StationsCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2Stations"] = 0
@@ -1621,7 +1621,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2Stations"] = 1
 
     def l2EnablePercentLtCheckBoxUpdate(self):
-        print("ConfigWindow - l2EnablePercentLtCheckBoxUpdate")
+        # print("ConfigWindow - l2EnablePercentLtCheckBoxUpdate")
 
         disabled = not self.l2EnablePercentLtCheckBox.isChecked()
         self.l2PercentLtLabel.setDisabled(disabled)
@@ -1632,7 +1632,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnablePercentLt"] = 1
 
     def l2RhoRadioButton3CClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to 3C")
+        # print("ConfigWindow - l2RhoCorrection set to 3C")
         self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(False)
@@ -1644,7 +1644,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RhoUpdate()
 
     def l2RhoRadioButtonZhangClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Zhang et al. 2017")
+        # print("ConfigWindow - l2RhoCorrection set to Zhang et al. 2017")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonDefault.setChecked(False)
@@ -1660,7 +1660,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RhoUpdate()
 
     def l2RhoRadioButtonDefaultClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Mobley 1999")
+        # print("ConfigWindow - l2RhoCorrection set to Mobley 1999")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(True)
@@ -1672,7 +1672,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RhoUpdate()
 
     def l2RhoRadioButtonDAlimonteClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to D'Alimonte et al. 2026")
+        # print("ConfigWindow - l2RhoCorrection set to D'Alimonte et al. 2026")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(False)
@@ -1710,7 +1710,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
 
     def l2RhoUnc10CheckBoxUpdate(self):
-        print("ConfigWindow - l2RhoUnc10CheckBoxUpdate")
+        # print("ConfigWindow - l2RhoUnc10CheckBoxUpdate")
         disabled = not self.l2RhoUnc10CheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2RhoUnc10"] = 0
@@ -1718,21 +1718,21 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2RhoUnc10"] = 1
 
     def l2SimpleNIRRadioButtonClicked(self):
-        print("ConfigWindow - l2NIRCorrection set to Simple")
+        # print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
 
     def l2SimSpecNIRRadioButtonClicked(self):
-        print("ConfigWindow - l2NIRCorrection set to SimSpec")
+        # print("ConfigWindow - l2NIRCorrection set to SimSpec")
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
 
     def l2NIRCorrectionCheckBoxUpdate(self):
-        print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
+        # print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
         disabled = not self.l2NIRCorrectionCheckBox.isChecked()
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
@@ -1742,7 +1742,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2PerformNIRCorrection"] = 1
 
     def l2NegativeSpecCheckBoxUpdate(self):
-        print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")
+        # print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")
 
         disabled = not self.l2NegativeSpecCheckBox.isChecked()
         if disabled:
@@ -1751,7 +1751,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2NegativeSpec"] = 1
 
     def l2BRDFCheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDFCheckBoxUpdate")
+        # print("ConfigWindow - l2BRDFCheckBoxUpdate")
 
         disabled = not self.l2BRDFCheckBox.isChecked()
         self.l2BRDF_fQCheckBox.setDisabled(disabled)
@@ -1779,7 +1779,7 @@ class ConfigWindow(QtWidgets.QDialog):
     # Make BRDF type exclusive so that it is clear what is written to SeaBASS output
     #   Reprocess to change to another BRDF type
     def l2BRDF_fQCheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
+        # print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
         disabled = not self.l2BRDF_fQCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
@@ -1793,7 +1793,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_O25CheckBox.setChecked(False)
 
     def l2BRDF_IOPCheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
+        # print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
         disabled = not self.l2BRDF_IOPCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_IOP"] = 0
@@ -1807,7 +1807,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_O25CheckBox.setChecked(False)
 
     def l2BRDF_O25CheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDF_O25CheckBoxUpdate")
+        # print("ConfigWindow - l2BRDF_O25CheckBoxUpdate")
         disabled = not self.l2BRDF_O25CheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL2BRDF_O25"] = 0
@@ -1821,7 +1821,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_O25CheckBox.setChecked(True)
 
     def l2UncertaintyBreakdownPlotCheckBoxUpdate(self):
-        print('Update Unc. Plot Checkbox')
+        # print('Update Unc. Plot Checkbox')
         if ConfigFile.settings['fL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower() not in ['seabird']:
             self.l2UncertaintyBreakdownPlotsLabel.setDisabled(True)
             self.l2UncertaintyBreakdownPlotCheckBox.setDisabled(True)
@@ -1832,7 +1832,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
 
     def l2OCproductsButtonPressed(self):
-        print("OC Products Dialogue")
+        # print("OC Products Dialogue")
 
         ConfigWindow.refreshConfig(self)
         # print(f'ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
@@ -1845,13 +1845,13 @@ class ConfigWindow(QtWidgets.QDialog):
         # print(f'Returning ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
-        print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
+        # print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
         disabled = not self.l2SaveSeaBASSCheckBox.isChecked()
 
         self.l2SeaBASSHeaderEditButton.setDisabled(disabled)
 
     def l2SeaBASSHeaderEditButtonPressed(self):
-        print("Edit seaBASSHeader Dialogue")
+        # print("Edit seaBASSHeader Dialogue")
 
         ConfigWindow.refreshConfig(self)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
@@ -1864,7 +1864,7 @@ class ConfigWindow(QtWidgets.QDialog):
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()
         else:
-            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
+            # print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
             SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
@@ -1874,11 +1874,11 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigWindow.refreshConfig(self)
 
     def l2WriteReportCheckBoxUpdate(self):
-        print("ConfigWindow - l2WriteReportCheckBoxUpdate")
+        # print("ConfigWindow - l2WriteReportCheckBoxUpdate")
         # disabled = not self.l2WriteReportCheckBox.isChecked()
 
     def saveButtonPressed(self):
-        print("ConfigWindow - Save Pressed")
+        # print("ConfigWindow - Save Pressed")
 
         ConfigWindow.refreshConfig(self)
 
@@ -1895,7 +1895,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.close()
 
     def refreshConfig(self):
-        print("ConfigWindow - refreshConfig")
+        # print("ConfigWindow - refreshConfig")
 
         ConfigFile.settings["fL1aUTCOffset"] = float(self.l1aUTCOffsetLineEdit.text())
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
@@ -1985,10 +1985,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.checkForChlor()
 
     def saveAsButtonPressed(self):
-        print("ConfigWindow - Save As Pressed")
+        # print("ConfigWindow - Save As Pressed")
         self.newName, ok = QtWidgets.QInputDialog.getText(self, 'Save As Config File', 'Enter File Name')
         if ok:
-            print("Create Config File: ", self.newName)
+            # print("Create Config File: ", self.newName)
 
             if not self.newName.endswith(".cfg"):
                 self.newName = self.newName + ".cfg"
@@ -2021,7 +2021,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.setWindowTitle(ConfigFile.filename)
 
     def cancelButtonPressed(self):
-        print("ConfigWindow - Cancel Pressed")
+        # print("ConfigWindow - Cancel Pressed")
         self.checkForChlor()
         self.close()
 
