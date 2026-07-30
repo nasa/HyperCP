@@ -237,15 +237,14 @@ class RhoCorrections:
         return rhoVector, rhoDelta
 
 
-    #TODO: Add D'Alimonte et al. (2026) static method here:
+    #TODO: Add Bulgarelli et al. (2026) static method here:
     @staticmethod
-    def DAlimonteCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
+    def BulgarelliCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
         """
         PLACEHOLDER
         """
         logging.writeLogFileAndPrint('UNDER DEVELOPMENT. Please use another glint correction.')
-        return None, None
-               
+        return None, None     
 
 
 

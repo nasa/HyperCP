@@ -1433,7 +1433,7 @@ class ProcessL2:
                         lt_ = np.array([v[0] for v in x_slice['lt'].values()])
                         
                     nlw = rrs * np.array(list(F0_hyper.values()))
-                    
+
                     # update breeakdown with L2 unc components
                     x_breakdown_unc['Lw']  = {k: um.convertToAbsolute(l2_bd['Lw'][k], lw)  for k in l2_bd['Lw']}
                     x_breakdown_unc['Rrs'] = {k: um.convertToAbsolute(l2_bd['Rrs'][k], rrs) for k in l2_bd['Rrs']}
@@ -1460,7 +1460,7 @@ class ProcessL2:
                             lw_band = lt_band - rho_band*li_band
                         else:
                             lw_band = lt_band - rho_val*li_band#
-                            
+
                         rrs_band = lw_band / es_band
                         try:
                             f0_band = np.zeros(len(vals['ES'].keys()))
@@ -1490,7 +1490,7 @@ class ProcessL2:
                 x_unc = sensor.FRML2ESOnly(wavelengths, x_slice)
             else:
                 x_unc = sensor.FRML2(PDS, rho_scalar, rho_vec, rho_unc, wavelengths, x_slice, x_breakdown_unc)
-        
+
         # log uncertainty processing time
         logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s")
 
@@ -1569,7 +1569,7 @@ class ProcessL2:
         elif int(ConfigFile.settings["bL2Z17Rho"]):
             method = 'zhang_rho'
         elif int(ConfigFile.settings["bL2D26Rho"]):
-            method = 'dAlimonte_rho'
+            method = 'bulgarelli_rho'
         else:
             method = 'mobley_rho'
 
@@ -1626,7 +1626,7 @@ class ProcessL2:
                                                          SVA, wavelengths, rho_uncertainty_obj)
 
 
-        elif method == "dAlimonte_rho":
+        elif method == "bulgarelli_rho":
             #TODO: Populate this placeholder call to Propagate and RhoCorrections.D26Corr
             rhoVector, rhoUNC = None,None
 
