@@ -1423,6 +1423,7 @@ class ProcessL2:
                     else:
                         lw = np.array([val[0] for val in x_slice['lt'].values()]) - rho_val * np.array([val[0] for val in x_slice['li'].values()])
                         rrs = lw / np.array([val[0] for val in x_slice['es'].values()])
+                        
                     nlw = rrs * np.array(list(F0_hyper.values()))
                     
                     # update breeakdown with L2 unc components
@@ -1446,9 +1447,12 @@ class ProcessL2:
                         es_band = np.array([v[0] for v in vals['ES'].values()])
                         li_band = np.array([v[0] for v in vals['LI'].values()])
                         lt_band = np.array([v[0] for v in vals['LT'].values()])
-                        rho_band = np.array(list(convolve_to_satellite[satellite](rho_vec).values())).flatten()
-
-                        lw_band = lt_band - rho_band*li_band
+                        if rho_vec is not None:
+                            rho_band = np.array(list(convolve_to_satellite[satellite](rho_vec).values())).flatten()
+                            lw_band = lt_band - rho_band*li_band
+                        else:
+                            lw_band = lt_band - rho_val*li_band#
+                            
                         rrs_band = lw_band / es_band
                         try:
                             f0_band = np.zeros(len(vals['ES'].keys()))

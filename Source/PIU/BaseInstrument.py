@@ -325,7 +325,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es, li, lt = Prop_CB.instruments(*means)
 
         # can set to be cumulative spectral plots
-        BD_UNCS = PlotMaths.classBased(Prop_CB, means, uncertainties, cul=False)  
+        BD_UNCS = PlotMaths.classBased(Prop_CB, means, uncertainties, cul=False)
 
         # # check if negative signal for any pixels
         # is_negative = np.any([ x < 0 for x in means])

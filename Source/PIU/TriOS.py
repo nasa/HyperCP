@@ -184,6 +184,7 @@ class TriOS(BaseInstrument):
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
             sample_alpha_CB  = cm.generate_sample(mDraws, DATA['cb_alpha'], UNC['cb_alpha'], "syst")
+            # Tartu specify that alpha (non-lin) correction should not be applied in the UV because of poor signal output from the lamp
             # TODO: clarify with Tartu why alpha != 0 for TriOS
             no_lin_corr_indx = DATA['cb_alpha'] == -2e-7
             sample_alpha[:, no_lin_corr_indx] = sample_alpha_CB[:, no_lin_corr_indx]
