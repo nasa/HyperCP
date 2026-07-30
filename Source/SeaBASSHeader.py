@@ -9,6 +9,10 @@ from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
 
 class SeaBASSHeader:
+    """
+    Generates the header for the SeaBASS file L2 output. 
+    If the ancillary file is provided when setting up the configuration, the header values will be ported over.
+    """
     filename = ""
     settings = collections.OrderedDict()
 
@@ -274,7 +278,7 @@ class SeaBASSHeader:
     # Saves the hdr file
     @staticmethod
     def saveSeaBASSHeader(filename):
-        print("SeaBASSHeader - Save SeaBASSHeader")
+        # print("SeaBASSHeader - Save SeaBASSHeader")
 
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
@@ -310,7 +314,7 @@ class SeaBASSHeader:
     # Deletes a seaBASSHeader
     @staticmethod
     def deleteSeaBASSHeader(filename):
-        print("SeaBASSHeader - Delete SeaBASSHeader")
+        # print("SeaBASSHeader - Delete SeaBASSHeader")
         seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
@@ -326,6 +330,4 @@ class SeaBASSHeader:
             # Only keep the full characterization files if running Full FRM
             files = [item for item in files if not item.startswith('CP')]
 
-        SeaBASSHeader.settings["calibration_files"] = (','.join(files))
-
-
+        SeaBASSHeader.settings["calibration_files"] = ','.join(files)

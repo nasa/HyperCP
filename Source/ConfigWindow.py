@@ -439,10 +439,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButton3C.clicked.connect(self.l2RhoRadioButton3CClicked)
         self.RhoRadioButton3C.setDisabled(True)
 
-        self.RhoRadioButtonBulgarelli = QtWidgets.QRadioButton("D'Alimonte et al. (2026) ρ")
+        self.RhoRadioButtonBulgarelli = QtWidgets.QRadioButton("Bulgarelli et al. (2026) ρ")
         self.RhoRadioButtonBulgarelli.setAutoExclusive(False)
         # TODO: Disable for public roll-out while under development
-        # self.RhoRadioButtonBulgarelli.setDisabled(True)
+        self.RhoRadioButtonBulgarelli.setChecked(0)
+        self.RhoRadioButtonBulgarelli.setDisabled(1)
         if ConfigFile.settings["bL2B26Rho"]==1:
             self.RhoRadioButtonBulgarelli.setChecked(True)
         self.RhoRadioButtonBulgarelli.clicked.connect(self.l2RhoRadioButtonBulgarelliClicked)
@@ -471,10 +472,13 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setDisabled(1)
             self.RhoRadioButton3C.setChecked(0)
             self.RhoRadioButton3C.setDisabled(1)
+            self.RhoRadioButtonBulgarelli.setChecked(0)
+            self.RhoRadioButtonBulgarelli.setDisabled(1)
             self.RhoRadioButtonDefault.setChecked(1)
 
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
+            ConfigFile.settings["bL2B26Rho"] = 0
             ConfigFile.settings["bL2M99Rho"] = 1
 
         #   L2 NIR AtmoCorr
@@ -490,6 +494,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
+        self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
 
         self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Mueller and Austin (1995) (blue water)")
         self.SimpleNIRRadioButton.setAutoExclusive(False)
@@ -640,7 +645,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.l2WriteReportCheckBox.clicked.connect(self.l2WriteReportCheckBoxUpdate)
         if int(ConfigFile.settings["bL2WriteReport"]) == 1:
             self.l2WriteReportCheckBox.setChecked(True)
-        self.l2WriteReportCheckBoxUpdate()
+        # self.l2WriteReportCheckBoxUpdate()
 
         logo = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap('./Data/Img/logo_scale20.png')
@@ -1427,7 +1432,8 @@ class ConfigWindow(QtWidgets.QDialog):
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
             self.RhoRadioButton3C.setDisabled(0)
-            self.RhoRadioButtonBulgarelli.setDisabled(0)
+            #TODO: uncomment when functional
+            # self.RhoRadioButtonBulgarelli.setDisabled(0)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
@@ -1738,8 +1744,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.SimSpecNIRRadioButton.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0
+            ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+            ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
+            self.SimpleNIRRadioButton.setChecked(False)
+            self.SimSpecNIRRadioButton.setChecked(False)
         else:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 1
+            if not ConfigFile.settings["bL2SimSpecNIRCorrection"] and not ConfigFile.settings["bL2SimpleNIRCorrection"]:
+                ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+                self.SimpleNIRRadioButton.setChecked(True)
+
 
     def l2NegativeSpecCheckBoxUpdate(self):
         # print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")

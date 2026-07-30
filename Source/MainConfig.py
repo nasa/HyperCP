@@ -16,7 +16,7 @@ class MainConfig:
     # Saves the cfg file
     @staticmethod
     def saveConfig(fileName):
-        print("MainConfig - Save MainConfig")
+        # print("MainConfig - Save MainConfig")
         # jsn = json.dumps(MainConfig.settings)
         fp = os.path.join(PATH_TO_CONFIG, fileName)
 
@@ -28,7 +28,7 @@ class MainConfig:
     # Loads the cfg file
     @staticmethod
     def loadConfig(fileName, version):
-        print("MainConfig - Load MainConfig")
+        # print("MainConfig - Load MainConfig")
 
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         MainConfig.createDefaultConfig(fileName,version)
@@ -53,7 +53,7 @@ class MainConfig:
     # Generates the default configuration
     @staticmethod
     def createDefaultConfig(fileName, version):
-        print("MainConfig - Set MainConfig settings defaults prior to populating with saved settings.")
+        # print("MainConfig - Set MainConfig settings defaults prior to populating with saved settings.")
 
         MainConfig.settings["cfgFile"] = fileName
         MainConfig.settings["cfgPath"] = os.path.join('./Config',fileName)

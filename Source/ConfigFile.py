@@ -26,7 +26,7 @@ class ConfigFile:
     def createDefaultConfig(fileName, new=1):
         # Generates the default configuration
         # fileName: the filename of the configuration file without path
-        print("ConfigFile - Create Default Config, or fill in newly added parameters with default values.")
+        # print("ConfigFile - Create Default Config, or fill in newly added parameters with default values.")
 
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
@@ -229,9 +229,9 @@ class ConfigFile:
     @staticmethod
     def saveConfig(filename):
         # import traceback
-        print("saveConfig was called from:")
+        # print("saveConfig was called from:")
         # traceback.print_stack() 
-        print(f"ConfigFile - Save Config: {filename}")
+        # print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
         # params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
@@ -292,7 +292,7 @@ class ConfigFile:
     # Deletes a config
     @staticmethod
     def deleteConfig(filename):
-        print("ConfigFile - Delete Config")
+        # print("ConfigFile - Delete Config")
         configPath = os.path.join(PATH_TO_CONFIG, filename)
         seabassPath = os.path.join(PATH_TO_CONFIG, filename.split('.')[0], "hdr")
         if "seaBASSHeaderFileName" in ConfigFile.settings:
@@ -316,7 +316,7 @@ class ConfigFile:
 
     @staticmethod
     def refreshCalibrationFiles():
-        print("ConfigFile - refreshCalibrationFiles")
+        # print("ConfigFile - refreshCalibrationFiles")
         files = os.listdir(ConfigFile.getCalibrationDirectory())
 
         newCalibrationFiles = {}
@@ -334,12 +334,12 @@ class ConfigFile:
 
     @staticmethod
     def setCalibrationConfig(calFileName, enabled, frameType):
-        print("ConfigFile - setCalibrationConfig")
+        # print("ConfigFile - setCalibrationConfig")
         ConfigFile.settings["CalibrationFiles"][calFileName] = {"enabled": enabled, "frameType": frameType}
 
     @staticmethod
     def getCalibrationConfig(calFileName):
-        print("ConfigFile - getCalibrationConfig")
+        # print("ConfigFile - getCalibrationConfig")
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
         return calibrationFiles[calFileName]
     

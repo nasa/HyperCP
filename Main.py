@@ -312,7 +312,7 @@ class Window(QtWidgets.QWidget):
         # MainConfig.saveConfig(MainConfig.fileName)
 
     def configNewButtonPressed(self):
-        print("New Config Dialogue")
+        # print("New Config Dialogue")
         fileName, ok = QtWidgets.QInputDialog.getText(
             self, "New Config File", "Enter File Name"
         )
@@ -348,7 +348,7 @@ class Window(QtWidgets.QWidget):
             # MainConfig.saveConfig(MainConfig.fileName)
 
     def configEditButtonPressed(self):
-        print("Edit Config Dialogue")
+        # print("Edit Config Dialogue")
 
         MainConfig.saveConfig(MainConfig.fileName)
         ConfigFile.saveConfig(ConfigFile.filename)
@@ -365,7 +365,7 @@ class Window(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
     def configDeleteButtonPressed(self):
-        print("Delete Config Dialogue")
+        # print("Delete Config Dialogue")
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join(CODE_HOME, "Config", configFileName)
         if os.path.isfile(configPath):
@@ -438,7 +438,7 @@ class Window(QtWidgets.QWidget):
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
-        print("Ancillary File Add Dialogue")
+        # print("Ancillary File Add Dialogue")
         if self.ancFileDir == "":
             self.ancFileDir = (
                 self.inputDirectory
@@ -464,7 +464,7 @@ class Window(QtWidgets.QWidget):
         # ConfigFile.saveConfig(ConfigFile.filename)
 
     def ancRemoveButtonPressed(self):
-        print("Wind File Remove Dialogue")
+        # print("Wind File Remove Dialogue")
         self.ancFileLineEdit.setText("")
         MainConfig.settings["ancFile"] = ""
         ConfigFile.settings["ancFile"] = ""
@@ -475,7 +475,7 @@ class Window(QtWidgets.QWidget):
         # ConfigFile.saveConfig(ConfigFile.filename)
 
     def processSingle(self, lvl):
-        print("Process Single-Level")
+        # print("Process Single-Level")
 
         t0Single = time.time()
         # Load Config file
@@ -576,7 +576,7 @@ class Window(QtWidgets.QWidget):
         self.processSingle("L2")
 
     def processMulti(self):
-        print("Process Multi-Level")
+        # print("Process Multi-Level")
         MainConfig.saveConfig(MainConfig.fileName)
         t0Multi = time.time()
         # Load Config file
@@ -635,7 +635,7 @@ class Window(QtWidgets.QWidget):
         self.processMulti()
 
     def popQueryCheckBoxUpdate(self):
-        print("Main - popQueryCheckBoxUpdate")
+        # print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
         MainConfig.saveConfig(MainConfig.fileName)
 
@@ -723,11 +723,11 @@ class Command:
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
-            print("Process Calibration Files")
+            # print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
-            print("Process Calibration Files")
+            # print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
