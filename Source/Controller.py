@@ -619,7 +619,6 @@ class Controller:
                 root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
                 if not flag_Trios:
                     # Checked in TriosL1A for TriOS
-                    # Utilities.checkOutputFiles(outFilePath)
                     filing.checkOutputFiles(outFilePath)
                 else:
                     # Set the class variable for use in moving on from L1A trios
@@ -665,18 +664,14 @@ class Controller:
                 else:
                     logging.writeLogFileAndPrint('No deglitching will be performed.')
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath)
-                # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
-
                 root = Controller.processL1bqc(inFilePath, outFilePath)
-                # Utilities.checkOutputFiles(outFilePath)
                 filing.checkOutputFiles(outFilePath)
 
         elif level == "L2":
@@ -794,7 +789,7 @@ class Controller:
                 # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
-                # Utilities.checkOutputFiles(outFilePath)
+                
                 filing.checkOutputFiles(outFilePath)
 
                 if os.path.isfile(outFilePath):
@@ -913,7 +908,6 @@ class Controller:
 
             #Pass entire list L0 files
             # print("Processing: " + fp)
-            # Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios)
             Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level)
             print("processFilesSingleLevel, all files - DONE")
 

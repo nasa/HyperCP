@@ -52,10 +52,10 @@ PROC_LEVEL = "L2"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored 
 # PLATFORM = "SolarTracker"
 # PLATFORM = "Manual_TriOS"
 # PLATFORM = "ES_Only"
-PLATFORM = "DALEC"
-# PLATFORM = "SoRad"
+# PLATFORM = "DALEC"
+PLATFORM = "SoRad"
 
-CRUISE = "FICE22" # Here mainly used for ancillary file name
+CRUISE = "Robot_Shakedown" # Here mainly used for ancillary file name
 
 # L1B_REGIME: Optional. [Factory, Class, Sensor]
 #   Denote FRM processing regime and use appropriately named subdirectories.
