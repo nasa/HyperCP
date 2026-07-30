@@ -230,7 +230,13 @@ class ProcessL2BRDF():
                                     # uncs not saved as list, perhaps numpy bug?
                                     Rrs_BRDF_unc[k] = Rrs_BRDF_unc[k] if isinstance(Rrs_BRDF_unc[k], list) else [Rrs_BRDF_unc[k]] 
                                     nLw_BRDF_unc[k] = nLw_BRDF_unc[k] if isinstance(nLw_BRDF_unc[k], list) else [nLw_BRDF_unc[k]]
-                        
+                                else:
+                                    # add in datetime datetag and timetag2 for consistency with other datasets
+                                    Rrs_BRDF[k] = Rrs[k]
+                                    nLw_BRDF[k] = Rrs[k]
+                                    Rrs_BRDF_unc[k] = Rrs[k]
+                                    nLw_BRDF_unc[k] = Rrs[k]
+
                         if 'HYPER' in ds:                            
                             try:
                                 # save to breakdown groups
@@ -268,7 +274,7 @@ class ProcessL2BRDF():
 
                         nLw_BRDF_unc_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option + "_unc")
                         nLw_BRDF_unc_ds.columns = nLw_BRDF_unc
-                        nLw_BRDF_unc_ds.columnsToDataset()    
+                        nLw_BRDF_unc_ds.columnsToDataset()
                     
                         # import matplotlib.pyplot as plt
                         # plt.figure()
