@@ -106,7 +106,7 @@ class HyperOCR(BaseInstrument):
             else:
                 signal_noise[wvl] = 0.0
 
-            std_signal.append(np.std(Ldata)/signalAve)  # as % of Dark corrected signal
+            std_signal.append(np.sqrt(np.std(Ldata)**2/signalAve**2))  # as % of Dark corrected signal
 
         return dict(
             ave_Light=np.array(ave_light),
@@ -269,6 +269,27 @@ class HyperOCR(BaseInstrument):
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
             BD_UNCS.update(LPU.temperature(BD_UNCS, PDS, s_type, cal_corr_signal))
             BD_CORR['ct'] = np.mean(sample_ct_corr, axis=0) - cal_corr_signal
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.plot(DATA['radcal_wvl'], np.mean(sample_ct_corr, axis=0), label="thermal corrected signal")
+            plt.plot(DATA['radcal_wvl'], np.mean(sample_stab_corr, axis=0), label="uncorrected signal")
+
+            plt.legend()
+            plt.grid("both")
+            plt.xlim(400, 800)
+            low = np.argmin(np.abs(DATA['radcal_wvl'] - 400))
+            hgh = np.argmin(np.abs(DATA['radcal_wvl'] - 800))
+            plt.ylim(
+                0, 
+                max(
+                    np.mean(sample_ct_corr, axis=0)[low:hgh]
+                ) * 1.1  # +10%
+            )
+            plt.xlabel("Wavelength [nm]")
+            plt.ylabel("signal [DN]")
+            plt.title(f"Magnitude of thermal correction in {s_type}")
+            plt.savefig(f"{s_type}_ct_corr_mag.png")
 
             if s_type == "ES":
                 # Cosine correction
