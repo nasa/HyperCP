@@ -49,7 +49,7 @@ class Window(QtWidgets.QWidget):
         self.setWindowIcon(QtGui.QIcon(icon_path))
 
         # Create - if inexistent - directories Plots, Config and Logs
-        hypercpDirs = ["Plots", "Config", "Logs"]
+        hypercpDirs = ["Config", "Logs"]
         for directory in hypercpDirs:
             dirPath = os.path.join(CODE_HOME, directory)
             if not os.path.exists(dirPath):
