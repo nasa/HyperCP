@@ -218,7 +218,7 @@ class PIUDataStore:
             radcal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
             Nlin_CB_string = "CLASS_HYPEROCR_RADIANCE"
             calDate_string = f"{s_type}_LIGHT_L1AQC"
-        elif instrument in ["trios", "trios es only"]:
+        elif instrument in ["trios", "trios es only","sorad"]:
             radcal_raw = self.readTriOSCal(grp, uncGrp, raw_slices, s_type)
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"

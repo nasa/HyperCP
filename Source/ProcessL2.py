@@ -1568,7 +1568,7 @@ class ProcessL2:
             method = 'three_c_rho'
         elif int(ConfigFile.settings["bL2Z17Rho"]):
             method = 'zhang_rho'
-        elif int(ConfigFile.settings["bL2D26Rho"]):
+        elif int(ConfigFile.settings["bL2B26Rho"]):
             method = 'bulgarelli_rho'
         else:
             method = 'mobley_rho'

@@ -104,7 +104,10 @@ class CalCharWindow(QtWidgets.QDialog):
         self.finished.connect(self.worker_done)
 
         # Define path to local repository of FidRadDB sensor-specific files.
-        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" else ConfigFile.settings['SensorType']
+        if ConfigFile.settings['SensorType'].lower() == "trios es only" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            sensor_type = 'TriOS'
+        else:
+            sensor_type = ConfigFile.settings['SensorType']
         self.path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
 
         # Blocks input to other windows in the application
@@ -431,7 +434,7 @@ class CalCharWindow(QtWidgets.QDialog):
         ConfigFile.settings['serialNumber'] = {}
 
         # Identify serial number for TriOS case
-        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
+        if ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only", "sorad"]:
             for k,v in ConfigFile.settings['CalibrationFiles'].items():
 
                 # Keep only ini files for the identification of serial numbers

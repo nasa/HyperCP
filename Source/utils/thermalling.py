@@ -50,7 +50,7 @@ def UncTempCorrection(node):
             #     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
             # # else:
             # #     logging.writeLogFileAndPrint("Caps-on temperature dataset not found")
-        elif ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only"]:
+        elif ConfigFile.settings['SensorType'].lower() in ["trios", "trios es only", "sorad"]:
             sensorGroup = node.getGroup(f'{sensor}')
             if "SPECTEMP" in sensorGroup.datasets:
                 # NOTE: Need to distinguish G2 at some point
@@ -73,7 +73,7 @@ def UncTempCorrection(node):
 
         # Now make the decision which value to use as the internal working temperature of the sensor.
         # NOTE: Currently, only TriOS L1A processing matches dark files to extract CAPSONTEMP
-        if meanSPECTEMP != 0.0:
+        if meanSPECTEMP != 0.0 and meanSPECTEMP is not None:
             # NOTE: G2 thermistor acquisition is still under development
             logging.writeLogFileAndPrint(f"{sensor}: Using internal thermistor for sensor working temperature")
             workingTemp = meanSPECTEMP     # SeaBird, DALEC, and TriOS G2 should always follow this path
