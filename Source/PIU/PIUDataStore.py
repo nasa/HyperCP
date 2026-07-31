@@ -487,7 +487,7 @@ class PIUDataStore:
         instrument = ConfigFile.settings['SensorType'].lower()
         if instrument == "seabird":
             calDate_string = f"{s}_LIGHT_L1AQC"
-        elif instrument in ["trios", "trios es only"]:
+        elif instrument in ["trios", "trios es only","sorad"]:
             calDate_string = f"{s}_L1AQC"
         else:
             writeLogFileAndPrint(f"{instrument} not yet implemented")

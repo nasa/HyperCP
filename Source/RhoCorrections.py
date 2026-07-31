@@ -291,9 +291,9 @@ class RhoCorrections:
                         wt,
                         nwb
                     ),
-                    method="pchip", # should be cubic - temporary fix due to memory issues
+                    method="pchip", 
                     )
-                print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
+                print('Interpolating Z17 LUT')
             else:
                 zhang_interp = spin.interpn(
                     points=(
@@ -318,7 +318,7 @@ class RhoCorrections:
                     method="pchip",
                 )
                 # print('Interpolating Z17 LUT using cubic method')
-                print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
+                print('Interpolating Z17 LUT')
 
             logging.writeLogFileAndPrint(f'Zhang17 LUT Elapsed Time: {time.time() - tic:.1f} s')
 

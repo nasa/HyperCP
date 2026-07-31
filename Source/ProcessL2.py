@@ -207,7 +207,7 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("SimSpec threshold tripped. Using 780/870 instead.")
                 ε = (α2*ρ3 - ρ2)/(α2-1)
                 εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1)
-            logging.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
+            logging.writeLogFileAndPrint(f'offset(rrs) = {ε:.4f}; offset(nLw) = {εnLw:.3f}')
 
             rrsNIRCorr = ε/np.pi
             nLwNIRCorr = εnLw/np.pi
