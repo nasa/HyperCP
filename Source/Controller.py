@@ -789,7 +789,7 @@ class Controller:
                 # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
-                
+
                 filing.checkOutputFiles(outFilePath)
 
                 if os.path.isfile(outFilePath):

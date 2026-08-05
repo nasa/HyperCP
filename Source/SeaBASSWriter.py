@@ -8,6 +8,7 @@ from Source.HDFRoot import HDFRoot
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.ConfigFile import ConfigFile
 import Source.utils.dating as dating
+import Source.utils.loggingHCP as logging
 
 
 class SeaBASSWriter:
@@ -28,7 +29,7 @@ class SeaBASSWriter:
             (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
                 f"{headerBlock['platform_id']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
                 f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
-        headerBlock['data_file_name'] = outFileName.split('/')[-1]
+        headerBlock['data_file_name'] = outFileName.rsplit('/', maxsplit=1)[-1]
         return outFileName
 
     @staticmethod
@@ -119,33 +120,32 @@ class SeaBASSWriter:
 
 
     @staticmethod
-    def formatData2(dataset,dsDelta,dtype, units):
+    def formatData2(dataset,dataUnc,dtype, units):
 
         dsCopy = dataset.data.copy() # By copying here, we leave the ancillary data tacked on to radiometry for later
-        # dsDelta = dsDelta.data.copy()
 
         # Convert Dates and Times and remove from dataset
         newData = dsCopy
         dateDay = dsCopy['Datetag'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Datetag')
-        if dsDelta is not None:
-            if 'Datetag' in dsDelta.columns:
-                del dsDelta.columns['Datetag']
+        if dataUnc is not None:
+            if 'Datetag' in dataUnc.columns:
+                del dataUnc.columns['Datetag']
         dateDT = [dating.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = dsCopy['Timetag2'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
-        if dsDelta is not None:
-            if 'Timetag2' in dsDelta.columns:
-                del dsDelta.columns['Timetag2']
+        if dataUnc is not None:
+            if 'Timetag2' in dataUnc.columns:
+                del dataUnc.columns['Timetag2']
 
-        if dsDelta is not None:
-            dsDelta.columnsToDataset()
+        if dataUnc is not None:
+            dataUnc.columnsToDataset()
 
         timeDT = []
         for i in range(len(dateDT)):
             timeDT.append(dating.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
-        # Retrieve ancillaries and remove from dataset (they are not on deltas)
+        # Retrieve ancillaries and remove from dataset (they are not in dataUnc)
         lat = dsCopy['LATITUDE'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
         lon = dsCopy['LONGITUDE'].tolist()
@@ -158,10 +158,12 @@ class SeaBASSWriter:
         newData = SeaBASSWriter.removeColumns(newData,'SZA')
         relAz = dsCopy['REL_AZ'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
-        newData = SeaBASSWriter.removeColumns(newData,'HEADING')
-        newData = SeaBASSWriter.removeColumns(newData,'SOLAR_AZ')
+        newData = SeaBASSWriter.removeColumns(newData,'HEADING') # Not exported
+        newData = SeaBASSWriter.removeColumns(newData,'SOLAR_AZ') # Not exported
         wind = dsCopy['WIND'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'WIND')
+        tilt = dsCopy['TILT'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'TILT')
         bincount = dsCopy['BINCOUNT'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'BINCOUNT')
 
@@ -169,7 +171,7 @@ class SeaBASSWriter:
 
         # Change field names for SeaBASS compliance
         bands = list(dsCopy.dtype.names)
-        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind','bincount']
+        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind','tilt','bincount']
 
         fieldSpecs = {}
         fieldSpecs['rrs'] = {'fieldName': 'Rrs', 'unc_or_sd':'unc'}
@@ -180,37 +182,38 @@ class SeaBASSWriter:
 
         fieldsLine = ls + [f'{fieldSpecs[dtype]["fieldName"]}{band}' for band in bands]
 
-        if dsDelta is not None:
+        if dataUnc is not None:
             fieldsLine = fieldsLine + [f'{fieldSpecs[dtype]["fieldName"]}{band}_{fieldSpecs[dtype]["unc_or_sd"]}' for band in bands]
 
         fieldsLineStr = ','.join(fieldsLine)
 
-        lenRad = (len(dsCopy.dtype.names))
+        lenRad = len(dsCopy.dtype.names)
         unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
         unitsLine.extend(['degrees']*4) # lat, lon, relAz, sza
         unitsLine.append('unitless') # AOD
         unitsLine.append('%') # cloud
         unitsLine.append('m/s') # wind
+        unitsLine.append('degrees') # tilt
         unitsLine.append('none') # bincount
         unitsLine.extend([units]*lenRad) # data
-        if dsDelta is not None:
+        if dataUnc is not None:
             unitsLine.extend([units]*lenRad)    # data uncertainty
         unitsLineStr = ','.join(unitsLine)
 
         # Add data for each row
         dataOut = []
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}'\
-            + ',{:.4f},{:.0f},{:.1f},{:.0f}' + ',{:.6f}'*lenRad)
-        if dsDelta is not None:
+            + ',{:.4f},{:.0f},{:.1f},{:.1f},{:.0f}' + ',{:.6f}'*lenRad)
+        if dataUnc is not None:
             formatStr = formatStr + ',{:.6f}' * lenRad
         for i in range(dsCopy.shape[0]):
-            subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i],bincount[i]]
+            subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i],tilt[i],bincount[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
                 subList + list(dsCopy[i].tolist())
 
-            if dsDelta is not None:
-                lineList = lineList + list(dsDelta.data[i].tolist())
+            if dataUnc is not None:
+                lineList = lineList + list(dataUnc.data[i].tolist())
 
             # Replace NaNs with -9999.0
             lineList = [-9999.0 if np.isnan(element) else element for element in lineList]
@@ -232,6 +235,8 @@ class SeaBASSWriter:
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
 
         outFileName = SeaBASSWriter.sbFileName(fp,headerBlock,formattedData,dtype)
+
+        logging.writeLogFileAndPrint(f'Writing: {outFileName}')
 
         outFile = open(outFileName,'w',newline='\n', encoding="utf-8")
         outFile.write('/begin_header\n')
@@ -461,7 +466,6 @@ class SeaBASSWriter:
         azimuthData.datasetToColumns()
         szaData.datasetToColumns()
         windData.datasetToColumns()
-
         azimuth = azimuthData.columns["SOLAR_AZ"]
         sza = szaData.columns["SZA"]
         wind = windData.columns["WINDSPEED"]
@@ -484,6 +488,7 @@ class SeaBASSWriter:
         aodData = ancGroup.getDataset("AOD")
         headingData = ancGroup.getDataset("HEADING")
         cloudData = ancGroup.getDataset("CLOUD")
+        tiltData = ancGroup.getDataset("TILT")
 
         if aodData is not None:
             aodData.datasetToColumns()
@@ -520,6 +525,13 @@ class SeaBASSWriter:
             heading = np.empty((1,len(wind)))
             heading = heading[0]*np.nan
             heading = heading.tolist()
+        if tiltData is not None:
+            tiltData.datasetToColumns()
+            tilt = tiltData.columns["TILT"]
+        else:
+            tilt = np.empty((1,len(wind)))
+            tilt = tilt[0]*np.nan
+            tilt = tilt.tolist()
 
         # No need to add all ancillary to the uncertainty deltas
         esData.columns["AOD"] = aod
@@ -529,6 +541,7 @@ class SeaBASSWriter:
         esData.columns["REL_AZ"] = relAz
         esData.columns["SZA"] = sza
         esData.columns["WIND"] = wind
+        esData.columns["TILT"] = tilt
         esData.columnsToDataset()
 
         if reflectanceGroup:
@@ -567,6 +580,9 @@ class SeaBASSWriter:
             # liData.columns["WIND"] = wind
             # ltData.columns["WIND"] = wind
 
+            rrsData.columns["TILT"] = tilt
+            nLwData.columns["TILT"] = tilt
+
             rrsData.columnsToDataset()
             nLwData.columnsToDataset()
             # liData.columnsToDataset()
@@ -580,6 +596,7 @@ class SeaBASSWriter:
             nLwData_BRDF.columns["REL_AZ"] = relAz
             nLwData_BRDF.columns["SZA"] = sza
             nLwData_BRDF.columns["WIND"] = wind
+            nLwData_BRDF.columns["TILT"] = tilt
             nLwData_BRDF.columnsToDataset()
             rrsData_BRDF.columns["AOD"] = aod
             rrsData_BRDF.columns["CLOUD"] = cloud
@@ -588,6 +605,7 @@ class SeaBASSWriter:
             rrsData_BRDF.columns["REL_AZ"] = relAz
             rrsData_BRDF.columns["SZA"] = sza
             rrsData_BRDF.columns["WIND"] = wind
+            rrsData_BRDF.columns["TILT"] = tilt
             rrsData_BRDF.columnsToDataset()
 
         # Format the non-specific header block
