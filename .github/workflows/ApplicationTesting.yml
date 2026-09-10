@@ -43,4 +43,5 @@ jobs:
 
       - name: 🧪 Run Tests
         run: |
+          python -m unittest Tests.test_filing
           python -m unittest Tests.test_sample_data 
