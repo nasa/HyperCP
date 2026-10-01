@@ -256,7 +256,7 @@ class Controller:
                         cf.instrumentType = "TriOS"
                     cf.media = "Air"
                     cf.measMode = "Surface"
-                    cf.frameType = "Combined"
+                    cf.frameType = calFiles[key]["frameType"]
                     calibrationMap[key] = cf
 
             # elif '.tdf' in key: # accounts for pseudo so-rad tdf

@@ -1293,6 +1293,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings['SensorType'].lower() == 'sorad':
             self.l1aqcRotatorDelayLineEdit.setDisabled(True)
             self.l1aqcRotatorDelayCheckBox.setDisabled(True)
+            self.l1aqcRotatorDelayCheckBox.setChecked(False)
         else:
             self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
             self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
