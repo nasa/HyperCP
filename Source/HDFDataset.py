@@ -41,7 +41,7 @@ class HDFDataset:
                 self.attributes[k] = f.attrs[k]
             elif isinstance(f.attrs[k], bytes):
                 self.attributes[k] = f.attrs[k].decode("utf-8")
-            else:
+            else: # string attribute
                 self.attributes[k] = f.attrs[k]
 
         # Read dataset
