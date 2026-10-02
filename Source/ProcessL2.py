@@ -1233,7 +1233,7 @@ class ProcessL2:
                 #  so the percent Lt estimation becomes highly questionable and is overridden here.
                 if nSpecStart <= 5 or nSpecEnd == 0:
                     nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
-                if nSpecEnd > 1:
+                if nSpecEnd > 3:
                     lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
                     index = np.argsort(lt780)
                     y = index[:nSpecEnd]
@@ -1245,6 +1245,13 @@ class ProcessL2:
                 nSpecEnd = nSpecStart
 
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
+
+            if np.any(stats['ES']['ave_Light'] < 0):
+                print('WARNING: negative ES stats')
+            if np.any(stats['LI']['ave_Light'] < 0):
+                print('WARNING: negative LI stats')
+            if np.any(stats['LT']['ave_Light'] < 0):
+                print('WARNING: negative LT stats')
 
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")

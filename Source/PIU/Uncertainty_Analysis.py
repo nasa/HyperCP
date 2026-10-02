@@ -148,6 +148,15 @@ class Propagate:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
+            combined_array = np.array(mean_vals)
+            all_indices = np.argwhere(combined_array <0)
+            if all_indices.size != 0:
+                print('Negative mean values') # This will not crash MCP
+            combined_array = np.array(uncertainties)
+            all_indices = np.argwhere(combined_array <0)
+            if all_indices.size != 0:
+                print('Negative uncertainty values') # This will crash MCP
+
             unc = self.MCP.propagate_random(self.instruments,
                                             mean_vals,
                                             uncertainties,

@@ -609,7 +609,10 @@ class CalCharWindow(QtWidgets.QDialog):
         _, missingFilesList = self.missing_FidRadDB_cal_char_files(out_of_thread=False)
 
         # Extract serial number and cal/char types from list of missing files.
-        serialNumber_calCharTypes = list(set(list(['_'.join(mf.split('_')[1:-1]) for mf in missingFilesList])))
+        # NOTE: This results in one format for files in FRDB, and another for files not found in FRDB.
+        #       We only want to fetch fetchable files, so only populate this for fetchable files.
+        serialNumber_calCharTypes = list(set(list(['_'.join(mf.split('_')[1:-1]) for mf in missingFilesList \
+                                                   if mf.startswith('CP_')])))
 
         # Nothing to download, return
         if len(missingFilesList) == 0:

@@ -90,6 +90,19 @@ class TriOS(BaseInstrument):
             # Sensitivity calibration
             # calibrated_mesure[n, :] = normalized_mesure/raw_cal  # uncommented /raw_cal L1985-6
 
+        # Corrected ir/radiances less than zero are non-physical. Set to zero.
+        is_negative = np.any([ x < 0 for x in Light])
+        if is_negative:
+            print('WARNING: Negative background corrected light value encountered. Setting to zero.')
+            for arr in Light:
+                arr[arr < 0] = 0
+        is_negative = np.any([ x < 0 for x in normalised_mesure])
+        if is_negative:
+            print('WARNING: Negative normalized light value encountered. Setting to near zero.')
+            # normalised_mesure becomes a denominator and cannot be zero
+            for arr in normalised_mesure:
+                arr[arr < 0] = 1e-5
+
         # get light and dark data before correction
         light_avg = np.mean(Light, axis=0)  # [ind_nocal == False]
         if nmes > 25:
@@ -99,6 +112,13 @@ class TriOS(BaseInstrument):
         else:
             writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
+
+        # is_negative = np.any(light_std < 0)
+        # if is_negative:
+        #     print('WARNING: Negative normalized light value encountered. Setting to zero.')
+        #     for arr in light_std:
+        #         arr[arr < 0] = 0
+
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * np.mean(Light[:, DarkPixelStart:DarkPixelStop])  # np.mean takes avg over 2 dims if axis not specified
@@ -106,14 +126,13 @@ class TriOS(BaseInstrument):
         if nmes > 25:
             dark_std = ones * (np.std(Dark, axis=0) / pow(nmes, 0.5))
         elif nmes > 3:  # already checked for light data so we know nmes > 3
-            # something is wrong with this equation
             sc = (nmes-1)/(nmes-3)
             dark_std = ones * np.sqrt(sc * (np.std(Dark)/pow(nmes, 0.5))**2)
             # dark_std2 = np.sqrt(((nmes-1)/(nmes-3)) * (ones * (np.std(np.mean(Light[:, DarkPixelStart:DarkPixelStop], axis=1), axis=0)/pow(nmes, 0.5)**2)))
             # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
         else:
             return False
-        
+
         # both are relative to the normalised dark corrected signal
         signal_noise = {}
         for i, wvl in enumerate(raw_wvl):
