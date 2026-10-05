@@ -56,7 +56,7 @@ class test_baseInstrument(unittest.TestCase):
     #     pysas = obj.generateSensorStats("SeaBird", rawData, rawSlice, newWaveBands, y)
 
     @patch('Source.PIU.TriOS.TriOSUtils.readParams')
-    @patch.object(ConfigFile, "settings", {"SensorType": "TriOS"})
+    @patch.object(ConfigFile, "settings", {"SensorType": "TriOS", 'fL1bCal': 3})
     def test_stats_trios(self, mock_readParams):
         obj = TriOS() # HDFGroup, XSlice, sensortype
         statsTriOS = {}
@@ -92,7 +92,7 @@ class test_baseInstrument(unittest.TestCase):
         statsTriOS["LI"] = obj.lightDarkStats(mock_HDFGroup, mock_xslice, "LI")
         statsTriOS["LT"] = obj.lightDarkStats(mock_HDFGroup, mock_xslice, "LT")
     
-    @patch.object(ConfigFile, "settings", {"SensorType": "TriOS"})
+    @patch.object(ConfigFile, "settings", {"SensorType": "TriOS", 'fL1bCal': 3})
     def test_stats_hyperocr(self):
         obj = HyperOCR() # lightdata, darkdata, sensortype
         obj.cal_int  = {k: 1024 for k in ["ES", "LI", "LT"]}
