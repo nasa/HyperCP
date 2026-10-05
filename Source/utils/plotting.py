@@ -758,7 +758,10 @@ def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
         'size': 16,
         }
 
-    cmap = plt.cm.get_cmap("jet")
+    try:
+        cmap = plt.get_cmap("jet")
+    except AttributeError:
+        cmap = plt.cm.get_cmap("jet")
 
     # dataDelta = None
     group = root.getGroup("DERIVED_PRODUCTS")
