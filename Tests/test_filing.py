@@ -16,9 +16,11 @@ from Source.utils import filing
 
 DOWNLOADS = (
     (filing.downloadZhangDB, 'e4c155f8ce92dcfa012a450a56b64e28'),
-    (filing.downloadZhangLUT, '1a33ed647d9c7359b0800915bd0229c7'),
+    (filing.downloadZhangLUT, '988cc08446dd00d689280397f2faa672'),
 )
 
+
+TARGET_LUT_NAME = 'Z17_LUT_30.nc'
 
 class TestZhangDownloads(unittest.TestCase):
     """Exercise the public download functions without external data or a GUI."""
@@ -26,7 +28,7 @@ class TestZhangDownloads(unittest.TestCase):
     def setUp(self):
         self.directory = TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.target = Path(self.directory.name) / 'database.nc'
+        self.target = Path(self.directory.name) / TARGET_LUT_NAME
         self.response = MagicMock(spec=requests.Response)
         self.response.__enter__.return_value = self.response
         self.response.close.return_value = None
