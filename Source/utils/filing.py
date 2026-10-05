@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import hashlib
 import csv
+from tempfile import NamedTemporaryFile
 
 from tqdm import tqdm
 import requests
@@ -14,6 +15,57 @@ from Source.MainConfig import MainConfig
 import Source.utils.loggingHCP as logging
 
 
+def _download_zhang_file(destination, url, expected_hash):
+    """Stream and verify a Zhang file without requiring a Content-Length header."""
+    temporary_path = None
+    try:
+        with requests.Session() as session:
+            with session.get(url, stream=True, timeout=(10, 60)) as response:
+                response.raise_for_status()
+                try:
+                    file_size = int(response.headers.get("Content-Length", ""))
+                    if file_size < 0:
+                        file_size = None
+                except (TypeError, ValueError):
+                    file_size = None
+                if file_size is None:
+                    print("##### Downloading data file (size unavailable). #####")
+                else:
+                    print(f"##### Downloading {file_size / (1024**3):.2f}GB data file. #####")
+
+                # Publish only a complete, verified file. Failed transfers must not
+                # overwrite an existing database or look like a successful download.
+                directory = os.path.dirname(os.path.abspath(destination))
+                with NamedTemporaryFile(mode="wb", dir=directory, prefix=".zhang-",
+                                        suffix=".part", delete=False) as target:
+                    temporary_path = target.name
+                    with tqdm(total=file_size, unit="iB", unit_scale=True,
+                              unit_divisor=1024) as progress:
+                        for chunk in response.iter_content(chunk_size=1024):
+                            if chunk:
+                                target.write(chunk)
+                                progress.update(len(chunk))
+
+        print("Checking file...")
+        if md5(temporary_path) != expected_hash:
+            raise ValueError(f"Checksum mismatch for {destination}")
+        os.replace(temporary_path, destination)
+        temporary_path = None
+        print("File checks out.")
+    except (requests.exceptions.RequestException, OSError, ValueError) as err:
+        print("Failed to download core database:", err)
+        print(
+            f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+            f" {dirPath}/Data directory."
+        )
+    finally:
+        if temporary_path is not None:
+            try:
+                os.remove(temporary_path)
+            except OSError as err:
+                print("Unable to remove incomplete download:", err)
+
+
 def downloadZhangLUT(fpfZhangLUT, force=False):
     infoText = "  NEW INSTALLATION\nGlint LUTs required.\nClick OK to download.\n\nThis comprisese two 200 MB files.\n\n\
     If canceled, Zhang et al. (2017) glint correction will revert to slower analytical solution. If download fails, a link and instructions will be provided in the terminal."
@@ -21,46 +73,7 @@ def downloadZhangLUT(fpfZhangLUT, force=False):
     if YNReply:
 
         url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_40.nc"
-        download_session = requests.Session()
-        try:
-            file_size = int(
-                download_session.head(url).headers["Content-length"]
-            ) # If this fails, check the file permissions on the server.
-            file_size_read = round(int(file_size) / (1024**3), 2)
-            print(
-                f"##### Downloading {file_size_read}GB data file. ##### "
-            )
-            download_file = download_session.get(url, stream=True)
-            download_file.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print("Error in download_file:", err)
-        if download_file.ok:
-            progress_bar = tqdm(
-                total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
-            )
-            with open(fpfZhangLUT, "wb") as f:
-                for chunk in download_file.iter_content(chunk_size=1024):
-                    progress_bar.update(len(chunk))
-                    f.write(chunk)
-            progress_bar.close()
-
-            # Check the hash of the file
-            print('Checking file...')
-            thisHash = md5(fpfZhangLUT)
-            if thisHash == '1a33ed647d9c7359b0800915bd0229c7':
-                print('File checks out.')
-            else:
-                print(f'Error in downloaded file {fpfZhangLUT}. Recommend you delete the downloaded file and try again.')
-                print(
-                f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                f" {dirPath}/Data directory."
-            )
-        else:
-            print(
-                "Failed to download core databases."
-                f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                f" {dirPath}/Data directory."
-            )
+        _download_zhang_file(fpfZhangLUT, url, "1a33ed647d9c7359b0800915bd0229c7")
 
 def downloadZhangDB(fpfZhang, force=False):
     infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.8 GB DOWNLOAD.\n\n\
@@ -69,47 +82,7 @@ def downloadZhangDB(fpfZhang, force=False):
     if YNReply:
 
         url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db_expanded.mat"
-        download_session = requests.Session()
-        try:
-            file_size = int(
-                download_session.head(url).headers["Content-length"]
-            )# If this fails, check the file permissions on the server.
-            file_size_read = round(int(file_size) / (1024**3), 2)
-            print(
-                f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### "
-            )
-            download_file = download_session.get(url, stream=True)
-            download_file.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print("Error in download_file:", err)
-        if download_file.ok:
-            progress_bar = tqdm(
-                total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
-            )
-            with open(fpfZhang, "wb") as f:
-                for chunk in download_file.iter_content(chunk_size=1024):
-                    progress_bar.update(len(chunk))
-                    f.write(chunk)
-            progress_bar.close()
-
-            # Check the hash of the file
-            print('Checking file...')
-            thisHash = md5(fpfZhang)
-            if thisHash == 'e4c155f8ce92dcfa012a450a56b64e28':
-                print('File checks out.')
-            else:
-                print(f'Error in downloaded file {fpfZhang}. Recommend you delete the downloaded file and try again.')
-                print(
-                f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                f" {dirPath}/Data directory."
-            )
-
-        else:
-            print(
-                "Failed to download core databases."
-                f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                f" {dirPath}/Data directory."
-            )
+        _download_zhang_file(fpfZhang, url, "e4c155f8ce92dcfa012a450a56b64e28")
 
 def YNWindow(winText,infoText):
     if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
