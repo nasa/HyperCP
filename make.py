@@ -104,8 +104,8 @@ if platform.system() == "Darwin":
 
         if not os.path.exists(link):
             candidates = [p for p in glob.glob(os.path.join(internal_dir, "libblosc2.*.dylib")) if os.path.isfile(p)]
-            source = os.path.basename(candidates[0])
             if candidates:
+                source = os.path.basename(candidates[0])
                 os.symlink(source, link)
                 print(f"Created {os.path.basename(link)} -> {source}")
                 if len(candidates) > 1:
