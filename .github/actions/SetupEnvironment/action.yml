@@ -6,7 +6,7 @@ runs:
 
   steps:
     - name: 🐍 Setup Mambaforge
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         miniforge-version: latest
 #        miniforge-variant: Mambaforge
@@ -14,7 +14,7 @@ runs:
         activate-environment: hypercp
 
     - name: 🔂 Cache Environment
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ${{ env.CONDA }}/envs
         key:

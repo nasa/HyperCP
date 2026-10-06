@@ -18,13 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ 'ubuntu-latest', 'macos-latest', 'windows-latest' ]
+        os: [ 'ubuntu-latest'  , 'macos-latest', 'windows-latest' ]
 
     steps:
       - name: ⏬ Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.branch }}
+        uses: actions/checkout@v7
 
       - name: 🔧 Setup Environment
         uses: ./.github/actions/SetupEnvironment
@@ -33,15 +31,22 @@ jobs:
         env:
           CDSAPIRC: ${{ secrets.ECMWF_ADS_CREDENTIALS }}
         run: |
-          echo "$CDSAPIRC" >> ~/.ecmwf_ads_credentials.json
+          echo "$CDSAPIRC" > ~/.ecmwf_ads_credentials.json
 
       - name: 🔑 Get GMAO MERRA2 Credentials
         env:
           NETRC: ${{ secrets.NETRC }}
         run: |
-          echo "$NETRC" >> ~/.netrc
+          echo "$NETRC" > ~/.netrc
+          chmod 600 "$HOME/.netrc"
+
+      - name: Disable IPv6 for EarthData access on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
       - name: 🧪 Run Tests
         run: |
           python -m unittest Tests.test_filing
-          python -m unittest Tests.test_sample_data 
+          python -m unittest Tests.test_sample_data
