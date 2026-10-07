@@ -712,15 +712,15 @@ class Controller:
                 currentRegime = 'Factory'
             if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
+                    f"uncertainty pathway in configuration. Currently set to {currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
+                    f"uncertainty pathway in configuration. Currently set to {currentRegime} regime.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. Currently set to f{currentRegime} regime.")
+                    f"uncertainty pathway in configuration. Currently set to {currentRegime} regime.")
                 return False
 
 
