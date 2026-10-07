@@ -476,7 +476,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
     def configUpdateButtonPressed(self, caller):
-        print("Updating SeaBASS Header comments from values in ConfigFile")
+        # print("Updating SeaBASS Header comments from values in ConfigFile")
         # This will update subsequently from the ConfigFile on demand
 
         # First try to fill left column metadata headers using the Ancillary fill if provided.
