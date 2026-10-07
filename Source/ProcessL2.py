@@ -1246,18 +1246,14 @@ class ProcessL2:
 
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
 
-            if np.any(stats['ES']['ave_Light'] < 0):
-                print('WARNING: negative ES stats')
-            if np.any(stats['LI']['ave_Light'] < 0):
-                print('WARNING: negative LI stats')
-            if np.any(stats['LT']['ave_Light'] < 0):
-                print('WARNING: negative LT stats')
-
             if isinstance(stats, bool):
                 logging.writeLogFileAndPrint("***Warning***")
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
                 percent_lt += 10
             else:
+                for sensor_name, sensor_stats in stats.items():
+                    if np.any(sensor_stats['ave_Light'] < 0):
+                        print(f'WARNING: negative {sensor_name} stats')
                 break
         if ((isinstance(stats, bool) and stats is False) or  # possibly unnecessary - if stats is not an array then the process failed
                 not all([v for v in stats.values()])):  # check if stats was generated and return False if not

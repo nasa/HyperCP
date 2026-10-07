@@ -862,4 +862,12 @@ if __name__ == "__main__":
 
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
+
+        # Close the PyInstaller splash screen (only exists in the bundled app)
+        try:
+            import pyi_splash
+            pyi_splash.close()
+        except ImportError:
+            pass
+
         sys.exit(app.exec_())

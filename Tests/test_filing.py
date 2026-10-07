@@ -15,8 +15,9 @@ from Source.utils import filing
 
 
 DOWNLOADS = (
-    (filing.downloadZhangDB, 'e4c155f8ce92dcfa012a450a56b64e28'),
-    (filing.downloadZhangLUT, '1a33ed647d9c7359b0800915bd0229c7'),
+    (filing.downloadZhangDB, 'Zhang_rho_db_expanded.mat', 'e4c155f8ce92dcfa012a450a56b64e28'),
+    (filing.downloadZhangLUT, 'Z17_LUT_40.nc', 'd9197436125f97c3bd8f00c6ee0185be'),
+    (filing.downloadZhangLUT, 'Z17_LUT_30.nc', '988cc08446dd00d689280397f2faa672'),
 )
 
 
@@ -26,7 +27,7 @@ class TestZhangDownloads(unittest.TestCase):
     def setUp(self):
         self.directory = TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.target = Path(self.directory.name) / 'database.nc'
+        self.target = None
         self.response = MagicMock(spec=requests.Response)
         self.response.__enter__.return_value = self.response
         self.response.close.return_value = None
@@ -61,9 +62,15 @@ class TestZhangDownloads(unittest.TestCase):
         self.checksum.return_value = expected
         download(self.target, force=True)
 
+    def set_target(self, filename):
+        for path in Path(self.directory.name).iterdir():
+            path.unlink()
+        self.target = Path(self.directory.name) / filename
+
     def test_missing_content_length(self):
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.run_download(download, expected)
                 self.assertEqual(self.target.read_bytes(), b'firstsecond')
                 self.session.head.assert_not_called()
@@ -74,8 +81,9 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_progress_uses_get_content_length(self):
         self.response.headers['content-length'] = '11'
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.run_download(download, expected)
                 self.assertEqual(self.progress_factory.call_args.kwargs['total'], 11)
                 self.assertEqual(self.target.read_bytes(), b'firstsecond')
@@ -84,8 +92,10 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_invalid_content_length_does_not_block_download(self):
         for value in ('', 'unknown', '-1', None):
-            for download, expected in DOWNLOADS:
-                with self.subTest(value=value, download=download.__name__):
+            for download, filename, expected in DOWNLOADS:
+                with self.subTest(value=value, download=download.__name__,
+                                  filename=filename):
+                    self.set_target(filename)
                     self.response.headers['Content-Length'] = value
                     self.run_download(download, expected)
                     self.assertIsNone(self.progress_factory.call_args.kwargs['total'])
@@ -93,8 +103,9 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_connection_failure_leaves_existing_file(self):
         self.session.get.side_effect = requests.ConnectionError('offline')
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.target.write_bytes(b'original')
                 self.run_download(download, expected)
                 self.assertEqual(self.target.read_bytes(), b'original')
@@ -104,8 +115,9 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_http_error_does_not_read_response_or_create_file(self):
         self.response.raise_for_status.side_effect = requests.HTTPError('503')
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.run_download(download, expected)
                 self.assertFalse(self.target.exists())
                 self.response.iter_content.assert_not_called()
@@ -118,8 +130,9 @@ class TestZhangDownloads(unittest.TestCase):
             yield b'partial'
             raise requests.exceptions.ChunkedEncodingError('connection closed')
 
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.response.iter_content.side_effect = lambda **kwargs: interrupted()
                 self.target.write_bytes(b'original')
                 self.run_download(download, expected)
@@ -131,8 +144,9 @@ class TestZhangDownloads(unittest.TestCase):
                 self.session.close.assert_called()
 
     def test_checksum_failure_does_not_publish_download(self):
-        for download, _ in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, _ in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.target.write_bytes(b'original')
                 self.run_download(download, 'incorrect hash')
                 self.assertEqual(self.target.read_bytes(), b'original')
@@ -141,16 +155,18 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_failed_publish_removes_temporary_file(self):
         self.patch('os.replace', side_effect=PermissionError('read-only destination'))
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.target.write_bytes(b'original')
                 self.run_download(download, expected)
                 self.assertEqual(self.target.read_bytes(), b'original')
                 self.assertEqual(list(self.target.parent.iterdir()), [self.target])
 
     def test_download_is_verified_before_replacing_destination(self):
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.target.write_bytes(b'original')
 
                 def verify(temporary):
@@ -165,8 +181,9 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_failure_to_create_output_leaves_existing_file(self):
         self.patch('NamedTemporaryFile', side_effect=PermissionError('read-only directory'))
-        for download, expected in DOWNLOADS:
-            with self.subTest(download=download.__name__):
+        for download, filename, expected in DOWNLOADS:
+            with self.subTest(download=download.__name__, filename=filename):
+                self.set_target(filename)
                 self.target.write_bytes(b'original')
                 self.run_download(download, expected)
                 self.assertEqual(self.target.read_bytes(), b'original')
@@ -177,7 +194,8 @@ class TestZhangDownloads(unittest.TestCase):
 
     def test_cancel_does_not_start_download(self):
         self.patch('YNWindow', return_value=filing.QMessageBox.Cancel)
-        for download, _ in DOWNLOADS:
+        for download, filename, _ in DOWNLOADS:
+            self.set_target(filename)
             download(self.target)
         self.session.get.assert_not_called()
         self.session.head.assert_not_called()

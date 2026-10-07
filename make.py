@@ -74,8 +74,10 @@ linked_data = [
 for f in sorted(glob.glob(os.path.join('Data', '*'))):
     if os.path.isdir(f) and os.path.basename(f) not in ['Anc', 'L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2', 'Plots', 'Reports']:
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}{f}')
-    elif re.match('^.*\.(txt|csv|sb|nc|hdf)$', os.path.splitext(f)[1]):
+    elif re.match(r'^.*\.(txt|csv|sb|nc|hdf)$', os.path.splitext(f)[1]):
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}Data')
+for f in sorted(glob.glob(os.path.join('Source', 'ocbrdf', 'BRDF_LUTs', '*.nc'))):
+    linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}{os.path.dirname(f)}')
 
 # Run PyInstaller with parameters below
 PyInstaller.__main__.run([
@@ -92,3 +94,21 @@ PyInstaller.__main__.run([
     *linked_data,
     *os_specific_options,
 ])
+
+# OS Specific Patch
+if platform.system() == "Darwin":
+        # PyInstaller bundles the versioned Blosc2 library, e.g. libblosc2.9.dylib,
+        # while PyTables 3.11 searches for the unversioned libblosc2.dylib.
+        internal_dir = os.path.join(root, 'dist', f'HyperCP-v{version}-{platform.system()}', '_internal')
+        link = os.path.join(internal_dir, 'libblosc2.dylib')
+
+        if not os.path.exists(link):
+            candidates = [p for p in glob.glob(os.path.join(internal_dir, "libblosc2.*.dylib")) if os.path.isfile(p)]
+            if candidates:
+                source = os.path.basename(candidates[0])
+                os.symlink(source, link)
+                print(f"Created {os.path.basename(link)} -> {source}")
+                if len(candidates) > 1:
+                    print(f"WARNING: multiple libblosc2 dylibs found, using {source}")
+            else:
+                print("WARNING: bundled libblosc2 dylib not found")

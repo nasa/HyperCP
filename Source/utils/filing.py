@@ -28,10 +28,11 @@ def _download_zhang_file(destination, url, expected_hash):
                         file_size = None
                 except (TypeError, ValueError):
                     file_size = None
+                filename = os.path.basename(destination)
                 if file_size is None:
-                    print("##### Downloading data file (size unavailable). #####")
+                    print(f"##### Downloading {filename} (size unavailable) #####")
                 else:
-                    print(f"##### Downloading {file_size / (1024**3):.2f}GB data file. #####")
+                    print(f"##### Downloading {filename} ({file_size / (1024**3):.2f} GB) #####")
 
                 # Publish only a complete, verified file. Failed transfers must not
                 # overwrite an existing database or look like a successful download.
@@ -67,13 +68,17 @@ def _download_zhang_file(destination, url, expected_hash):
 
 
 def downloadZhangLUT(fpfZhangLUT, force=False):
-    infoText = "  NEW INSTALLATION\nGlint LUTs required.\nClick OK to download.\n\nThis comprisese two 200 MB files.\n\n\
+    infoText = "  NEW INSTALLATION\nGlint LUTs required.\nClick OK to download.\n\nThis comprises two 200 MB files.\n\n\
     If canceled, Zhang et al. (2017) glint correction will revert to slower analytical solution. If download fails, a link and instructions will be provided in the terminal."
     YNReply = True if force else YNWindow("Database Download", infoText) == QMessageBox.Ok
+    lut_name = os.path.basename(fpfZhangLUT)
+    expected_hash = {
+        'Z17_LUT_30.nc': '988cc08446dd00d689280397f2faa672',
+        'Z17_LUT_40.nc': 'd9197436125f97c3bd8f00c6ee0185be',
+    }
     if YNReply:
-
-        url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_40.nc"
-        _download_zhang_file(fpfZhangLUT, url, "1a33ed647d9c7359b0800915bd0229c7")
+        url = f"https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/{lut_name}"
+        _download_zhang_file(fpfZhangLUT, url, expected_hash[lut_name])
 
 def downloadZhangDB(fpfZhang, force=False):
     infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.8 GB DOWNLOAD.\n\n\
