@@ -61,6 +61,10 @@ class TestZhangDownloads(unittest.TestCase):
     def run_download(self, download, expected):
         self.checksum.return_value = expected
         download(self.target, force=True)
+        self.assertEqual(
+            self.session.get.call_args.args[0],
+            f"https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/{self.target.name}",
+        )
 
     def set_target(self, filename):
         for path in Path(self.directory.name).iterdir():
