@@ -463,6 +463,8 @@ class Propagate:
             AOD = 0.5
         if sza > 60:
             sza = 60
+        if sza < 10:
+            sza = 10
 
         # TODO: add more guards so we cannot go out of bounds when running MCP
 

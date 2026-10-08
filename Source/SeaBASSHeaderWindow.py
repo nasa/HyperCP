@@ -542,7 +542,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         if ConfigFile.settings['fL1bThermal'] == 1:
             ThermalSource = 'Internal_Thermistor'
         elif ConfigFile.settings['fL1bThermal'] == 2:
-            ThermalSource = 'Air_Termperature'
+            ThermalSource = 'Air_Temperature'
         elif ConfigFile.settings['fL1bThermal'] == 3:
             ThermalSource = 'Caps_On_Dark_File'
         else:

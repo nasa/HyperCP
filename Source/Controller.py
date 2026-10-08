@@ -23,6 +23,7 @@ from Source.ProcessL1bDALEC import ProcessL1bDALEC
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
+from Source.SeaBASSHeader import SeaBASSHeader
 from Source.PDFreport import PDF
 import Source.utils.loggingHCP as logging
 import Source.utils.filing as filing
@@ -767,6 +768,17 @@ class Controller:
 
                                 # Write SeaBASS
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                                    # Update SeaBASS headers
+                                    # We have up to three calibration dates, but SB only has one header. Use Es.
+                                    SeaBASSHeader.settings['calibration_date'] = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                                    # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
+                                    if SeaBASSHeader.settings['version'] == 'R0':
+                                        SeaBASSHeader.settings['data_status'] = 'preliminary'
+                                    else:
+                                        SeaBASSHeader.settings['data_status'] = 'final'
+                                    SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+
+
                                     logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePathStation}')
                                     sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePathStation)
 
@@ -802,6 +814,16 @@ class Controller:
 
                         # Write SeaBASS
                         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                            # Update SeaBASS headers
+                            # We have up to three calibration dates, but SB only has one header. Use Es.
+                            SeaBASSHeader.settings['calibration_date'] = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                            # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
+                            if SeaBASSHeader.settings['version'] == 'R0':
+                                SeaBASSHeader.settings['data_status'] = 'preliminary'
+                            else:
+                                SeaBASSHeader.settings['data_status'] = 'final'
+                            SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+
                             logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePath}')
                             sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePath)
 

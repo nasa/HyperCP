@@ -66,6 +66,8 @@ class SeaBASSWriter:
                     headerRawNames = headerRawNames + os.path.basename(fp) +','
             headerBlock['original_file_name'] = headerRawNames
         else:
+            if not node.attributes['RAW_FILE_NAME']:
+                node.attributes['RAW_FILE_NAME'] = node.attributes['L0_FILENAME']
             headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
         # headerBlock['data_file_name'] = os.path.split(fp)[1].replace('.hdf','.sb')
         # headerBlock['data_file_name'] = SeaBASSWriter.sbFileName()
