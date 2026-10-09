@@ -441,9 +441,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.RhoRadioButtonBulgarelli = QtWidgets.QRadioButton("Bulgarelli et al. (2026) ρ")
         self.RhoRadioButtonBulgarelli.setAutoExclusive(False)
-        # TODO: Disable for public roll-out while under development
         self.RhoRadioButtonBulgarelli.setChecked(0)
-        self.RhoRadioButtonBulgarelli.setDisabled(1)
+        self.RhoRadioButtonBulgarelli.setDisabled(0)
         if ConfigFile.settings["bL2B26Rho"]==1:
             self.RhoRadioButtonBulgarelli.setChecked(True)
         self.RhoRadioButtonBulgarelli.clicked.connect(self.l2RhoRadioButtonBulgarelliClicked)
@@ -1433,8 +1432,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
             self.RhoRadioButton3C.setDisabled(0)
-            #TODO: uncomment when functional
-            # self.RhoRadioButtonBulgarelli.setDisabled(0)
+            self.RhoRadioButtonBulgarelli.setDisabled(0)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
@@ -1679,7 +1677,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RhoUpdate()
 
     def l2RhoRadioButtonBulgarelliClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to D'Alimonte et al. 2026")
+        # print("ConfigWindow - l2RhoCorrection set to Bulgarelli et al. 2026")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(False)
@@ -1969,6 +1967,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL23CRho"] = int(self.RhoRadioButton3C.isChecked())
         ConfigFile.settings["bL2Z17Rho"] = int(self.RhoRadioButtonZhang.isChecked())
         ConfigFile.settings["bL2M99Rho"] = int(self.RhoRadioButtonDefault.isChecked())
+        ConfigFile.settings["bL2B26Rho"] = int(self.RhoRadioButtonBulgarelli.isChecked())
 
         ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
         ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
