@@ -272,11 +272,7 @@ class RhoCorrections:
         coord_wavelength = coordinates['wavelength'].data
         coord_wind_speed = coordinates['wind_speed'].data
 
-        # Find LUT subscription indices
-        sza_idx = comparing.find_nearest(coord_sza, sza)
-        tau560_idx = comparing.find_nearest(coord_tau560, tau560)
-        wavelength_idx = [comparing.find_nearest(coord_wavelength, v) for v in wavelengths]
-        wind_speed_idx = comparing.find_nearest(coord_wind_speed, wind_speed)
+        # Find LUT subscription index for aerosol type
         try:
             aerosol_type_idx = coord_aerosol_type.index(aerosol_type)
         except ValueError:
@@ -284,16 +280,26 @@ class RhoCorrections:
             assert(coord_aerosol_type[0] == 'MA')
             logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MA type is used instead")
 
-        logging.writeLogFileAndPrint(f"SZA {sza} --> {coord_sza[sza_idx]} [{sza_idx}]")
-        logging.writeLogFileAndPrint(f"tau560 {tau560} --> {coord_tau560[tau560_idx]} [{tau560_idx}]")
-        for i, v in enumerate(wavelengths):
-            logging.writeLogFileAndPrint(f"wavelength {v} --> {coord_wavelength[wavelength_idx[i]]} [{wavelength_idx[i]}]")
-        logging.writeLogFileAndPrint(f"wind_speed {wind_speed} --> {coord_wind_speed[wind_speed_idx]} [{wind_speed_idx}]")
-        logging.writeLogFileAndPrint(f"aerosol_type {aerosol_type} --> {coord_aerosol_type[aerosol_type_idx]} [{aerosol_type_idx}]")
-
+        # Intepolation by piece-wise cubic hermitian polynomial (pchip)
         # lut dimensions: tropospheric_aerosol_type, tau560, wavelength, SZA, wind_speed
-        # nearest-neighbor results
-        rhoVector = lut[aerosol_type_idx, tau560_idx, wavelength_idx, sza_idx, wind_speed_idx].astype(float)
+        rhoVector = spin.interpn(
+            points=(
+                coord_tau560,
+                coord_wavelength,
+                coord_sza,
+                coord_wind_speed,
+            ),
+            values=lut[aerosol_type_idx, :, :, :, :],
+            xi=(
+                tau560,
+                wavelengths,
+                sza,
+                wind_speed
+            ),
+            method=interp_method,
+        )
+        print('Interpolating B26 LUT using pchip (3rd order Hermitian Polynomial) method')
+
         # TODO: Check this placeholder for forced 10% Rho uncertainty:
         rhoDelta = 0.10 * rhoVector
 
