@@ -266,6 +266,7 @@ class ProcessL2:
 
         threeCRho = int(ConfigFile.settings["bL23CRho"])
         ZhangRho = int(ConfigFile.settings["bL2Z17Rho"])
+        BulgarelliRho = int(ConfigFile.settings["bL2B26Rho"])
 
         # Root (new/output) groups:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
@@ -577,7 +578,7 @@ class ProcessL2:
                 rrsRemainingSD = 0
                 nLwRemainingSD = 0
 
-                if ZhangRho or threeCRho:
+                if ZhangRho or threeCRho or BulgarelliRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = lt - (rhoVec[k] * li)
@@ -671,7 +672,7 @@ class ProcessL2:
                         newLTUNCData.columns[k].append(ltUNC[k][0])
 
                     if sensor == 'HYPER':
-                        if ZhangRho or threeCRho:
+                        if ZhangRho or threeCRho or BulgarelliRho:
                             newRhoHyper.columns[k].append(rhoVec[k])
                             if xUNC is not None:  # TriOS factory does not require uncertainties
                                 newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
@@ -1130,6 +1131,7 @@ class ProcessL2:
         percent_lt = float(ConfigFile.settings["fL2PercentLt"])
         three_c_rho = int(ConfigFile.settings["bL23CRho"])
         zhang_rho = int(ConfigFile.settings["bL2Z17Rho"])
+        bulgarelli_rho = int(ConfigFile.settings["bL2B26Rho"])
         if ConfigFile.settings["SensorType"].lower() == "dalec":
             sensor, sensor_type = Dalec(), 'Dalec'
         elif ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
@@ -1525,7 +1527,7 @@ class ProcessL2:
                 x_slice[k.lower() + 'Median'] = median[k]
                 x_slice[k.lower() + 'STD'] = std[k]
             sat_rho_vec = None
-            if zhang_rho or three_c_rho:
+            if zhang_rho or three_c_rho or bulgarelli_rho:
                 sat_rho_vec = convolve_to_satellite[sat](rho_vec)
                 sat_rho_vec = {key: value[0] for key, value in sat_rho_vec.items()}  # drop one level of list
             # NOTE: According to AR, this may not be a robust way of estimating convolved uncertainties.
@@ -1618,9 +1620,12 @@ class ProcessL2:
 
 
         elif method == "bulgarelli_rho":
-            #TODO: Populate this placeholder call to Propagate and RhoCorrections.D26Corr
-            rhoVector, rhoUNC = None,None
-
+            # Glint correction (rho) factors based on Bulgarelli et al. (2026) look-up tables
+            rhoVector, rhoUNC = RhoCorrections.BulgarelliCorr(wavelengths,
+                                                              anc_slice['SZA'],
+                                                              anc_slice['REL_AZ'],
+                                                              anc_slice['WINDSPEED'],
+                                                              anc_slice['AOD'])
 
 
         elif method == "mobley_rho":
@@ -1996,6 +2001,8 @@ class ProcessL2:
                 gp.attributes['GLINT_CORR'] = 'Zhang et al. 2017'
             if ConfigFile.settings['bL2M99Rho']:
                 gp.attributes['GLINT_CORR'] = 'Mobley 1999'
+            if ConfigFile.settings['bL2B26Rho']:
+                gp.attributes['GLINT_CORR'] = 'Bulgarelli et al. 2026'
             if ConfigFile.settings['bL2PerformNIRCorrection']:
                 if ConfigFile.settings['bL2SimpleNIRCorrection']:
                     gp.attributes['NIR_RESID_CORR'] = 'Mueller and Austin 1995'

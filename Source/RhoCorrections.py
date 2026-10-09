@@ -237,16 +237,67 @@ class RhoCorrections:
         return rhoVector, rhoDelta
 
 
-    #TODO: Add Bulgarelli et al. (2026) static method here:
     @staticmethod
-    def BulgarelliCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
+    def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, aerosol_type='MA',
+                       interp_method='pchip'):
         """
-        PLACEHOLDER
+        Glint correction (rho) factors for sole diffuse light based on
+        Bulgarelli et al. (2026) look-up tables. Input parameters are
+        center-wavelength, sun zenith, relative sun azimuth, wind speed,
+        aerosol optical depth (tau) at 560 nm, and tropospheric aerosol
+        type (RH = 80%).
         """
-        logging.writeLogFileAndPrint('UNDER DEVELOPMENT. Please use another glint correction.')
-        return None, None     
+        logging.writeLogFileAndPrint('Calculating B26 glint correction')
 
+        # load in the LUT HDF file
+        inFilePath = os.path.join(PATH_TO_DATA, 'B26_rho_factors.h5')
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except Exception as err:
+            msg = f"Unable to open B26 glint correction LUT. {err}"
+            logging.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            return None, None
 
+        # Load the "rho_dif" LUT
+        assert(root.datasets[0].id == "rho_dif")
+        lut = root.datasets[0].data.astype(float)
+
+        # Load LUT coordinates
+        assert(root.groups[0].id == "coordinates")
+        coordinates = root.groups[0].datasets
+        coord_sza = coordinates['SZA'].data
+        coord_tau560 = coordinates['tau560'].data
+        coord_aerosol_type = list(v.decode('utf-8') for v in coordinates['tropospheric_aerosol_type'].data)
+        coord_wavelength = coordinates['wavelength'].data
+        coord_wind_speed = coordinates['wind_speed'].data
+
+        # Find LUT subscription indices
+        sza_idx = comparing.find_nearest(coord_sza, sza)
+        tau560_idx = comparing.find_nearest(coord_tau560, tau560)
+        wavelength_idx = [comparing.find_nearest(coord_wavelength, v) for v in wavelengths]
+        wind_speed_idx = comparing.find_nearest(coord_wind_speed, wind_speed)
+        try:
+            aerosol_type_idx = coord_aerosol_type.index(aerosol_type)
+        except ValueError:
+            aerosol_type_idx = 0
+            assert(coord_aerosol_type[0] == 'MA')
+            logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MA type is used instead")
+
+        logging.writeLogFileAndPrint(f"SZA {sza} --> {coord_sza[sza_idx]} [{sza_idx}]")
+        logging.writeLogFileAndPrint(f"tau560 {tau560} --> {coord_tau560[tau560_idx]} [{tau560_idx}]")
+        for i, v in enumerate(wavelengths):
+            logging.writeLogFileAndPrint(f"wavelength {v} --> {coord_wavelength[wavelength_idx[i]]} [{wavelength_idx[i]}]")
+        logging.writeLogFileAndPrint(f"wind_speed {wind_speed} --> {coord_wind_speed[wind_speed_idx]} [{wind_speed_idx}]")
+        logging.writeLogFileAndPrint(f"aerosol_type {aerosol_type} --> {coord_aerosol_type[aerosol_type_idx]} [{aerosol_type_idx}]")
+
+        # lut dimensions: tropospheric_aerosol_type, tau560, wavelength, SZA, wind_speed
+        # nearest-neighbor results
+        rhoVector = lut[aerosol_type_idx, tau560_idx, wavelength_idx, sza_idx, wind_speed_idx].astype(float)
+        # TODO: Check this placeholder for forced 10% Rho uncertainty:
+        rhoDelta = 0.10 * rhoVector
+
+        return rhoVector, rhoDelta
 
 
     @staticmethod
