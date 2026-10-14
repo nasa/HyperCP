@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Delete Artifact
         if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tags')
-        uses: geekyeggo/delete-artifact@v4
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: ${{ needs.Build.outputs.files }}
           token: ${{ secrets.GITHUB_TOKEN }}
