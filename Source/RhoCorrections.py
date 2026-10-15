@@ -239,7 +239,7 @@ class RhoCorrections:
 
     @staticmethod
     def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
-                       lut_id='rho_dif', aerosol_type='MA', interp_method='pchip'):
+                       lut_id='rho_dif', aerosol_type='MX', interp_method='pchip'):
         """
         Glint correction (rho) factors for sole diffuse light based on
         Bulgarelli et al. (2026) look-up tables. Input parameters are
@@ -283,9 +283,8 @@ class RhoCorrections:
         try:
             aerosol_type_idx = coord_aerosol_type.index(aerosol_type)
         except ValueError:
-            aerosol_type_idx = 0
-            assert(coord_aerosol_type[0] == 'MA')
-            logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MA type is used instead")
+            aerosol_type_idx = coord_aerosol_type.index('MX')
+            logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MX type is used instead")
 
         # Round out-of-range sza, tau560 and wind_speed to avoid extrapolation
         new_sza = min(max(sza, coord_sza[0]), coord_sza[-1])
