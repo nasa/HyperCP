@@ -238,8 +238,8 @@ class RhoCorrections:
 
 
     @staticmethod
-    def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, aerosol_type='MA',
-                       interp_method='pchip'):
+    def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
+                       aerosol_type='MA', interp_method='pchip'):
         """
         Glint correction (rho) factors for sole diffuse light based on
         Bulgarelli et al. (2026) look-up tables. Input parameters are
