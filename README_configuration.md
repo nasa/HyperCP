@@ -259,9 +259,9 @@ This temperature can be derived in several ways:
 - For Sea-Bird, DALEC, and TriOS G2 sensors, an **internal thermistor** provides the working temperature.
   - If your sensor(s) belong to these classes, this is the most accurate and recommended option. 
 - For TriOS G1, which has no thermistor, there are **two** options to circumvent the lack of working temperature reading
-  - Use "T$_{air}$ + 2.5°C", where T$_{air}$ is the ambient air temperature  (most accurate for T$_{air}$ < 30°C)
+  - Use "T$_{air}$ + 5.0°C", where T$_{air}$ is the ambient air temperature  (most accurate for T$_{air}$ < 30°C)
   - Estimate working temperature for caps-on dark measurements (most accurate for T$_{air}$ $\geq$ 30°C) 
-  - NB: If selecting the latter option (caps-on), the processing will fall back to "air temperature + 2.5" whenever the air temperature is available and exceeding 30°C.
+  - NB: If selecting the latter option (caps-on), the processing will fall back to "air temperature + 5.0" whenever the air temperature is available and exceeding 30°C.
   - NB: These options are thoroughly discussed in ([Zibordi & Talone, 2025](https://journals.ametsoc.org/view/journals/atot/aop/JTECH-D-25-0049.1/JTECH-D-25-0049.1.pdf))
     - See note in Level 1A Processing [above](#configuration) to understand how to set up the caps-on measurements.
 
@@ -271,8 +271,8 @@ The table summarizes the options
 | Option                                         | Description                                                                    | Recommended if ...                                                                                                  |
 |------------------------------------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
 | **Internal Thermistor**                        | Uses the built-in temperature sensor (available for SeaBird and DALEC)         | ... thermistor is available (still not supported for TriOS G2)                                                      |
-| **T$_{air}$ + 2.5°C**                          | Estimates working temperature by adding 2.5°C to T$_{air}$                     | ... thermistor is unavailable and caps-on darks unavailable                                                         | 
-| **Caps-on Dark File (T$_{air}$ $\geq$ 30 °C)** | Estimate working temperature from dark current measurements taken with caps on | ... thermistor is unavailable and caps-on darks are available (falls back to "T$_{air}$+2.5°C" if T$_{air}$ < 30°C) |
+| **T$_{air}$ + 5.0°C**                          | Estimates working temperature by adding 5.0°C to T$_{air}$                     | ... thermistor is unavailable and caps-on darks unavailable                                                         | 
+| **Caps-on Dark File (T$_{air}$ $\geq$ 30 °C)** | Estimate working temperature from dark current measurements taken with caps on | ... thermistor is unavailable and caps-on darks are available (falls back to "T$_{air}$+5.0°C" if T$_{air}$ < 30°C) |
 
 ---
 

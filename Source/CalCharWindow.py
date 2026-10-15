@@ -105,7 +105,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.ThermistorRadioButton = QtWidgets.QRadioButton("Internal Thermistor (SeaBird, DALEC, TriOS-G2)")
         # self.ThermistorRadioButton.setAutoExclusive(False)
         self.ThermistorRadioButton.clicked.connect(self.ThermistorRadioButtonClicked)
-        self.AirTempRadioButton = QtWidgets.QRadioButton("Air Temperature + 2.5 deg. C")
+        self.AirTempRadioButton = QtWidgets.QRadioButton("Air Temperature + 5.0 deg. C")
         self.AirTempRadioButton.clicked.connect(self.AirTempRadioButtonClicked)
         self.CapsOnFileRadioButton = QtWidgets.QRadioButton("Caps-on Dark File (T > 30 deg. C)")
         self.CapsOnFileRadioButton.clicked.connect(self.CapsOnFileRadioButtonClicked)
@@ -609,7 +609,10 @@ class CalCharWindow(QtWidgets.QDialog):
         _, missingFilesList = self.missing_FidRadDB_cal_char_files(out_of_thread=False)
 
         # Extract serial number and cal/char types from list of missing files.
-        serialNumber_calCharTypes = list(set(list(['_'.join(mf.split('_')[1:-1]) for mf in missingFilesList])))
+        # NOTE: This results in one format for files in FRDB, and another for files not found in FRDB.
+        #       We only want to fetch fetchable files, so only populate this for fetchable files.
+        serialNumber_calCharTypes = list(set(list(['_'.join(mf.split('_')[1:-1]) for mf in missingFilesList \
+                                                   if mf.startswith('CP_')])))
 
         # Nothing to download, return
         if len(missingFilesList) == 0:

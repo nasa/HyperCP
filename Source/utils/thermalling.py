@@ -28,7 +28,7 @@ def UncTempCorrection(node):
         TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
         meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
-        airTempMargin = 2.5 # Average estimate of margin for working temperature (G1) above air temp
+        airTempMargin = 5.0 # Average estimate of margin for working temperature (G1) above air temp
         # SPECTEMP should be present for all platform/sensors (SeaBird,TriOS,DALEC),
         #   but only populated with non-zeroes where an internal thermistor is available.
 

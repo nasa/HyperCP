@@ -1,13 +1,15 @@
 '''Process Raw (L0) data to L1A HDF5'''
-import numpy as np
 import json
-import os
+# import os
+
+import numpy as np
 
 from Source.HDFRoot import HDFRoot
 from Source.ProcessL1aTriOS import ProcessL1aTriOS
 from Source.MainConfig import MainConfig
-import Source.utils.loggingHCP as logging 
-import Source.utils.filing as filing
+from Source.ConfigFile import ConfigFile
+import Source.utils.loggingHCP as logging
+# import Source.utils.filing as filing
 
 class ProcessL1aSoRad:
     '''Process L1A SoRad. 
@@ -33,16 +35,54 @@ class ProcessL1aSoRad:
         configPath = MainConfig.settings['cfgPath']
         cal_path = configPath[0:configPath.rfind('.')] + '_Calibration/'
 
-        # Test for the erroneous sorad group attribute in Tom's raw HDF (and erroneous group name in NASA L0 HDF) 
-        # TJ - I think this loop will be removed later on (it is useful for testing/data cleaning for now)
+        # # Test for the erroneous sorad group attribute in Tom's raw HDF (and erroneous group name in NASA L0 HDF) 
+        # # TJ - I think this loop will be removed later on (it is useful for testing/data cleaning for now)
+        # for gp in root.groups:
+        #     # If SoRad L0 is using the bundled, irradiance/tilt serial number instead of the ES serial number
+        #     if 'RadianceTerm1' in gp.attributes.keys():
+        #         # All SoRad radiometers have this key
+        #         for calFile in calibrationMap:
+        #             if calFile != 'sorad':
+        #                 serialNumber = calibrationMap[calFile].id.split('_')[1].split('.')[0]
+        #                 if calibrationMap[calFile].sensorType == 'ES' and gp.attributes['RadianceTerm1'] == 'ES':
+        #                     gp.id = calibrationMap[calFile].id
+        #                     gp.attributes['FrameType'] = serialNumber
+        #                     gp.attributes['CalFileName'] = calibrationMap[calFile].id
+        #                 elif calibrationMap[calFile].sensorType == 'LI' and gp.attributes['RadianceTerm1'] == 'LI':
+        #                     gp.attributes['CalFileName'] = calibrationMap[calFile].id
+        #                 elif calibrationMap[calFile].sensorType == 'LT' and gp.attributes['RadianceTerm1'] == 'LT':
+        #                     gp.attributes['CalFileName'] = calibrationMap[calFile].id
+        #     elif gp.id == 'sorad':
+        #         try: # old L1A (with `legacy' tdf label)
+        #             # NOTE: Likely obsolete
+        #             if gp.attributes['CalFileName'] == 'sorad.tdf':
+        #                 gp.attributes['CalFileName'] = 'sorad'
+        #         except: 
+        #             gp.attributes['CalFileName'] = 'sorad'
+
+        # Test the L0 group attributes against the configuration/calibrationmap to correct the frametypes (ES,LI,LT)
+        # in case they were enterred wrong in the configuration. Update the configuration accordingly.
+        # NOTE: Raw SoRad defines FrameType (big F) as serial number and RadianceTerm1 as LI,LT,ES. HyperCP defines frameType (small F) as LI,LT,ES.
         for gp in root.groups:
-            # NASA SoRad L0 is using the bundled, irradiance/tilt serial number instead of the ES serial number
+            # If SoRad L0 is using the bundled, irradiance/tilt serial number instead of the ES serial number
             if 'RadianceTerm1' in gp.attributes.keys():
                 # All SoRad radiometers have this key
                 for calFile in calibrationMap:
                     if calFile != 'sorad':
+                        # SoRad holds the serial number in the FrameType (NOTE CASE) attribute
                         serialNumber = calibrationMap[calFile].id.split('_')[1].split('.')[0]
+
+                        # Check sensor assignment in config against raw data attributes and correct if necessary                 
+                        if serialNumber == gp.attributes['FrameType']:
+                            if calibrationMap[calFile].sensorType != gp.attributes['RadianceTerm1']:
+                                calibrationMap[calFile].sensorType = gp.attributes['RadianceTerm1']
+                                calibrationMap[calFile].frameType = gp.attributes['RadianceTerm1']
+                                # NOTE Now need to update the configuration file as well...
+                                ConfigFile.settings['CalibrationFiles'][calFile]['frameType'] = gp.attributes['RadianceTerm1']
+                                ConfigFile.saveConfig(ConfigFile.filename)
+
                         if calibrationMap[calFile].sensorType == 'ES' and gp.attributes['RadianceTerm1'] == 'ES':
+                            # In case the combine SAMIP ini was used for ES in the raw acquisition:
                             gp.id = calibrationMap[calFile].id
                             gp.attributes['FrameType'] = serialNumber
                             gp.attributes['CalFileName'] = calibrationMap[calFile].id
@@ -50,7 +90,7 @@ class ProcessL1aSoRad:
                             gp.attributes['CalFileName'] = calibrationMap[calFile].id
                         elif calibrationMap[calFile].sensorType == 'LT' and gp.attributes['RadianceTerm1'] == 'LT':
                             gp.attributes['CalFileName'] = calibrationMap[calFile].id
-            elif gp.id == 'sorad':
+            if gp.id == 'sorad':
                 try: # old L1A (with `legacy' tdf label)
                     # NOTE: Likely obsolete
                     if gp.attributes['CalFileName'] == 'sorad.tdf':
@@ -66,7 +106,7 @@ class ProcessL1aSoRad:
             gp.datasets["TIMETAG2"].data = np.array((gp.datasets["TIMETAG2"].data)*1000, dtype=[('NONE', '<f8')]) 
             gp.datasets["DATETAG"].data = np.array((gp.datasets["DATETAG"].data).astype(int), dtype=[('NONE', '<f8')])
 
-            if gp.id.split('_')[0] == 'SAM': # selects sensor group to appemnd cal info
+            if gp.id.split('_')[0] == 'SAM': # selects sensor group to append cal info
                 # assign `sensor_id', `sensor' and `name' labels used in ProcesssL1aTriOS
                 sensor_id = gp.id # e.g. 'SAM_8729.ini'   
 

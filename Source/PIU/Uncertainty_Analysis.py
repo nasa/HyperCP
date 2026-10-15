@@ -148,6 +148,15 @@ class Propagate:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
+            combined_array = np.array(mean_vals)
+            all_indices = np.argwhere(combined_array <0)
+            if all_indices.size != 0:
+                print('Negative mean values') # This will not crash MCP
+            combined_array = np.array(uncertainties)
+            all_indices = np.argwhere(combined_array <0)
+            if all_indices.size != 0:
+                print('Negative uncertainty values') # This will crash MCP
+
             unc = self.MCP.propagate_random(self.instruments,
                                             mean_vals,
                                             uncertainties,
@@ -454,6 +463,8 @@ class Propagate:
             AOD = 0.5
         if sza > 60:
             sza = 60
+        if sza < 10:
+            sza = 10
 
         # TODO: add more guards so we cannot go out of bounds when running MCP
 

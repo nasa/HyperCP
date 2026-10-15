@@ -476,7 +476,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
     def configUpdateButtonPressed(self, caller):
-        print("Updating SeaBASS Header comments from values in ConfigFile")
+        # print("Updating SeaBASS Header comments from values in ConfigFile")
         # This will update subsequently from the ConfigFile on demand
 
         # First try to fill left column metadata headers using the Ancillary fill if provided.
@@ -542,7 +542,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         if ConfigFile.settings['fL1bThermal'] == 1:
             ThermalSource = 'Internal_Thermistor'
         elif ConfigFile.settings['fL1bThermal'] == 2:
-            ThermalSource = 'Air_Termperature'
+            ThermalSource = 'Air_Temperature'
         elif ConfigFile.settings['fL1bThermal'] == 3:
             ThermalSource = 'Caps_On_Dark_File'
         else:

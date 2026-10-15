@@ -39,8 +39,10 @@ class HDFDataset:
                 self.attributes[k] = f.attrs[k]
             elif type(f.attrs[k]) == np.int32:  # noqa: E721
                 self.attributes[k] = f.attrs[k]
-            else: # string attribute
+            elif isinstance(f.attrs[k], bytes): # bytes and byte-strings
                 self.attributes[k] = f.attrs[k].decode("utf-8")
+            else: # ascii string attribute
+                self.attributes[k] = f.attrs[k]
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray

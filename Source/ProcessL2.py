@@ -1233,7 +1233,7 @@ class ProcessL2:
                 #  so the percent Lt estimation becomes highly questionable and is overridden here.
                 if nSpecStart <= 5 or nSpecEnd == 0:
                     nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
-                if nSpecEnd > 1:
+                if nSpecEnd > 3:
                     lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
                     index = np.argsort(lt780)
                     y = index[:nSpecEnd]
@@ -1251,6 +1251,9 @@ class ProcessL2:
                 logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
                 percent_lt += 10
             else:
+                for sensor_name, sensor_stats in stats.items():
+                    if np.any(sensor_stats['ave_Light'] < 0):
+                        print(f'WARNING: negative {sensor_name} stats')
                 break
         if ((isinstance(stats, bool) and stats is False) or  # possibly unnecessary - if stats is not an array then the process failed
                 not all([v for v in stats.values()])):  # check if stats was generated and return False if not
@@ -1978,8 +1981,8 @@ class ProcessL2:
                     node.attributes[f'{grp.id}_START_PIXEL'] = grp.attributes['CAL_START']
                     node.attributes[f'{grp.id}_STOP_PIXEL'] = grp.attributes['CAL_STOP']
                     node.attributes[f'{grp.id}_CalFileName'] = grp.attributes['CalFileName']
-                    if ConfigFile.settings['SensorType'].lower() != 'sorad':
-                        node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] # for now, skip sorad (not present)
+                    # if ConfigFile.settings['SensorType'].lower() != 'sorad':
+                    node.attributes[f'{grp.id}_CalibrationDate'] = grp.attributes['CalibrationDate'] 
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
