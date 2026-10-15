@@ -245,9 +245,9 @@ class RhoCorrections:
         Bulgarelli et al. (2026) look-up tables. Input parameters are
         center-wavelength, sun zenith, relative sun azimuth, wind speed,
         aerosol optical depth (tau) at 560 nm, and tropospheric aerosol
-        type (RH = 80%).
+        type ('MA', 'CO, or 'MX').
         """
-        logging.writeLogFileAndPrint('Calculating B26 glint correction')
+        logging.writeLogFileAndPrint('Calculating B26 glint correction (rho) factors')
 
         # load in the LUT HDF file
         inFilePath = os.path.join(PATH_TO_DATA, 'B26_rho_factors.h5')
@@ -280,7 +280,8 @@ class RhoCorrections:
             assert(coord_aerosol_type[0] == 'MA')
             logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MA type is used instead")
 
-        # Intepolation by piece-wise cubic hermitian polynomial (pchip)
+        # Round out-of-range wavelengths to avoid extrapolation
+        # Rho-factors intepolation
         # lut dimensions: tropospheric_aerosol_type, tau560, wavelength, SZA, wind_speed
         rhoVector = spin.interpn(
             points=(
@@ -298,7 +299,7 @@ class RhoCorrections:
             ),
             method=interp_method,
         )
-        print('Interpolating B26 LUT using pchip (3rd order Hermitian Polynomial) method')
+        logging.writeLogFileAndPrint(f'Interpolating B26 glint correction (rho) factors using the "{interp_method}" method')
 
         # TODO: Check this placeholder for forced 10% Rho uncertainty:
         rhoDelta = 0.10 * rhoVector
