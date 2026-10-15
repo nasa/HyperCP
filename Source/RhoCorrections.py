@@ -287,7 +287,37 @@ class RhoCorrections:
             assert(coord_aerosol_type[0] == 'MA')
             logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MA type is used instead")
 
+        # Round out-of-range sza, tau560 and wind_speed to avoid extrapolation
+        new_sza = min(max(sza, coord_sza[0]), coord_sza[-1])
+        if sza < new_sza:
+            logging.writeLogFileAndPrint(f"sza < {new_sza} was out of range and rounded for B26 LUT")
+        elif sza > new_sza:
+            logging.writeLogFileAndPrint(f"sza > {new_sza} was out of range and rounded for B26 LUT")
+
+        new_tau560 = min(max(tau560, coord_tau560[0]), coord_tau560[-1])
+        if tau560 < new_tau560:
+            logging.writeLogFileAndPrint(f"tau560 < {new_tau560} was out of range and rounded for B26 LUT")
+        elif tau560 > new_tau560:
+            logging.writeLogFileAndPrint(f"tau560 > {new_tau560} was out of range and rounded for B26 LUT")
+
+        new_wind_speed = min(max(wind_speed, coord_wind_speed[0]), coord_wind_speed[-1])
+        if wind_speed < new_wind_speed:
+            logging.writeLogFileAndPrint(f"wind_speed < {new_wind_speed} was out of range and rounded for B26 LUT")
+        elif wind_speed > new_wind_speed:
+            logging.writeLogFileAndPrint(f"wind_speed > {new_wind_speed} was out of range and rounded for B26 LUT")
+
         # Round out-of-range wavelengths to avoid extrapolation
+        min_wavelength = coord_wavelength[0]
+        max_wavelength = coord_wavelength[-1]
+        new_wavelengths = [min(max(v, min_wavelength), max_wavelength) for v in wavelengths]
+        if new_wavelengths != wavelengths:
+            n1 = sum(1 if v < min_wavelength else 0 for v in wavelengths)
+            n2 = sum(1 if v > max_wavelength else 0 for v in wavelengths)
+            if n1 > 0:
+                logging.writeLogFileAndPrint(f"{n1} wavelength(s) < {min_wavelength} were out of range and rounded for B26 LUT")
+            if n2 > 0:
+                logging.writeLogFileAndPrint(f"{n2} wavelength(s) > {max_wavelength} were out of range and rounded for B26 LUT")
+
         # Rho-factors intepolation
         # lut dimensions: tropospheric_aerosol_type, tau560, wavelength, SZA, wind_speed
         rhoVector = spin.interpn(
@@ -299,10 +329,10 @@ class RhoCorrections:
             ),
             values=lut[aerosol_type_idx, :, :, :, :],
             xi=(
-                tau560,
-                wavelengths,
-                sza,
-                wind_speed
+                new_tau560,
+                new_wavelengths,
+                new_sza,
+                new_wind_speed
             ),
             method=interp_method,
         )
