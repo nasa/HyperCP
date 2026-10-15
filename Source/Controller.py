@@ -770,7 +770,11 @@ class Controller:
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
                                     # Update SeaBASS headers
                                     # We have up to three calibration dates, but SB only has one header. Use Es.
-                                    SeaBASSHeader.settings['calibration_date'] = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                                    if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                                        CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
+                                    else:
+                                        CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                                    SeaBASSHeader.settings['calibration_date'] = CalDate
                                     # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
                                     if SeaBASSHeader.settings['version'] == 'R0':
                                         SeaBASSHeader.settings['data_status'] = 'preliminary'
@@ -816,7 +820,11 @@ class Controller:
                         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
                             # Update SeaBASS headers
                             # We have up to three calibration dates, but SB only has one header. Use Es.
-                            SeaBASSHeader.settings['calibration_date'] = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                                CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
+                            else:
+                                CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                            SeaBASSHeader.settings['calibration_date'] = CalDate
                             # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
                             if SeaBASSHeader.settings['version'] == 'R0':
                                 SeaBASSHeader.settings['data_status'] = 'preliminary'

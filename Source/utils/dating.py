@@ -389,7 +389,8 @@ def SASUTCOffset(node):
         if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
 
             timeStamp = gp.datasets["DATETIME"].data
-            timeStampNew = [time + datetime.timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
+            # timeStampNew = [time + datetime.timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
+            timeStampNew = [time + timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
             TimeTag2 = [datetime2TimeTag2(dt) for dt in timeStampNew]
             DateTag = [datetime2DateTag(dt) for dt in timeStampNew]
             gp.datasets["DATETIME"].data = timeStampNew
