@@ -239,7 +239,7 @@ class RhoCorrections:
 
     @staticmethod
     def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
-                       aerosol_type='MA', interp_method='pchip'):
+                       lut_id='rho_dif', aerosol_type='MA', interp_method='pchip'):
         """
         Glint correction (rho) factors for sole diffuse light based on
         Bulgarelli et al. (2026) look-up tables. Input parameters are
@@ -259,9 +259,16 @@ class RhoCorrections:
             logging.errorWindow("File Error", msg)
             return None, None
 
-        # Load the "rho_dif" LUT
-        assert(root.datasets[0].id == "rho_dif")
-        lut = root.datasets[0].data.astype(float)
+        # Load the LUT
+        for dataset in root.datasets:
+            if dataset.id == lut_id:
+                lut = dataset.data.astype(float)
+                break
+        else:
+            msg = f'Unkonwn B26 glint correction LUT id: "{lut_id}".'
+            logging.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            return None, None
 
         # Load LUT coordinates
         assert(root.groups[0].id == "coordinates")
