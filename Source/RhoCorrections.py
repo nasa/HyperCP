@@ -241,11 +241,13 @@ class RhoCorrections:
     def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
                        lut_id='rho_dif', aerosol_type='MX', interp_method='pchip'):
         """
-        Glint correction (rho) factors for sole diffuse light based on
-        Bulgarelli et al. (2026) look-up tables. Input parameters are
-        center-wavelength, sun zenith, relative sun azimuth, wind speed,
-        aerosol optical depth (tau) at 560 nm, and tropospheric aerosol
-        type ('MA', 'CO, or 'MX').
+        Compute glint correction (rho) factors based on Bulgarelli et al. 2026
+        look-up tables (LUTs). Input parameters are center-wavelength, sun
+        zenith angle, relative sun azimuth angle, wind speed, and aerosol
+        optical depth (tau) at 560 nm.  The LUT id ('rho_dif' is the default,
+        and anoother option is 'rho_tot') and The tropospheric aerosol type
+        ('MX' is the default, and other options are 'MA' and 'CO') are
+        optional.
         """
         logging.writeLogFileAndPrint('Calculating B26 glint correction (rho) factors')
 
