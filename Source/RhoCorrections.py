@@ -237,16 +237,112 @@ class RhoCorrections:
         return rhoVector, rhoDelta
 
 
-    #TODO: Add Bulgarelli et al. (2026) static method here:
     @staticmethod
-    def BulgarelliCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
+    def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
+                       lut_id='rho_dif', aerosol_type='MX', interp_method='pchip'):
         """
-        PLACEHOLDER
+        Compute glint correction (rho) factors based on Bulgarelli et al. 2026
+        look-up tables (LUTs). Input parameters are center-wavelength, sun
+        zenith angle, relative sun azimuth angle, wind speed, and aerosol
+        optical depth (tau) at 560 nm.  The LUT id ('rho_dif' is the default,
+        and anoother option is 'rho_tot') and The tropospheric aerosol type
+        ('MX' is the default, and other options are 'MA' and 'CO') are
+        optional.
         """
-        logging.writeLogFileAndPrint('UNDER DEVELOPMENT. Please use another glint correction.')
-        return None, None     
+        logging.writeLogFileAndPrint('Calculating B26 glint correction (rho) factors')
 
+        # load in the LUT HDF file
+        inFilePath = os.path.join(PATH_TO_DATA, 'B26_rho_factors.h5')
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except Exception as err:
+            msg = f"Unable to open B26 glint correction LUT. {err}"
+            logging.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            return None, None
 
+        # Load the LUT
+        for dataset in root.datasets:
+            if dataset.id == lut_id:
+                lut = dataset.data.astype(float)
+                break
+        else:
+            msg = f'Unkonwn B26 glint correction LUT id: "{lut_id}".'
+            logging.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            return None, None
+
+        # Load LUT coordinates
+        assert(root.groups[0].id == "coordinates")
+        coordinates = root.groups[0].datasets
+        coord_sza = coordinates['SZA'].data
+        coord_tau560 = coordinates['tau560'].data
+        coord_aerosol_type = list(v.decode('utf-8') for v in coordinates['tropospheric_aerosol_type'].data)
+        coord_wavelength = coordinates['wavelength'].data
+        coord_wind_speed = coordinates['wind_speed'].data
+
+        # Find LUT subscription index for aerosol type
+        try:
+            aerosol_type_idx = coord_aerosol_type.index(aerosol_type)
+        except ValueError:
+            aerosol_type_idx = coord_aerosol_type.index('MX')
+            logging.writeLogFileAndPrint(f"Aerosol type '{aerosol_type}' not found, the MX type is used instead")
+
+        # Round out-of-range sza, tau560 and wind_speed to avoid extrapolation
+        new_sza = min(max(sza, coord_sza[0]), coord_sza[-1])
+        if sza < new_sza:
+            logging.writeLogFileAndPrint(f"sza < {new_sza} was out of range and rounded for B26 LUT")
+        elif sza > new_sza:
+            logging.writeLogFileAndPrint(f"sza > {new_sza} was out of range and rounded for B26 LUT")
+
+        new_tau560 = min(max(tau560, coord_tau560[0]), coord_tau560[-1])
+        if tau560 < new_tau560:
+            logging.writeLogFileAndPrint(f"tau560 < {new_tau560} was out of range and rounded for B26 LUT")
+        elif tau560 > new_tau560:
+            logging.writeLogFileAndPrint(f"tau560 > {new_tau560} was out of range and rounded for B26 LUT")
+
+        new_wind_speed = min(max(wind_speed, coord_wind_speed[0]), coord_wind_speed[-1])
+        if wind_speed < new_wind_speed:
+            logging.writeLogFileAndPrint(f"wind_speed < {new_wind_speed} was out of range and rounded for B26 LUT")
+        elif wind_speed > new_wind_speed:
+            logging.writeLogFileAndPrint(f"wind_speed > {new_wind_speed} was out of range and rounded for B26 LUT")
+
+        # Round out-of-range wavelengths to avoid extrapolation
+        min_wavelength = coord_wavelength[0]
+        max_wavelength = coord_wavelength[-1]
+        new_wavelengths = [min(max(v, min_wavelength), max_wavelength) for v in wavelengths]
+        if new_wavelengths != wavelengths:
+            n1 = sum(1 if v < min_wavelength else 0 for v in wavelengths)
+            n2 = sum(1 if v > max_wavelength else 0 for v in wavelengths)
+            if n1 > 0:
+                logging.writeLogFileAndPrint(f"{n1} wavelength(s) < {min_wavelength} were out of range and rounded for B26 LUT")
+            if n2 > 0:
+                logging.writeLogFileAndPrint(f"{n2} wavelength(s) > {max_wavelength} were out of range and rounded for B26 LUT")
+
+        # Rho-factors intepolation
+        # lut dimensions: tropospheric_aerosol_type, tau560, wavelength, SZA, wind_speed
+        rhoVector = spin.interpn(
+            points=(
+                coord_tau560,
+                coord_wavelength,
+                coord_sza,
+                coord_wind_speed,
+            ),
+            values=lut[aerosol_type_idx, :, :, :, :],
+            xi=(
+                new_tau560,
+                new_wavelengths,
+                new_sza,
+                new_wind_speed
+            ),
+            method=interp_method,
+        )
+        logging.writeLogFileAndPrint(f'Interpolating B26 glint correction (rho) factors using the "{interp_method}" method')
+
+        # TODO: Check this placeholder for forced 10% Rho uncertainty:
+        rhoDelta = 0.10 * rhoVector
+
+        return rhoVector, rhoDelta
 
 
     @staticmethod
