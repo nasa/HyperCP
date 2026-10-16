@@ -563,40 +563,46 @@ optimal ensemble periods within that hour will depend on how rapidly conditions 
 
 ### L2 Sky/Sunglint Correction (rho) and NIR correction
 
-The value for (**Rho_sky**, sometimes called the Fresnel factor) can be estimated using various approaches in order
-to correct for glint **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**. It is adjusted for wind speed and
-solar-senzor geometries. The default wind speed (U) should be set by the user depending on in situ conditions, for
-instances when the ancillary data and models are not available (see L1BQC above, and further explanation below). The
-Mobley 1999 correction does not account for the spectral dependence **(Lee et al. 2010, Gilerson et al. 2018)** or
-polarization sensitivity **(Harmel et al. 2012, Mobley 2015, Hieronymi 2016, D'Alimonte and Kajiyama 2016,
-Foster and Gilerson 2016, Gilerson et al. 2018)** in Rho_sky. The tabulated LUT used for the Mobley 1999 glint correction derived from
-**Mobley, 1999, Appl Opt 38, page 7445, Eq. 4** and can be found in the /Data directory as text or HDF5 data.
-*{TODO: Uncertainty estimates for rho in M99 are no longer current (vastly overestimated) since the incorporation of the
- full LUT 2021-11-17.)}*
+To estimate the water leaving radiance ($L_{w}$) and remote sensing reflectance ($R_{rs}$) from above water radiometry measurements,
+the light entering the downward-looking radiometer ($L_{t}$) attributable to the reflection of skylight (and sunlight for a 
+wind-ruffled surface) at the air-sea interface must be removed from the Lt signal. This is accomplished by measuring skylight
+($L_{i}$) at a recipricol zenith and equivalent relative azimuth angle, and then estimating the fraction of that signal ($\rho$) 
+reflected into $L_{t}$. This glint correction factor ($\rho$) can be estimated using various 
+approaches  **(e.g., Mobley 1999, Mueller et al. 2003 (NASA Protocols), IOCCG Protocols 2019)**. It is primarily dependent 
+on wind speed and solar-senzor geometries, and to a lesser extent on the aerosol type, aerosol optical depth, and water temperature
+and salinity (see L1B configuration).
 
-The **Zhang et al. 2017** model explicitly accounts for spectral dependence in rho, separates the glint contribution
+L2 processing in HyperCP accomodates several approaches to estimating the glint correction factor.
+
+The seminal Mobley 1999 correction (M99) is probably the still the most commonly applied correction, but does not account for the 
+spectral dependence in $\rho$ **(Lee et al. 2010, Gilerson et al. 2018)** or polarization sensitivity **(Harmel et al. 2012, 
+Mobley 2015, Hieronymi 2016, D'Alimonte and Kajiyama 2016,Foster and Gilerson 2016, Gilerson et al. 2018)** in $\rho$. The 
+tabulated LUT used for the Mobley 1999 glint correction is derived from **Mobley, 1999, Appl Opt 38, page 7445, Eq. 4** and 
+can be found in the /Data directory as text or HDF5 data.
+
+The **Zhang et al. 2017** model (Z17) explicitly accounts for spectral dependence in rho, separates the glint contribution
 from the sky and the sun, and accounts for polarization in the skylight term. This approach requires knowledge of
 environmental conditions during sampling including: wind speed, aerosol optical depth, solar and sensor azimuth and
 zenith angles, water temperature and salinity. To accomodate these parameters, HyperCP uses either the ancillary data
-file provided in the main window, GMAO models, or the default values set in the Configuration window as follows: field
-data ancillary files are screened for wind, water temperature, and salinity. These are each associated with the nearest
-timestamps of the radiometer suite to within one hour. Radiometer timestamps still lacking wind and aerosol data will
-extract it from the GMAO models, if available. Otherwise, the default values set in the Configuration window will be
-used as a last resort.
+file provided in the main window, GMAO or ECMWF models, or the default values set in L1B configuration. If ancillary data are
+not provided, data will be extracted for the date and location of the in situ data GMAO or ECMWF models, if available. 
+Otherwise, the default values set in the Configuration window at L1B will be used as a last resort. Various LUTs for Z17
+can be found in the /Data directory.
 
-Remote sensing reflectance is then calculated as
+The **3C** approach {TODO; Placeholder}...
+
+The **Bulgarelli et al. 2026** approach {TODO; Placeholder}
+
+Once $\rho$ has been calculated, the remote sensing reflectance is then calculated as
 
 $$
 \displaystyle
-Rrs = \frac{L_{t} - \rho_{sky}.L_{i}}{E_{s}} = \frac{L_{w}}{E_{s}},
+Rrs = \frac{L_{t} - \rho.L_{i}}{E_{s}} = \frac{L_{w}}{E_{s}}.
 $$
 
-where $L_{w}$ is the water leaving radiance.
-
-(e.g. Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)).
 Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is the top of atmosphere incident radiation
 adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
-hybrid model.
+hybrid model, also provided in the /Data directory.
 
 ### <a id="uncertainties-anchor"></a>Uncertainties
 Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$ ) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).
