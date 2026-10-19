@@ -20,12 +20,12 @@ class RhoCorrections:
     ''' Object for processing glint corrections '''
     @staticmethod
     def M99Corr(windSpeedMean, SZAMean, relAzMean, Propagate = None,
-                AOD=None, cloud=None, wTemp=None, sal=None, waveBands=None):
+                AOD=None, cloud=None, wTemp=None, sal=None, waveBands=None, theta=None):
         ''' Mobley 1999 AO'''
 
         logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
 
-        theta = 40 # viewing nadir angle of Lt or VZA of Li
+        # theta = 40 # viewing nadir angle of Lt or VZA of Li
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
         phiViews = np.arange(0, 180+1, 15)  # 0:15:180 # phiView is relAz
@@ -73,7 +73,9 @@ class RhoCorrections:
                     AOD = 0.5
                 # SZA
                 if SZAMean > 60:
-                    logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
+                    # The limitation here is not with the M99 LUT, but with the uncertainty comparison against Z17.
+                    # NOTE: SZAMean is only used for uncertainty derived from comparison against Z17
+                    logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60 (for Z17 comparison only).")
                     # raise ValueError('SZAMean is too high (%s), Zhang correction cannot be performed above SZA=70.')
                     SZAMean = 60
                 # wavelengths in range [350-1000] nm

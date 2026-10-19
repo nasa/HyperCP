@@ -589,8 +589,6 @@ not provided, data will be extracted for the date and location of the in situ da
 Otherwise, the default values set in the Configuration window at L1B will be used as a last resort. Various LUTs for Z17
 can be found in the /Data directory.
 
-The **3C** approach {TODO; Placeholder}...
-
 The **Bulgarelli et al. 2026** approach {TODO; Placeholder}
 
 Once $\rho$ has been calculated, the remote sensing reflectance is then calculated as
@@ -600,9 +598,20 @@ $$
 Rrs = \frac{L_{t} - \rho.L_{i}}{E_{s}} = \frac{L_{w}}{E_{s}}.
 $$
 
-Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is the top of atmosphere incident radiation
+Normalized water leaving radiance (nLw) is calculated as $Rrs. F0$, where F0 is the top of atmosphere incident radiation
 adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
 hybrid model, also provided in the /Data directory.
+
+The **3C** model (Groetsch et al. 2017; Pitarch 2026) derives remote sensing reflectance from above-water radiometry with a physics-based model that fits $L_{t}$/$E_{s}$ spectra to a model estimate. Model parameters, including those that are used as a model of the glint, are found by spectral matching. Hence, the glint estimate is spectral by nature, and the modeling is wavelength-agnostic. In practice, the M99 $\rho$ model is used as a first guess, whereas an offset term is modeled as a linear combination of the direct and diffuse component, found with the simplified algebraic atmospheric model by Gregg and Carder (1990). Due to its construction, 3C does not need wind speed as input and hence is not theoretically limited by any value of it. Also, the model has shown good performance in conditions outside the ideal ones for satellite validation (i.e., low wind speeds, favorable sun-view geometries, stable conditions, high sun elevations).
+
+The follow table lists ancillary data requirements for each glint correction model with parameter limitations as implemented in HyperCP, including solar zenith angle (SZA), relative azimuth angle (RAA), viewing nadir angle (VNA), aerosol optical thickness ($\tau$), sea surface temperature (SST), and salinity (Sal).
+
+|Model|Wind [m/s]|SZA   |RAA    |VNA    |$\tau$(550)|SST [C] |Sal [psu]|
+|-----|----------|------|-------|-------|-----------|--------|---------|
+|M99  |0-14      |0-80  |0-180  |0-87.5 |N/A        |N/A     |N/A      |
+|Z17  |0-15      |10-60 |80-140 |30,40  |0-0.5      |-40-40  |0-60     |
+|B26  |0-10      |10-80 |80-140 |30,40  |0-0.5      |N/A     |N/A      |
+|3C   |N/A       |N/A   |N/A    |N/A    |N/A        |N/A     |N/A      |
 
 ### <a id="uncertainties-anchor"></a>Uncertainties
 Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$ ) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).

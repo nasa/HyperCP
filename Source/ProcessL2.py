@@ -1637,17 +1637,20 @@ class ProcessL2:
                 rho_uncertainty_obj = Propagate(M=100, cores=1)  # Standard number of draws for reasonable uncertainty estimates
             else:
                 rho_uncertainty_obj = None
+            SVA = ConfigFile.settings['fL2SVA']
             if 'AOD' in anc_slice:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(anc_slice['WINDSPEED'], anc_slice['SZA'],
                                                            anc_slice['REL_AZ'],
                                                            rho_uncertainty_obj,
                                                            AOD=anc_slice['AOD'], cloud=anc_slice['CLOUD'],
                                                            wTemp=anc_slice['SST'],
-                                                           sal=anc_slice['SALINITY'], waveBands=wavelengths)
+                                                           sal=anc_slice['SALINITY'], waveBands=wavelengths,
+                                                           theta=SVA)
             else:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(anc_slice['WINDSPEED'], anc_slice['SZA'],
-                                                           anc_slice['REL_AZ'],
-                                                           rho_uncertainty_obj)
+                                                            anc_slice['REL_AZ'],
+                                                            rho_uncertainty_obj,
+                                                            theta=SVA)
 
         # Format output
         if rhoVector is not None:
