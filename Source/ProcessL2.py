@@ -461,7 +461,7 @@ class ProcessL2:
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
             rhoUNC = xUNC[f'rhoUNC_{sensor}']
             for i, wvl in enumerate(waveSubset):
-                k = str(wvl)
+                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # More robust (able to handle sensor and hyper bands
@@ -476,7 +476,7 @@ class ProcessL2:
         else:
             # factory case
             for wvl in waveSubset:
-                k = str(wvl)
+                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # old version had issues with '.0'
@@ -489,7 +489,8 @@ class ProcessL2:
 
         deleteKey = []
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
-            k = str(wvl)
+            # k = str(wvl)
+            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
             if (any(wvl == float(x) for x in esXSlice) and
                 any(wvl == float(x) for x in liXSlice) and
                 any(wvl == float(x) for x in ltXSlice)):
@@ -825,12 +826,12 @@ class ProcessL2:
         else:
             # factory case
             for wvl in waveSubset:
-                k = str(wvl)
+                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
                 if any([wvl == float(x) for x in esXSlice]):
                     esUNC[k] = 0
 
         for wvl in waveSubset:
-            k = str(wvl)
+            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
             if any([wvl == float(x) for x in esXSlice]):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
@@ -1182,7 +1183,7 @@ class ProcessL2:
             satellite_bands['Sentinel3'] = Weight_RSR.Sentinel3Bands()
 
         satellite_slice = {satellite: {k: convolve_to_satellite[satellite](sliceData) for k, sliceData in data_slice.items()}
-                                for satellite in convolve_to_satellite}
+                            for satellite in convolve_to_satellite}
 
         # %% Get indexes (y) of N darkest Lt frames
         # Default to all indexes if no LT data or percent_lt is not enabled
@@ -1285,6 +1286,7 @@ class ProcessL2:
 
         slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
                     for k, sliceData in data_slice.items()}  # standard deviation is relative to signal - i.e. in %
+        
         satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
                                 for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}
@@ -1656,7 +1658,8 @@ class ProcessL2:
         if rhoVector is not None:
             rhoVec = {}
             for i, k in enumerate(wavelengths):
-                rhoVec[str(k)] = rhoVector[i]
+                # rhoVec[str(k)] = rhoVector[i]
+                rhoVec[f'{k:.3f}'] = rhoVector[i]
         else:
             rhoVec = None
 

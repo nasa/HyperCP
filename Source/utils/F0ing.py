@@ -63,7 +63,8 @@ def TSIS_1(dateTag, wavelength, F0_raw=None, F0_unc_raw=None, wv_raw=None):
     # F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
 
     # Use the strings for the F0 dict
-    wavelengthStr = [str(wave) for wave in wavelength]
+    # wavelengthStr = [str(wave) for wave in wavelength]
+    wavelengthStr = [str(wave) if isinstance(wave,int) else f'{wave:.3f}' for wave in wavelength]
     F0 = collections.OrderedDict(zip(wavelengthStr, avg_f0))
     F0_unc = collections.OrderedDict(zip(wavelengthStr, avg_f0_unc))
 

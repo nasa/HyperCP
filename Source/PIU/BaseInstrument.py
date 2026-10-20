@@ -737,7 +737,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 )
             )
         UNC.update(
-            {"rhoUNC_HYPER": {str(k): val for k, val in zip(l2Wavelength, rhoUNC)},
+            {"rhoUNC_HYPER": {f'{k:.3f}': val for k, val in zip(l2Wavelength, rhoUNC)},
             "lwUNC": lwRelUnc,
              "rrsUNC": rrsRelUnc,
              "nlwUNC": nlwRelUnc}
@@ -778,7 +778,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     # used to choose correct band convolution measurement function in uncertainty_analysis.py
                 )
                 UNC[f"esUNC_{sensor_name}"] = {
-                    str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)
+                    f'{k:.3f}': [val] for k, val in zip(RSR_Bands, esDeltaBand)
                 }
 
         return UNC
@@ -948,7 +948,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 esDeltaBand = MCP_obj.MCP.process_samples(None, sample_es_conv)
                 # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
                 # be returned to ProcessingL2 and used to update xSlice/xUNC
-                UNC[f"esUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+                UNC[f"esUNC_{sensor_name}"] = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, esDeltaBand)}
 
         return UNC
 

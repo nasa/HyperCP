@@ -2,6 +2,7 @@
 import collections
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.integrate import simpson
 from itertools import compress
 
 class Weight_RSR:
@@ -207,3 +208,80 @@ class Weight_RSR:
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
 
         return weightedBandData
+
+    @staticmethod
+    def gaussian_L1B(ds, newDS, commonWaveBands):
+        ''' Build relative spectral response for gaussians at commonWaveBands with
+            10 nm FWHM with 50 RSR bands per commonWaveBand. Then convolve raw L1B 
+            bands to the RSR at commonWaveBands.
+            NOTE: This will truncate the initial set of commonWaveBands due to lack of 
+            overlap in the RSR at the extremities.'''
+
+        # Build the Gaussian RSR table
+        fwhm = 10
+        bins = 50
+        step = fwhm/bins
+        minWave = min(commonWaveBands) - bins/2
+        maxWave = max(commonWaveBands) + bins/2
+        RSRwave = np.arange(minWave,maxWave,step)
+        RSR = np.zeros((len(RSRwave),len(commonWaveBands)))
+
+        order = 1
+        for i in np.arange(0,RSR.shape[1]):
+            mu = commonWaveBands[i]
+            x = np.arange(mu - 4*fwhm,mu + 4*fwhm,step)
+            sig = fwhm/(2*np.sqrt(2*np.log(2)))
+            amp = 1/(sig*np.sqrt(2*np.pi)) *step
+            vo = 0
+            y = amp*np.exp(-(((x-mu)**2)/(2*sig**2)))+vo 
+            # Pad out with zeros
+            fn = InterpolatedUnivariateSpline(x,y.tolist(),k=order)
+            RSR[:,i] = fn(RSRwave)
+
+        # Convolve raw L1B bands to RSR at commonWaveBands
+        # Flip ds datetimes into columns and pop them for use in newDS
+        ds.datasetToColumns()
+        columns = ds.columns
+        saveDatetag = columns.pop("Datetag")
+        saveTimetag2 = columns.pop("Timetag2")
+        columns.pop("Datetime")
+
+        overlap = (RSRwave >= min(commonWaveBands)) & (RSRwave <= max(commonWaveBands))
+        rawData = ds.columns
+        rawBands = np.empty([1,len(rawData.keys())])*0
+        for i, key in enumerate(rawData.keys()):
+            rawBands[0,i] = float(key)
+        rawBands = rawBands[0].tolist()
+        rawData = np.array(list(rawData.values()))
+
+        # Interpolate each raw spectrum to RSRwave and integrate over the RSR
+        start = 1
+        spectrum_out = dict()
+        for i in np.arange(0,rawData.shape[1]):
+            fn = InterpolatedUnivariateSpline(rawBands,rawData[:,i], ext=1) # Return 0s on extrapolation
+            interpData = fn(RSRwave)
+
+            # spectrum_out = np.zeros((len(commonWaveBands),1))
+            # common_wave_out = np.zeros((len(commonWaveBands),1))            
+            for j,commonBand in enumerate(commonWaveBands):
+                # Test for band overlap
+                RSR_total = simpson(RSR[:,j], x=RSRwave) # same as trapz to several decimal places...
+                RSR_overlap = simpson(RSR[overlap,j], x=RSRwave[overlap])
+
+                # 5% maximum difference
+                if (RSR_total - RSR_overlap)/RSR_total < 0.05:
+
+                    # Insure that the integral over lambda for this band == 1
+                    RSR_band = RSR[:,j]/RSR_total
+                    if start == 1:
+                        spectrum_out[f'{commonBand:.3f}'] = [simpson(interpData*RSR_band,x=RSRwave)]
+                    else:
+                        spectrum_out[f'{commonBand:.3f}'].append(simpson(interpData*RSR_band,x=RSRwave))
+            if spectrum_out:
+                start = 0
+
+
+        newDS.columns = {k: [float(x) for x in v] for k, v in spectrum_out.items()}
+        newDS.columns = {'Timetag2': saveTimetag2, **newDS.columns}
+        newDS.columns = {'Datetag': saveDatetag, **newDS.columns}
+        newDS.columnsToDataset()

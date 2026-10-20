@@ -11,6 +11,7 @@ import scipy as sp
 
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
+from Source.Weight_RSR import Weight_RSR
 import Source.utils.plotting as plotting
 import Source.utils.comparing as comparing
 import Source.utils.loggingHCP as logging
@@ -569,7 +570,8 @@ class ProcessL1b_Interp:
             of all sensors, the minimum highest wavelength, and the interval
             set in the Configuration Window. '''
 
-        print('Interpolating to common wavelengths')
+        # print('Interpolating to common wavelengths')
+        print('Convolving to common wavelengths')
         root = HDFRoot()
         root.copyAttributes(node)
 
@@ -695,14 +697,23 @@ class ProcessL1b_Interp:
             end = min(esEnd,ltEnd)
             newWavebands = np.arange(start, end, interval)
 
-        print('Interpolating Es')
-        ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
+        print('Convolving Es')
+        Weight_RSR.gaussian_L1B(esData,newESData,newWavebands)
+        # Truncated common wavebands:
+        # badKeys = ['Datetag','Timetag2']
+        # newWavebands = np.array([float(key) for key in newESData.columns.keys() if key not in badKeys])
+        # print('Interpolating Es')
+        # ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
         if 'LI' in radiance_group_ids:
-            print('Interpolating Li')
-            ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
+            # print('Interpolating Li')
+            # ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
+            print('Convolving Li')
+            Weight_RSR.gaussian_L1B(liData,newLIData,newWavebands)
         if 'LT' in radiance_group_ids:
-            print('Interpolating Lt')
-            ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
+            # print('Interpolating Lt')
+            # ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
+            print('Convolving Lt')
+            Weight_RSR.gaussian_L1B(ltData,newLTData,newWavebands)
 
         return root
 
