@@ -610,7 +610,7 @@ The follow table lists ancillary data requirements for each glint correction mod
 |-----|----------|------|-------|-------|-----------|--------|---------|
 |M99  |0-14      |0-80  |0-180  |0-87.5 |N/A        |N/A     |N/A      |
 |Z17  |0-15      |10-60 |80-140 |30,40  |0-0.5      |-40-40  |0-60     |
-|B26  |0-10      |10-80 |80-140 |30,40  |0-0.5      |N/A     |N/A      |
+|B26  |0-10      |10-80 |90     |30,40  |0-0.5      |N/A     |N/A      |
 |3C   |N/A       |N/A   |N/A    |N/A    |N/A        |N/A     |N/A      |
 
 ### <a id="uncertainties-anchor"></a>Uncertainties
