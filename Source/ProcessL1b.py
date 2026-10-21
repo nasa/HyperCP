@@ -272,13 +272,13 @@ class ProcessL1b:
                     elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post cals
 
                         # Read preCal into gp
-                        preCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("preCal_%s" % sensorType))
+                        preCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get(f'preCal_{sensorType}'))
                         if preCal is None:
                             raise ValueError('Pre-calibration file should have been chosen if pre-post option was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(preCal, gp)
 
                         # Read postCal into gp
-                        postCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("postCal_%s" % sensorType))
+                        postCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get(f'postCal_{sensorType}'))
                         if postCal is None:
                             raise ValueError('Post-calibration file should have been chosen if pre-post option was chosen (see GUI-->Edit-->Cal/Char options).')
                         filing.read_char(postCal, gp)

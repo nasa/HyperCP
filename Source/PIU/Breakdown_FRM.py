@@ -540,10 +540,8 @@ class SolveLPU:
         LAMP_mag = np.mean(sample_LAMP, axis=0)
         if ind_nocal is None:
             ind_nocal = [False for i in range(len(S1))]  # if not given, assume all wavelengths are used for non-linearity correction, i.e. no nocal wavelengths
-        if any(
-            [s == 0 for s in S1[ind_nocal]]
-        ):
-            print(f"Warning: S1 contains zero values, at: {np.where(S1 == 0)}")  
+        if any([s == 0 for s in S1[ind_nocal]]):
+            print(f"Warning: S1 contains zero values, at: {np.where(S1 == 0)}")
         if s.upper() == "ES":  # irradiance does not use a Panel
             return LAMP_mag / (S1*10)
         else:  # Radiance

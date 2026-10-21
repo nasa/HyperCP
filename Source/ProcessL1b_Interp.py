@@ -543,7 +543,8 @@ class ProcessL1b_Interp:
 
         for i in range(newWavebands.shape[0]):
             # limit to one decimal place
-            newColumns[str(round(10*newWavebands[i])/10)] = []
+            # newColumns[str(round(10*newWavebands[i])/10)] = []
+            newColumns[f'{newWavebands[i]:.3f}'] = []
 
         # Perform interpolation for each timestamp
         for timeIndex in range(len(saveDatetag)):
@@ -557,7 +558,8 @@ class ProcessL1b_Interp:
             new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
             for waveIndex in range(newWavebands.shape[0]):
-                newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
+                # newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
+                newColumns[f'{newWavebands[waveIndex]:.3f}'].append(new_y[waveIndex])
 
         newDS.columns = newColumns
         newDS.columnsToDataset()
@@ -697,24 +699,32 @@ class ProcessL1b_Interp:
             end = min(esEnd,ltEnd)
             newWavebands = np.arange(start, end, interval)
 
-        print('Convolving Es')
-        Weight_RSR.gaussian_L1B(esData,newESData,newWavebands)
-        # Truncated common wavebands:
-        # badKeys = ['Datetag','Timetag2']
-        # newWavebands = np.array([float(key) for key in newESData.columns.keys() if key not in badKeys])
-        # print('Interpolating Es')
-        # ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
-        if 'LI' in radiance_group_ids:
-            # print('Interpolating Li')
-            # ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
-            print('Convolving Li')
-            Weight_RSR.gaussian_L1B(liData,newLIData,newWavebands)
-        if 'LT' in radiance_group_ids:
-            # print('Interpolating Lt')
-            # ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
-            print('Convolving Lt')
-            Weight_RSR.gaussian_L1B(ltData,newLTData,newWavebands)
 
+
+        # TODO: Decide on an implementation or allow user selection in ConfigWindow
+        convolution = False
+
+
+
+
+        if convolution:
+            print('Convolving Es')
+            Weight_RSR.gaussian_L1B(esData,newESData,newWavebands)
+            if 'LI' in radiance_group_ids:
+                print('Convolving Li')
+                Weight_RSR.gaussian_L1B(liData,newLIData,newWavebands)
+            if 'LT' in radiance_group_ids:
+                print('Convolving Lt')
+                Weight_RSR.gaussian_L1B(ltData,newLTData,newWavebands)
+        else:
+            print('Interpolating Es')
+            ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
+            if 'LI' in radiance_group_ids:
+                print('Interpolating Li')
+                ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
+            if 'LT' in radiance_group_ids:
+                print('Interpolating Lt')
+                ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
         return root
 
     @staticmethod

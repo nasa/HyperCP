@@ -82,14 +82,17 @@ class utils:
         '''
 
         # Copy dataset to dictionary
-        columns = {k: Columns[:, i] for i, k in enumerate(waves)}
+        try:
+            columns = {k: Columns[:, i] for i, k in enumerate(waves)}
+        except:
+            breakpoint
         cols = []
         for m in range(Columns.shape[0]):  # across all the monte carlo draws
             newColumns = {}
 
             for i in range(newWavebands.shape[0]):
                 # limit to one decimal place
-                newColumns[str(round(10*newWavebands[i])/10)] = []
+                newColumns[f'{newWavebands[i]:.3f}'] = []
 
             # for m in range(Columns.shape[0]):
             # Perform interpolation for each timestamp
@@ -98,7 +101,8 @@ class utils:
             new_y = InterpolatedUnivariateSpline(waves, y, k=3)(newWavebands)
 
             for waveIndex in range(newWavebands.shape[0]):
-                newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
+                # newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
+                newColumns[f'{newWavebands[waveIndex]:.3f}'].append(new_y[waveIndex])
 
             cols.append(newColumns)
 

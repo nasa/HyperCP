@@ -45,14 +45,14 @@ class ProcessL2BRDF():
             #     # chlorophyll is needed for M02 scheme
             #     chl = gp.datasets["chlor_a"].columns["chlor_a"]
             #     # Could bring in IOPS for IOP BRDF here...
-            if (gp.id == "ANCILLARY"):
+            if gp.id == "ANCILLARY":
                 solz = gp.datasets["SZA"].columns["SZA"]
                 relaz = gp.datasets["REL_AZ"].columns["REL_AZ"]
                 aod = gp.datasets["AOD"].columns["AOD"]
                 wind = gp.datasets["WINDSPEED"].columns["WINDSPEED"]
 
         for gp in root.groups:
-            if (gp.id == "REFLECTANCE"):
+            if gp.id == "REFLECTANCE":
                 # NB: BRDF Morel must be applied over Rrs and not nLw because of the iterative process to update chl.
                 # Then, the BRDF factors between Rrs and nLw can be assumed to be the same
                 # This list will contain Rrs_HYPER and Rrs convoluted to satellite-specific bands, e.g. MODISA
@@ -62,21 +62,21 @@ class ProcessL2BRDF():
                         # Can't change datasets in this loop, so make a list
                         if not (ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02") or ds.endswith("_unc") or ds.endswith("_sd")):
                             Rrs_list.append(ds)
-                
+
                 # ensure hyperspectral dataset is the first in the loop
                 Rrs_list.insert(0, Rrs_list.pop(Rrs_list.index("Rrs_HYPER")))
-                
+
                 # I have refactored this to loop through Rrs and nLw at the same time as it makes managing variables for the uncertainty easier
 
                 # dicts to store hyperspectral info for convolving BRDF uncs
-                brdf_unc = {} 
+                brdf_unc = {}
                 hyperspec = {}
 
                 # Extract the spectrla information
                 for ds in Rrs_list:  # Rrs_list = [Rrs_HYPER, Rrs_MODISA, Rrs_Sentinel3A, etc.]
                     Rrs_ds = gp.getDataset(ds)
                     Rrs = Rrs_ds.columns
-                    
+
                     # Store BRDF corrected rrs
                     Rrs_BRDF = Rrs.copy()
 
@@ -85,7 +85,7 @@ class ProcessL2BRDF():
                     nLw = nLw_ds.columns
 
                     nLw_BRDF = nLw.copy()
-                    
+
                     try:
                         # get uncertainty datasets and columns for Rrs and nLw, passig with AttributeError if they do not exits.
                         Rrs_unc_ds = gp.getDataset(f"{ds}_unc")
@@ -138,7 +138,7 @@ class ProcessL2BRDF():
                     for k,v in I.items():
                         if np.shape(v) == ():
                             I[k] = I[k].reshape((1,))
-                            
+
                     # Calculate BRDF correction for Lee11 or O25
                     if BRDF_option in ['L11','O25','M02','M02_SeaDAS']:
                         # fomating input into xarray wanted by OLCI-BRDF code
@@ -163,7 +163,7 @@ class ProcessL2BRDF():
                                         data=I['aot'],
                                         dims=['n']),
                             } )
-                        
+
                         # Compute and apply BRDF
                         OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
                         stations = range(OC_BRDF.n.shape[0])
@@ -184,8 +184,9 @@ class ProcessL2BRDF():
                                             np.array(list(brdf_unc[f"{meas}_hyper"].values()))[:, station], # BRDF unc in refltectance units
                                             platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                         )
-                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    # This clause only covers satellite, so can use simple str(k)
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength  # 1 x 165
@@ -224,13 +225,13 @@ class ProcessL2BRDF():
                                         # cs1 = nLw (applied in lines: 166-169), cs2 = BRDF correction factor
                                         nLw_BRDF_unc[k].append(
                                             np.sqrt(
-                                                brdf_unc[f"nLw_{platform}"][k][station]**2 + 
+                                                brdf_unc[f"nLw_{platform}"][k][station]**2 +
                                                 (np.array(nLw_unc[k][station])**2 * OC_BRDF.C_brdf.sel(bands=float(k), n=station).values**2)
                                             )
                                         )
 
                                     # uncs not saved as list, perhaps numpy bug?
-                                    Rrs_BRDF_unc[k] = Rrs_BRDF_unc[k] if isinstance(Rrs_BRDF_unc[k], list) else [Rrs_BRDF_unc[k]] 
+                                    Rrs_BRDF_unc[k] = Rrs_BRDF_unc[k] if isinstance(Rrs_BRDF_unc[k], list) else [Rrs_BRDF_unc[k]]
                                     nLw_BRDF_unc[k] = nLw_BRDF_unc[k] if isinstance(nLw_BRDF_unc[k], list) else [nLw_BRDF_unc[k]]
                                 else:
                                     # add in datetime datetag and timetag2 for consistency with other datasets
@@ -239,21 +240,26 @@ class ProcessL2BRDF():
                                     Rrs_BRDF_unc[k] = Rrs[k]
                                     nLw_BRDF_unc[k] = Rrs[k]
 
-                        if 'HYPER' in ds:                            
+                        if 'HYPER' in ds:
                             try:
                                 # save to breakdown groups
                                 bd_grp = root.getGroup("BREAKDOWN")
                                 if 'BRDF_method' not in bd_grp.attributes or not bd_grp.attributes['BRDF_method']:
                                     bd_grp.attributes['BRDF_method'] = [BRDF_option]
                                 elif BRDF_option not in bd_grp.attributes['BRDF_method']:
-                                    bd_grp.attributes['BRDF_method'].append(BRDF_option)
-                                
+                                    bd_grp.attributes['BRDF_method'].append(BRDF_option)                                
+
                                 bd_rrs = bd_grp.addDataset(f"{ds}_BRDF")
                                 bd_rrs.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["Rrs_hyper"].items()}
+                                # Add Datetag and Timetag2 to the new datasets
+                                bd_rrs.columns = {'Timetag2': Rrs_unc['Timetag2'], **bd_rrs.columns}
+                                bd_rrs.columns = {'Datetag': Rrs_unc['Datetag'], **bd_rrs.columns}
                                 bd_rrs.columnsToDataset()
 
                                 bd_nlw = bd_grp.addDataset(f"{ds.replace('Rrs','nLw')}_BRDF")
-                                bd_nlw.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["nLw_hyper"].items()} 
+                                bd_nlw.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["nLw_hyper"].items()}
+                                bd_nlw.columns = {'Timetag2': Rrs_unc['Timetag2'], **bd_nlw.columns}
+                                bd_nlw.columns = {'Datetag': Rrs_unc['Datetag'], **bd_nlw.columns}
                                 bd_nlw.columnsToDataset()
 
                             except AttributeError:  # faster to ask forgiveness than permission
@@ -277,30 +283,6 @@ class ProcessL2BRDF():
                         nLw_BRDF_unc_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option + "_unc")
                         nLw_BRDF_unc_ds.columns = nLw_BRDF_unc
                         nLw_BRDF_unc_ds.columnsToDataset()
-                    
-                        # import matplotlib.pyplot as plt
-                        # plt.figure()
-                        # ii = 0
-                        # plt.plot(wavelength, np.array(Rrs_ds.data[ii]).tolist()[3:], label="raw rrs")
-                        # plt.plot(wavelength, np.array(Rrs_BRDF_ds.data[ii]).tolist()[3:], label="BRDF corrected rrs")
-                        # plt.legend()
-                        # plt.xlabel('wavelength [nm]')
-                        # plt.ylabel('Rrs')
-                        # plt.title('TRIOS LEE BRDF correction')
-                        # plt.figure()
-                        # plt.plot(wavelength, np.array(nLw_ds.data[ii]).tolist()[3:], label="raw nLw")
-                        # plt.plot(wavelength, np.array(nLw_BRDF_ds.data[ii]).tolist()[3:], label="BRDF corrected nLw")
-                        # plt.legend()
-                        # plt.xlabel('wavelength [nm]')
-                        # plt.ylabel('nLw')
-                        # plt.title('TRIOS LEE BRDF correction')
-                        # plt.figure()
-                        # plt.plot(wavelength, OC_BRDF.C_brdf, 'b', label="BRDF factor")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf-OC_BRDF.brdf_unc, 'b--')
-                        # plt.legend()
-                        # plt.xlabel('wavelength [nm]')
-                        # plt.ylabel('BRDF factor')
-                        # plt.title('TRIOS LEE BRDF' )
+
                     else:
-                        raise ValueError('BRDF option %s not supported.' % BRDF_option)
+                        raise ValueError(f'BRDF option {BRDF_option} not supported.')

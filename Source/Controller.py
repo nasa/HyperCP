@@ -418,6 +418,16 @@ class Controller:
 
         # Write output file
         if root is not None:
+            # Homogenize L1AQC carryover datasets by setting all waveband naming to 3 decimal places
+            for gp in root.groups:
+                if 'L1AQC' in gp.id:
+                    sensor = gp.id[0:2]
+                    ds = gp.datasets[sensor]
+                    cols = ds.columns.copy()
+                    for k in cols:
+                        band = float(k)
+                        ds.columns[f'{band:.3f}'] = ds.columns.pop(k)
+                    ds.columnsToDataset()
             try:
                 root.writeHDF5(outFilePath)
             except Exception:
