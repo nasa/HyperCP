@@ -184,7 +184,8 @@ class ProcessL2BRDF():
                                             np.array(list(brdf_unc[f"{meas}_hyper"].values()))[:, station], # BRDF unc in refltectance units
                                             platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                         )
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength  # 1 x 165
@@ -198,7 +199,8 @@ class ProcessL2BRDF():
                                         hyperspec[f"{meas}_hyper"][station, :] = hyperspec[f"{meas}_hyper"][station,:] * OC_BRDF.C_brdf.isel(n=station).values
                                         meas_uncs[station, :] = np.sqrt(np.array(OC_BRDF.brdf_unc.isel(n=station).values)**2 * hyperspec[f"{meas}_hyper"][station, :]**2)
                                     brdf_unc[f"{meas}_hyper"] = {
-                                        str(k): list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
+                                        f'{k:.3f}': list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
+                                        # str(k): list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
                                     }  # turn BRDF uncs into dict so we can convolve uncs
 
                         for k in Rrs:

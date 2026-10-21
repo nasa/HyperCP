@@ -65,7 +65,8 @@ class utils:
         if return_as_dict:
             for idx, wb in enumerate(newWaveBands):
                 # wb_str = str(round(10 * wb) / 10) # limit to one decimal place (inconsitent with other parts of the code)
-                wb_str = str(wb)  # preferred for consistency
+                # wb_str = str(wb)  # preferred for consistency
+                wb_str = f'{wb:.3f}' # 3 decimal places fixed
                 newColumns[wb_str] = [new_y[idx]]
             return newColumns
         else:

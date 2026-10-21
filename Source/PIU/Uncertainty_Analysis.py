@@ -502,7 +502,8 @@ class Propagate:
     def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for S3A using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        # hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processSentinel3Bands(
             hyperspec_as_dict, sensor='A'
         )
@@ -512,7 +513,7 @@ class Propagate:
     def band_Conv_Sensor_S3B(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for S3B using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processSentinel3Bands(
             hyperspec_as_dict, sensor='B'
         )
@@ -522,7 +523,7 @@ class Propagate:
     def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for EOS-AQUA Modis using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processMODISBands(
             hyperspec_as_dict, sensor='A'
         )
@@ -532,7 +533,7 @@ class Propagate:
     def band_Conv_Sensor_TERRA(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for EOS-Terra Modis using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processMODISBands(
             hyperspec_as_dict, sensor='T'
         )
@@ -542,7 +543,7 @@ class Propagate:
     def band_Conv_Sensor_NOAA_J(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for NOAA Virrs using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processVIIRSBands(
             hyperspec_as_dict, sensor='J'  # uses else to identify, string does not matter
         )
@@ -552,7 +553,7 @@ class Propagate:
     def band_Conv_Sensor_NOAA_N(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for NOAA Virrs using Source.Weight_RSR"""
 
-        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processVIIRSBands(
             hyperspec_as_dict, sensor='N'
         )
