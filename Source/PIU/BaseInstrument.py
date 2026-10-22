@@ -139,7 +139,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     f"{path.splitext(ConfigFile.filename)[0]}_Calibration"
                 )
 
-                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
+                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileNameFactory']]
                 cal_int_time = np.array(
                     [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
                 )

@@ -1983,7 +1983,11 @@ class ProcessL2:
                             node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                testGroup = '_LIGHT_L1AQC'
+            else:
+                testGroup = '_L1AQC'
+            if grp.id.endswith(testGroup): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:

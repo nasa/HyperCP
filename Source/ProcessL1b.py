@@ -1,5 +1,6 @@
 ''' Process L1AQC to L1B '''
 import os
+import re
 import datetime as dt
 import calendar
 from inspect import currentframe, getframeinfo
@@ -195,10 +196,10 @@ class ProcessL1b:
         return root (with the group "RAW_UNCERTAINTIES" updated to contain the read cal/chars)
         '''
         if ConfigFile.settings['SensorType'].lower() == "trios es only" or ConfigFile.settings['SensorType'].lower() == "sorad":
-            sensor_type = 'TriOS'
+            sensor_make = 'TriOS'
         else:
-            sensor_type = ConfigFile.settings['SensorType']
-        fidRadPath= os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
+            sensor_make = ConfigFile.settings['SensorType']
+        fidRadPath= os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_make)
 
         # Initialise "RAW_UNCERTAINTIES"
         gp = root.addGroup("RAW_UNCERTAINTIES")
@@ -264,10 +265,20 @@ class ProcessL1b:
 
                         filing.read_char(chosen_file, gp)
                         gp.attributes[f'{sensorType}_{calCharType}_file'] = os.path.split(chosen_file)[-1]
-                        if ConfigFile.settings["SensorType"].lower() == 'seabird':
+
+                        if sensor_make.lower() == 'seabird':
                             root.getGroup(f"{sensorType}_LIGHT_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                            root.getGroup(f'{sensorType}_LIGHT').attributes['CalFileNameFactory'] = \
+                                root.getGroup(f'{sensorType}_LIGHT').attributes['CalFileName']
+                            root.getGroup(f'{sensorType}_LIGHT_L1AQC').attributes['CalFileNameFactory'] = \
+                                root.getGroup(f'{sensorType}_LIGHT').attributes['CalFileName']
+                            root.getGroup(f'{sensorType}_LIGHT').attributes['CalFileName'] = os.path.split(chosen_file)[-1]
+                            root.getGroup(f'{sensorType}_LIGHT').attributes['CalibrationDate'] = os.path.split(chosen_file)[-1].split('_')[-1].split('.')[0]
                         else:
                             root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = available_files_calTime0[idx]
+                            root.getGroup(sensorType).attributes['CalFileNameFactory'] = root.getGroup(sensorType).attributes['CalFileName']
+                            root.getGroup(sensorType).attributes['CalFileName'] = os.path.split(chosen_file)[-1]
+                            root.getGroup(sensorType).attributes['CalibrationDate'] = os.path.split(chosen_file)[-1].split('_')[-1].split('.')[0]
 
                     elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post cals
 
@@ -317,6 +328,11 @@ class ProcessL1b:
                         else:
                             root.getGroup(f"{sensorType}_L1AQC").attributes['CalibrationDate'] = \
                                 os.path.basename(chooseCal).split('_')[-1].split('.')[0]
+
+                        # # Update calibration file attributes in
+                        # gp = node.getGroup(sensor)
+                        # gp.attributes['CalFileName'] = uncGroup.attributes[f'{sensor}_RADCAL_file']
+                        # gp.attributes['CalibrationDate'] = uncGroup.attributes[f'{sensor}_RADCAL_file']
 
         return root
 
@@ -907,9 +923,9 @@ class ProcessL1b:
             classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', 'TriOS_initial')
 
         # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
-        sensor_type = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
+        sensor_make = 'TriOS' if ConfigFile.settings['SensorType'].lower() == "trios es only" \
             else ConfigFile.settings['SensorType']
-        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
+        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_make)
 
         if ConfigFile.settings['fL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
@@ -976,9 +992,9 @@ class ProcessL1b:
         calibrationMap = CalibrationFileReader.read(calPath)
         start, stop = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
         for gp in node.groups:
-            if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
-                gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
-                gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
+            if gp.id in ['ES','LI','LT'] or 'LIGHT_L1AQC' in gp.id:
+                gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileNameFactory']])
+                gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileNameFactory']])
         if ConfigFile.settings['fL1bCal'] == 1 or ConfigFile.settings['fL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two

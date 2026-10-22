@@ -416,8 +416,6 @@ class ProcessL1bTriOS:
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
 
-            # Check that the FidRadDB file agrees on which bands are calibrated.
-            # TODO: Port this test over to SeaBird, DALEC, etc.
             uncGroup = node.getGroup('RAW_UNCERTAINTIES')
             if ConfigFile.settings['SensorType'].lower() == "trios es only":
                 sensors = ["ES"]

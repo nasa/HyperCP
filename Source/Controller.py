@@ -400,7 +400,7 @@ class Controller:
             print('No such input file: ' + inFilePath)
             return None
 
-        # Process the data
+        # Read in the L1AQC file
         logging.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
@@ -409,6 +409,7 @@ class Controller:
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
             return None
+        
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":

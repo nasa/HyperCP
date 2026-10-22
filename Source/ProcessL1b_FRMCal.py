@@ -442,21 +442,22 @@ class ProcessL1b_FRMCal:
         loggingHCP.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
-            if 'L1AQC' not in gp.id:
+            # if 'L1AQC' not in gp.id and 'SATTHS' not in gp.id:
+            if gp.id in ['ES','LI','LT']: # May need to add additional calibrated instruments
                 loggingHCP.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
                     if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
-                        cf = calibrationMap[gp.attributes["CalFileName"]]
+                        cf = calibrationMap[gp.attributes["CalFileNameFactory"]]
                         #print(gp.id, gp.attributes)
-                        loggingHCP.writeLogFileAndPrint(f'    File: {cf.id}')
+                        # loggingHCP.writeLogFileAndPrint(f'    File: {cf.id}')
 
-                        if esUnits == None:
+                        if esUnits is None:
                             esUnits = cf.getUnits("ES")
-                        if liUnits == None:
+                        if liUnits is None:
                             liUnits = cf.getUnits("LI")
-                        if ltUnits == None:
+                        if ltUnits is None:
                             ltUnits = cf.getUnits("LT")
-                        if pyrUnits == None:
+                        if pyrUnits is None:
                             pyrUnits = cf.getUnits("T") #Pyrometer
 
         node.attributes["LI_UNITS"] = liUnits
