@@ -1,12 +1,3 @@
-import numpy as np
-import sys
-import xarray as xr
-from .brdf_model_M02 import M02
-from .brdf_model_M02SeaDAS import M02SeaDAS
-from .brdf_model_L11 import L11
-from .brdf_model_O25 import O25
-from .brdf_utils import ADF_OCP, squeeze_trivial_dims
-
 """
 Main BRDF correction module
     Works with xarray dataset as input
@@ -39,6 +30,16 @@ Main BRDF correction module
         Constant Mazeran (constant.mazeran@solvo.fr).
     Relative azimuth in the BRDF LUTs follows the OLCI convention. See https://www.eumetsat.int/media/50720, Fig. 6.
 """
+
+import sys
+import numpy as np
+import xarray as xr
+
+from Source.ocbrdf.brdf_model_M02 import M02
+from Source.ocbrdf.brdf_model_M02SeaDAS import M02SeaDAS
+from Source.ocbrdf.brdf_model_L11 import L11
+from Source.ocbrdf.brdf_model_O25 import O25
+from Source.ocbrdf.brdf_utils import ADF_OCP, squeeze_trivial_dims
 
 
 def brdf_prototype(ds, adf=None, brdf_model='L11'):
@@ -99,7 +100,7 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
         # Drop remnant coordinates to avoid ambiguities in the update of the BRDF factor.
         for coord in ratio.coords:
             if coord not in ds['C_brdf'].coords:
-                ratio = ratio.drop(coord)
+                ratio = ratio.drop_vars(coord)
 
         # Normalize reflectance
         ds['C_brdf'] = xr.where(ds['convergeFlag'], ds['C_brdf'], ratio)

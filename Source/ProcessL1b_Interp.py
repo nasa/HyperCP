@@ -947,6 +947,15 @@ class ProcessL1b_Interp:
             # Calls interpolateWavelengths and matchColumns
             # Includes columnsToDataset for only the radiometry, for remaining groups, see below
             root = ProcessL1b_Interp.matchWavelengths(root)
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            # Update for .3f waveband format
+            for gp in ['IRRADIANCE','ES_L1AQC']:
+                ds = root.getGroup(gp).datasets['ES']
+                newCols = ds.columns.copy()
+                for k in newCols:
+                    if k not in ['Datetag','Timetag2','Datetime']:
+                        band = float(k)
+                        ds.columns[f'{band:.3f}'] = ds.columns.pop(k)
 
         # FRM uncertainties
         _unc = node.getGroup('RAW_UNCERTAINTIES')

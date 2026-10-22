@@ -3,6 +3,7 @@ import collections
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import simpson
+from scipy.interpolate import interp1d
 from itertools import compress
 
 class Weight_RSR:
@@ -219,24 +220,35 @@ class Weight_RSR:
 
         # Build the Gaussian RSR table
         fwhm = 10
-        bins = 50
-        step = fwhm/bins
-        minWave = min(commonWaveBands) - bins/2
-        maxWave = max(commonWaveBands) + bins/2
+        bins = 20
+        step = fwhm/bins # 0.5 nm resolution Simposons integration of a Gaussian should results in < 0.1% error
+        minWave = min(commonWaveBands) - 4*fwhm # capture tails
+        maxWave = max(commonWaveBands) + 4*fwhm
         RSRwave = np.arange(minWave,maxWave,step)
-        RSR = np.zeros((len(RSRwave),len(commonWaveBands)))
+        sig = fwhm/(2*np.sqrt(2*np.log(2)))
 
-        order = 1
-        for i in np.arange(0,RSR.shape[1]):
-            mu = commonWaveBands[i]
-            x = np.arange(mu - 4*fwhm,mu + 4*fwhm,step)
-            sig = fwhm/(2*np.sqrt(2*np.log(2)))
-            amp = 1/(sig*np.sqrt(2*np.pi)) *step
-            vo = 0
-            y = amp*np.exp(-(((x-mu)**2)/(2*sig**2)))+vo 
-            # Pad out with zeros
-            fn = InterpolatedUnivariateSpline(x,y.tolist(),k=order)
-            RSR[:,i] = fn(RSRwave)
+        # Broadcasting creates a 2D array of shape: (len(RSRwave), len(commonWaveBands))
+        RSR = np.exp(-0.5 * ((RSRwave[:, None] - commonWaveBands[None, :]) / sig)**2)
+        overlap_mask = (RSRwave >= np.min(commonWaveBands)) & (RSRwave <= np.max(commonWaveBands))
+
+        valid_band_names = []
+        normalized_RSR = []
+
+        for j, commonBand in enumerate(commonWaveBands):
+            RSR_total = simpson(RSR[:, j], x=RSRwave)
+            RSR_overlap = simpson(RSR[overlap_mask, j], x=RSRwave[overlap_mask])
+
+            # 5% maximum difference check
+            if (RSR_total - RSR_overlap) / RSR_total < 0.05:
+                valid_band_names.append(f'{commonBand:.3f}')
+                # Store the normalized band
+                normalized_RSR.append(RSR[:, j] / RSR_total)
+
+        if not normalized_RSR:
+            raise ValueError("No common wavebands passed the 5% overlap criteria. Cannot proceed.")
+
+        # Stack into a 2D array for fast matrix math: shape (len(RSRwave), num_valid_bands)
+        normalized_RSR = np.column_stack(normalized_RSR)
 
         # Convolve raw L1B bands to RSR at commonWaveBands
         # Flip ds datetimes into columns and pop them for use in newDS
@@ -244,42 +256,28 @@ class Weight_RSR:
         columns = ds.columns
         saveDatetag = columns.pop("Datetag")
         saveTimetag2 = columns.pop("Timetag2")
-        columns.pop("Datetime")
+        columns.pop("Datetime",None)
 
-        overlap = (RSRwave >= min(commonWaveBands)) & (RSRwave <= max(commonWaveBands))
-        rawData = ds.columns
-        rawBands = np.empty([1,len(rawData.keys())])*0
-        for i, key in enumerate(rawData.keys()):
-            rawBands[0,i] = float(key)
-        rawBands = rawBands[0].tolist()
-        rawData = np.array(list(rawData.values()))
+        # rawData shape will be (num_raw_bands, num_spectra) based on dict values
+        rawBands = np.array([float(k) for k in columns.keys()])
+        rawData = np.array(list(columns.values()))
 
-        # Interpolate each raw spectrum to RSRwave and integrate over the RSR
-        start = 1
-        spectrum_out = dict()
-        for i in np.arange(0,rawData.shape[1]):
-            fn = InterpolatedUnivariateSpline(rawBands,rawData[:,i], ext=1) # Return 0s on extrapolation
-            interpData = fn(RSRwave)
+        # Vectorized interpolation
+        # interp1d can interpolate the entire 2D matrix of spectra at once.
+        # Using 'linear' might help prevent artifacts from upsampling 3.3nm to 0.5nm.
+        interp_func = interp1d(rawBands, rawData, axis=0, kind='linear', 
+                            bounds_error=False, fill_value=0.0)
+        interpData = interp_func(RSRwave) # Shape: (len(RSRwave), num_spectra)
 
-            # spectrum_out = np.zeros((len(commonWaveBands),1))
-            # common_wave_out = np.zeros((len(commonWaveBands),1))            
-            for j,commonBand in enumerate(commonWaveBands):
-                # Test for band overlap
-                RSR_total = simpson(RSR[:,j], x=RSRwave) # same as trapz to several decimal places...
-                RSR_overlap = simpson(RSR[overlap,j], x=RSRwave[overlap])
+        # Vectorized integration
+        spectrum_out = {}
+        for b_idx, band_name in enumerate(valid_band_names):
+            # Multiply (waves, spectra) by (waves, 1) -> broadcasts to (waves, spectra)
+            integrand = interpData * normalized_RSR[:, b_idx][:, None]
 
-                # 5% maximum difference
-                if (RSR_total - RSR_overlap)/RSR_total < 0.05:
-
-                    # Insure that the integral over lambda for this band == 1
-                    RSR_band = RSR[:,j]/RSR_total
-                    if start == 1:
-                        spectrum_out[f'{commonBand:.3f}'] = [simpson(interpData*RSR_band,x=RSRwave)]
-                    else:
-                        spectrum_out[f'{commonBand:.3f}'].append(simpson(interpData*RSR_band,x=RSRwave))
-            if spectrum_out:
-                start = 0
-
+            # Integrate along the wave axis (axis=0) for all spectra simultaneously
+            integrated_spectra = simpson(integrand, x=RSRwave, axis=0)
+            spectrum_out[band_name] = [float(x) for x in integrated_spectra]
 
         newDS.columns = {k: [float(x) for x in v] for k, v in spectrum_out.items()}
         newDS.columns = {'Timetag2': saveTimetag2, **newDS.columns}

@@ -80,7 +80,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.finished.connect(self.worker_done)
 
         # Define path to local repository of FidRadDB sensor-specific files.
-        if ConfigFile.settings['SensorType'].lower() == "trios es only" or ConfigFile.settings['SensorType'].lower() == "sorad":
+        if ConfigFile.settings['SensorType'].lower() in ["trios es only","sorad"]:
             sensor_type = 'TriOS'
         else:
             sensor_type = ConfigFile.settings['SensorType']
@@ -478,7 +478,7 @@ class CalCharWindow(QtWidgets.QDialog):
         ConfigFile.settings['num_of_sensors'] = n
 
     def ThermalStatusUpdate(self):
-        if ConfigFile.settings['SensorType'].lower() in ["trios"]: # Assume: TriOS is G1 and TriOS ES Only is G2
+        if ConfigFile.settings['SensorType'].lower() in ["trios","sorad"]: # Assume: TriOS is G1 and TriOS ES Only is G2
             self.ThermistorRadioButton.setDisabled(True)
             if ConfigFile.settings["fL1bThermal"] == 1:
                 # NOTE: This will need to be changed for G2

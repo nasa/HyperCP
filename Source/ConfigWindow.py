@@ -1750,7 +1750,7 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 1
             if not ConfigFile.settings["bL2SimSpecNIRCorrection"] and not ConfigFile.settings["bL2SimpleNIRCorrection"]:
-                ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+                ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
                 self.SimpleNIRRadioButton.setChecked(True)
 
 

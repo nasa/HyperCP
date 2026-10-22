@@ -506,7 +506,7 @@ class ProcessL1bTriOS:
                 enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
                 if enabled:
                     logging.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
-    
+
                     if ConfigFile.settings["fL1bCal"] <= 2:
                         if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
                             logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')

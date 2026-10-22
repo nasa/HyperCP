@@ -1286,7 +1286,7 @@ class ProcessL2:
 
         slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
                     for k, sliceData in data_slice.items()}  # standard deviation is relative to signal - i.e. in %
-        
+
         satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
                                 for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}

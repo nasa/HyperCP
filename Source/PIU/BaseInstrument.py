@@ -904,7 +904,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rrsDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Rrs)
         nlwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_nLw)
 
-        UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
+        # UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
+        UNCS["rhoUNC_HYPER"] = {f'{wvl:.3f}': val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"]  = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
         UNCS["nlwUNC"] = nlwDelta
