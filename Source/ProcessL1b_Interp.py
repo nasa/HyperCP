@@ -702,7 +702,7 @@ class ProcessL1b_Interp:
 
 
         # TODO: Decide on an implementation or allow user selection in ConfigWindow
-        convolution = False
+        convolution = True
 
 
 

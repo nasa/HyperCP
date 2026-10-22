@@ -502,7 +502,7 @@ class Controller:
             if (
                 ConfigFile.settings['bL2UncertaintyBreakdownPlot']  # unc selected in config
                 and plotDeltaBool  # we can do plots
-                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
+                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc breakdown plots not implemented for ES only
             ):
                 plotting.plotUncertainties(node, filename)
 
