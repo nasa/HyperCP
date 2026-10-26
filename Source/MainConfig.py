@@ -2,11 +2,10 @@
 import os
 import collections
 import json
-import time
-import threading
+from tempfile import NamedTemporaryFile
 
 from Source import PATH_TO_CONFIG
-# from Source.ConfigFile import ConfigFile
+
 
 class MainConfig:
     '''Class to hold Main window configurations'''
@@ -20,9 +19,17 @@ class MainConfig:
         # jsn = json.dumps(MainConfig.settings)
         fp = os.path.join(PATH_TO_CONFIG, fileName)
 
-        with open(fp, 'w', encoding="utf-8") as f:
-            json.dump(MainConfig.settings,f,indent=4)
-            # f.write(jsn)
+        config_dir = os.path.dirname(fp)
+        os.makedirs(config_dir, exist_ok=True)
+        temp_file_path = None
+        try:
+            with NamedTemporaryFile("w", dir=config_dir, suffix='.tmp', delete=False, encoding="utf-8") as temp_file:
+                json.dump(MainConfig.settings, temp_file, indent=4)
+                temp_file_path = temp_file.name
+            os.replace(temp_file_path, fp)
+        finally:
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
         # ConfigFile.saveConfig(ConfigFile.filename)
 
     # Loads the cfg file
@@ -35,20 +42,13 @@ class MainConfig:
 
         configPath = os.path.join(PATH_TO_CONFIG, fileName)
         if os.path.isfile(configPath):
-            lock = threading.Lock()
-            with lock:
-                with open(configPath, 'r', encoding="utf-8") as f:
-                    try:
-                        fullCollection = json.loads(f.read(), object_pairs_hook=collections.OrderedDict)
-                    except json.decoder.JSONDecodeError as err:
-                        print(f'ConfigFile loadConfig: {err}')
-                        time.sleep(1)
-                        fullCollection = json.loads(f.read(), object_pairs_hook=collections.OrderedDict)
-
-                    for key, value in fullCollection.items():
-                        MainConfig.settings[key] = value
-        # else:
-        #     MainConfig.createDefaultConfig(fileName, version)
+            with open(configPath, "r", encoding="utf-8") as f:
+                content = f.read()
+            if not content.strip():
+                raise ValueError(f"Config file {configPath} is empty.")
+            fullCollection = json.loads(content, object_pairs_hook=collections.OrderedDict)
+            for key, value in fullCollection.items():
+                MainConfig.settings[key] = value
 
     # Generates the default configuration
     @staticmethod
