@@ -19,6 +19,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from Source.ConfigFile import ConfigFile
 from Source.Controller import Controller
 from Source.CalibrationFileReader import CalibrationFileReader
+from Source.SeaBASSHeader import SeaBASSHeader
 from Source import PACKAGE_DIR as CODE_HOME
 
 from ocdb.api.OCDBApi import new_api, OCDBApi

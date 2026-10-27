@@ -203,19 +203,20 @@ class ProcessL1b_FactoryCal:
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
-            # if gp.id in ['ES','LI','LT'] or '_L1AQC' in gp.id:
-            #     gp.attributes['CAL_START'] = str(start[gp.attributes['CalFileName']])
-            #     gp.attributes['CAL_STOP'] = str(stop[gp.attributes['CalFileName']])
-            if 'L1AQC' not in gp.id:
+            if 'L1AQC' not in gp.id and 'SATTHS' not in gp.id:
                 logging.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
                     if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
-                        cf = calibrationMap[gp.attributes["CalFileName"]]
+                        if gp.id in ['ES','LI','LT']:
+                            cf = calibrationMap[gp.attributes["CalFileNameFactory"]]
+                        else:
+                            cf = calibrationMap[gp.attributes["CalFileName"]]
                         #print(gp.id, gp.attributes)
                         logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
 
+                        # More instruments with calibrations may need to be added here eventually
                         if esUnits is None:
                             esUnits = cf.getUnits("ES")
                         if liUnits is None:

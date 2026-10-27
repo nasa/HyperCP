@@ -101,7 +101,9 @@ class ProcessL1aTriOS:
                 root.attributes["PROCESSING_LEVEL"] = "1a"
 
                 ffp = [s for s in fp if a_name in s]
-                root.attributes["RAW_FILE_NAME"] = str(ffp)
+                # root.attributes["RAW_FILE_NAME"] = str(ffp)
+                # NOTE: This only reflects one of three raw files
+                root.attributes["RAW_FILE_NAME"] = os.path.split(ffp[0])[-1]
                 root.attributes["CAST"] = a_name
                 match = re.search(r"\dD$", a_name)
                 outFilePathDark = os.path.join(outFilePath+'/DARK')

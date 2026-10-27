@@ -100,6 +100,20 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.documentsLineEdit = QtWidgets.QLineEdit(self)
         self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
 
+        archivesLabel = QtWidgets.QLabel("associated_archives", self)
+        archivesLabel_font = archivesLabel.font()
+        archivesLabel_font.setBold(True)
+        archivesLabel.setFont(archivesLabel_font)
+        self.archivesLineEdit = QtWidgets.QLineEdit(self)
+        self.archivesLineEdit.setText(str(SeaBASSHeader.settings["associated_archives"]))
+
+        archiveTypesLabel = QtWidgets.QLabel("associated_archive_types", self)
+        archiveTypesLabel_font = archiveTypesLabel.font()
+        archiveTypesLabel_font.setBold(True)
+        archiveTypesLabel.setFont(archiveTypesLabel_font)
+        self.archiveTypesLineEdit = QtWidgets.QLineEdit(self)
+        self.archiveTypesLineEdit.setText(str(SeaBASSHeader.settings["associated_archive_types"]))
+
         instrument_manufacturerLabel = QtWidgets.QLabel("instrument_manufacturer", self)
         instrument_manufacturerLabel_font = instrument_manufacturerLabel.font()
         instrument_manufacturerLabel_font.setBold(True)
@@ -118,11 +132,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.calibration_dateLineEdit = QtWidgets.QLineEdit(self)
         self.calibration_dateLineEdit.setText(str(SeaBASSHeader.settings["calibration_date"]))
 
-        # These will always be refreshed from the ConfigFile
-        SeaBASSHeader.refreshCalibrationFiles()
+        # # These will always be refreshed from the ConfigFile
+        # SeaBASSHeader.refreshCalibrationFiles()
         calibration_filesLabel = QtWidgets.QLabel("calibration_files", self)
         self.calibration_filesLineEdit = QtWidgets.QLineEdit(self)
-        self.calibration_filesLineEdit.setText(str(SeaBASSHeader.settings["calibration_files"]))
+        self.calibration_filesLineEdit.setText(SeaBASSHeader.settings["calibration_files"])
 
         data_typeLabel = QtWidgets.QLabel("data_type", self)
         self.data_typeLineEdit = QtWidgets.QLineEdit(self)
@@ -197,7 +211,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         original_file_nameLabel = QtWidgets.QLabel("original_file_name", self)
         self.original_file_nameLineEdit = QtWidgets.QLineEdit(self)
-        self.original_file_nameLineEdit.setText(str(SeaBASSHeader.settings["original_file_name"]))
+        self.original_file_nameLineEdit.setText(SeaBASSHeader.settings["original_file_name"])
 
         start_dateLabel = QtWidgets.QLabel("start_date (RAW data should be in GMT)", self)
         self.start_dateLineEdit = QtWidgets.QLineEdit(self)
@@ -309,6 +323,16 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox9.addWidget(self.documentsLineEdit)
         VBox1.addLayout(HBox9)
 
+        HBox32 = QtWidgets.QHBoxLayout()
+        HBox32.addWidget(archivesLabel)
+        HBox32.addWidget(self.archivesLineEdit)
+        VBox1.addLayout(HBox32)
+
+        HBox33 = QtWidgets.QHBoxLayout()
+        HBox33.addWidget(archiveTypesLabel)
+        HBox33.addWidget(self.archiveTypesLineEdit)
+        VBox1.addLayout(HBox33)
+
         HBox27 = QtWidgets.QHBoxLayout()
         HBox27.addWidget(instrument_manufacturerLabel)
         HBox27.addWidget(self.instrument_manufacturerLineEdit)
@@ -390,7 +414,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox2.addLayout(HBox30)
 
         # VBox1.addSpacing(20)
-
 
         HBox6 = QtWidgets.QHBoxLayout()
         HBox6.addWidget(stationLabel)
@@ -480,7 +503,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # This will update subsequently from the ConfigFile on demand
 
         # First try to fill left column metadata headers using the Ancillary fill if provided.
-        #   Only when opening, not when saving 
+        #   Only when opening, not when saving
         if caller == 'config1' and not os.environ["HYPERINSPACE_CMD"].lower() == 'true': # os.environ must be string
             fp = MainConfig.settings["ancFile"]
             if not os.path.isfile(fp):
@@ -489,7 +512,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                 metaHeaders = AncillaryReader.readAncillaryHeader(fp)
                 for key,value in metaHeaders.items():
                     # The ancillary file may cover a whole cruise, so only use the general metadata, not the specific
-                    omitList = ['data_file_name','calibration_files','data_status','station','documents','start_date','end_date',\
+                    omitList = ['data_file_name','calibration_files','data_status','station','documents',\
+                                'associated_archives','associated_archive_types',\
+                                'start_date','end_date',\
                                 'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
                                     'measurement_depth','water_depth','fields','units']
                     if key in SeaBASSHeader.settings and \
@@ -497,19 +522,18 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                             and key not in omitList:
                         SeaBASSHeader.settings[key] = value
 
-        if ConfigFile.settings["SensorType"].lower() == "trios es only":
+        if ConfigFile.settings["SensorType"].lower() in ["trios es only"]:
+            # Keep So-Rad as the instrument manufacturer, but change model to RAMSES
             SeaBASSHeader.settings['instrument_manufacturer'] = 'TriOS'
         else:
             SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
-        if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only']:
+        if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only','sorad']:
             SeaBASSHeader.settings['instrument_model'] = 'RAMSES'
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             SeaBASSHeader.settings['instrument_model'] = 'HyperOCR'
         if ConfigFile.settings['SensorType'].lower() == 'dalec':
             SeaBASSHeader.settings['instrument_model'] = 'DALEC'
 
-        # NOTE: Need to capture the calibration date for the SeaBASS file header
-        
         if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
         else:
@@ -687,6 +711,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["platform_id"] = self.platformLineEdit.text()
 
         SeaBASSHeader.settings["documents"] = self.documentsLineEdit.text()
+
+
         SeaBASSHeader.settings["calibration_files"] = self.calibration_filesLineEdit.text()
         SeaBASSHeader.settings["data_type"] = self.data_typeLineEdit.text()
         SeaBASSHeader.settings["data_status"] = self.data_statusLineEdit.text()
@@ -736,6 +762,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.stationLineEdit.setText(str(SeaBASSHeader.settings["station"]))
         self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform_id"]))
         self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
+
+
         self.instrument_manufacturerLineEdit.setText(str(SeaBASSHeader.settings["instrument_manufacturer"]))
         self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
         self.calibration_dateLineEdit.setText(str(SeaBASSHeader.settings["calibration_date"]))
