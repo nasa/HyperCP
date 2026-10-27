@@ -322,7 +322,7 @@ class ProcessL1aTriOS:
         if 'DateTime' not in data.columns:
             dt = pd.to_datetime(data.IDData.str[6:], format='%Y-%m-%d_%H-%M-%S_%f', utc=True)
             # Convert from seconds since 1970-01-01 to days since 1900-01-01
-            dt = ((datetime(1970, 1, 1) - datetime(1900, 1, 1)).total_seconds() + dt.to_numpy(dtype=float)/10**9) / 86400
+            dt = (dt - pd.Timestamp("1900-01-01", tz="UTC")).dt.total_seconds() / 86400
             # Add two days to match legacy format
             dt += 2
             # Insert Column at position 0
