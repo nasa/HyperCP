@@ -5,6 +5,7 @@ import json
 from tempfile import NamedTemporaryFile
 
 from Source import PATH_TO_CONFIG
+from Source import PATH_TO_DATA
 
 
 class MainConfig:
@@ -48,6 +49,10 @@ class MainConfig:
                 raise ValueError(f"Config file {configPath} is empty.")
             fullCollection = json.loads(content, object_pairs_hook=collections.OrderedDict)
             for key, value in fullCollection.items():
+                if isinstance(value,str) and PATH_TO_DATA in value:
+                    value = value.replace(PATH_TO_DATA,'./Data')
+                if isinstance(value,str) and PATH_TO_CONFIG in value:
+                    value = value.replace(PATH_TO_CONFIG,'./Config')
                 MainConfig.settings[key] = value
 
     # Generates the default configuration
@@ -55,12 +60,13 @@ class MainConfig:
     def createDefaultConfig(fileName, version):
         # print("MainConfig - Set MainConfig settings defaults prior to populating with saved settings.")
 
+        # Make all paths relative to HyperCP
         MainConfig.settings["cfgFile"] = fileName
         MainConfig.settings["cfgPath"] = os.path.join('./Config',fileName)
         MainConfig.settings["version"] = version
-        MainConfig.settings["inDir"] = './Data'
-        MainConfig.settings["outDir"] = './Data'
+        MainConfig.settings["inDir"] = './Data/Sample_Data'
+        MainConfig.settings["outDir"] = './Data/Sample_Data'
         MainConfig.settings["ancFileDir"] = './Data/Sample_Data'
         MainConfig.settings["ancFile"] = ""
         MainConfig.settings["popQuery"] = 0
-        MainConfig.settings["deleteConfig"] = False
+        MainConfig.settings["deleteConfig"] = False # Avoids saving a deleted configuration (ConfigFile) into the MainConfig settings

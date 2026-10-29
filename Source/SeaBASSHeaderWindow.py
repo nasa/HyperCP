@@ -505,7 +505,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # First try to fill left column metadata headers using the Ancillary fill if provided.
         #   Only when opening, not when saving
         if caller == 'config1' and not os.environ["HYPERINSPACE_CMD"].lower() == 'true': # os.environ must be string
-            fp = MainConfig.settings["ancFile"]
+            fp = os.path.join(MainConfig.settings["ancFileDir"],MainConfig.settings["ancFile"])
             if not os.path.isfile(fp):
                 print("Specified ancillary file not found: " + fp)
             else:
@@ -517,6 +517,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                                 'start_date','end_date',\
                                 'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
                                     'measurement_depth','water_depth','fields','units']
+                    # Only replace if empty or "temp"
                     if key in SeaBASSHeader.settings and \
                         (SeaBASSHeader.settings[key] == '' or SeaBASSHeader.settings[key] == 'temp') \
                             and key not in omitList:
