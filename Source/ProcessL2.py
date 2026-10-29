@@ -1361,7 +1361,7 @@ class ProcessL2:
             satellite_bands_subset[sat] = b[(350 <= b) & (b <= 1000)].tolist()
 
         # %% Format data and Propagate Uncertainties
-        # ** unpacks the values from dictionaries 
+        # ** unpacks the values from dictionaries
         x_slice = {
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},

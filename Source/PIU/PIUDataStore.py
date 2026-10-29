@@ -257,6 +257,10 @@ class PIUDataStore:
             radcal_raw = self.readTriOSCal(grp, uncGrp, raw_slices[s_type], s_type)
             Nlin_CB_string = "CLASS_RAMSES_RADIANCE"
             calDate_string = f"{s_type}_L1AQC"
+        elif instrument == 'dalec':
+            #TODO: Placeholder for DALEC
+            writeLogFileAndPrint(f"{instrument} not yet implemented")
+            raise NotImplementedError
         else:
             writeLogFileAndPrint(f"{instrument} not yet implemented")
             raise NotImplementedError
@@ -276,7 +280,7 @@ class PIUDataStore:
         S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
         S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
 
-        if instrument in ["trios", "trios es only"]:  # if trios then convert to same units as signal
+        if instrument in ["trios", "trios es only", "sorad"]:  # if trios then convert to same units as signal
             S1 = S1/65535.0
             S2 = S2/65535.0
             S1_unc = np.asarray(S1_unc/65535.0, dtype=float)
