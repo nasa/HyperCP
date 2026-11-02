@@ -213,15 +213,13 @@ class unc_management:
         except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.
         """
 
-        grp = node.getGroup("RAW_UNCERTAINTIES")
-        # sensorId = unc_management.get_sensor_dict(node)
-        # grp.datasets
         sensor_list = []
         for grp in node.groups:
             for s in ['ES', 'LI', 'LT']:
                 if s in grp.id and not s in sensor_list:
                     sensor_list.append(s)
 
+        grp = node.getGroup("RAW_UNCERTAINTIES")
         for sensor in sensor_list:
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()

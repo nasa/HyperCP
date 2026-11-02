@@ -18,6 +18,7 @@ import time
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from Source import PACKAGE_DIR as CODE_HOME
+from Source import PATH_TO_DATA
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
@@ -28,6 +29,8 @@ from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 # from Source.Utilities import Utilities
 import Source.utils.filing as filing
 
+# import traceback
+
 VERSION = "1.2.19"
 
 
@@ -35,17 +38,16 @@ class Window(QtWidgets.QWidget):
     """Window is the main GUI container"""
 
     def __init__(self, parent=None):
-        self.inputDirectory = ""
-        self.outputDirectory = ""
-        self.ancFileDir = ""
-
         super().__init__(parent)
 
-        icon_path = os.path.join(os.path.dirname(__file__), 'Data', 'Img', 'logo.ico')
-        # load_icon = Image.open(icon_path)
-        # render = ImageTk.PhotoImage(load_icon)  # Loads the given icon
-        # app.iconphoto(False, render)
+        self._initial_load_done = False
+        self._is_updating_config = False
+        self.inputDirectory = ""
+        self.outputDirectory = ""
+        self.ancFile = ""
+        self.ancFileDir = ""
 
+        icon_path = os.path.join(os.path.dirname(__file__), 'Data', 'Img', 'logo.ico')
         self.setWindowIcon(QtGui.QIcon(icon_path))
 
         # Create - if inexistent - directories Plots, Config and Logs
@@ -72,6 +74,7 @@ class Window(QtWidgets.QWidget):
 
         self.initUI()
 
+
     def initUI(self):
         """Initialize the user interface"""
         # Main window configuration restore
@@ -87,8 +90,9 @@ class Window(QtWidgets.QWidget):
             MainConfig.settings["outDir"] = CODE_HOME
         if not os.path.isdir(MainConfig.settings["ancFileDir"]):
             MainConfig.settings["ancFileDir"] = CODE_HOME
-        if not os.path.isfile(MainConfig.settings["ancFile"]):
-            MainConfig.settings["ancFile"] = CODE_HOME
+        if not os.path.isfile(
+            os.path.join(MainConfig.settings["ancFileDir"],MainConfig.settings["ancFile"])):
+            MainConfig.settings["ancFile"] = ""
 
         # Banner
         banner = QtWidgets.QLabel(self)
@@ -145,7 +149,7 @@ class Window(QtWidgets.QWidget):
             "Ancillary Data File (SeaBASS format; MUST USE UTC)"
         )
         self.ancFileLineEdit = QtWidgets.QLineEdit()
-        self.ancFileLineEdit.setText(str(MainConfig.settings["ancFile"]))
+        self.ancFileLineEdit.setText(MainConfig.settings["ancFile"]) # Should not contain full path
         self.ancFileDir = MainConfig.settings["ancFileDir"]
         self.ancAddButton = QtWidgets.QPushButton("Add", self)
         self.ancRemoveButton = QtWidgets.QPushButton("Remove", self)
@@ -272,44 +276,94 @@ class Window(QtWidgets.QWidget):
         # MainConfig.saveConfig(MainConfig.fileName)
 
     def comboBox1Changed(self, value):
+        if self._is_updating_config or not value:
+            return
+
+        # Echo loop guard
+        if self._initial_load_done and value == MainConfig.settings.get('cfgFile'):
+            return
+
+        index = self.configComboBox.findText(value)
+
+        # FSM signal block
+        self.configComboBox.blockSignals(True)
+
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
+
         # Save prior Config
-        if value != MainConfig.settings['cfgFile']:
-            if not MainConfig.settings['cfgFile']:
-                MainConfig.settings['cfgFile'] = value
-            if MainConfig.settings['deleteConfig'] is False:
+        configPath = os.path.join(CODE_HOME, "Config", value)
+        if value != MainConfig.settings.get('cfgFile'):
+            # if not MainConfig.settings.get('cfgFile'):
+            #     # In case the prior combo box was empty
+            #     MainConfig.settings['cfgFile'] = value
+            # Allow for deleting the old config, and should block saving over new config
+            if MainConfig.settings.get('deleteConfig', False) is False and MainConfig.settings.get('cfgFile'):
                 ConfigFile.saveConfig(MainConfig.settings['cfgFile'])
             MainConfig.settings["cfgFile"] = value
-        index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
-        self.configComboBox.setCurrentIndex(index)
-        # print("MainConfig: Configuration file changed to: ", value)
-        # MainConfig.saveConfig(MainConfig.fileName)
-        configFileName = self.configComboBox.currentText()
-        configPath = os.path.join(CODE_HOME, "Config", configFileName)
+            # Save as relative. cfgPath includes path and file (unlike ancFilePath)
+            MainConfig.settings["cfgPath"] = configPath.replace(CODE_HOME,'.')
+
         if os.path.isfile(configPath):
-            ConfigFile.loadConfig(configFileName)
-            if 'inDir' in ConfigFile.settings:
-                if not os.path.isdir(ConfigFile.settings['inDir']):
-                    ConfigFile.settings['inDir'] = './Data'
-                MainConfig.settings["inDir"] = ConfigFile.settings['inDir']
-                if not os.path.isdir(ConfigFile.settings['outDir']):
-                    ConfigFile.settings['outDir'] = './Data'
-                MainConfig.settings["outDir"] = ConfigFile.settings['outDir']
-                if not os.path.isdir(ConfigFile.settings['ancFileDir']):
-                    ConfigFile.settings['ancFileDir'] = './Data'
-                MainConfig.settings["ancFileDir"] = ConfigFile.settings['ancFileDir']
-                if not os.path.isfile(ConfigFile.settings['ancFile']):
-                    ConfigFile.settings['ancFile'] = ''
-                MainConfig.settings["ancFile"] = ConfigFile.settings['ancFile']
-                self.inputDirectory = ConfigFile.settings['inDir']
-                self.outputDirectory = ConfigFile.settings['outDir']
-                self.ancFileDir = ConfigFile.settings['ancFileDir']
-                # self.anc = ConfigFile.settings['ancFile']
-                self.inDirButton.setText(MainConfig.settings["inDir"])
-                self.outDirButton.setText(MainConfig.settings["outDir"])
-                self.ancFileLineEdit.setText(
-                    os.path.join(MainConfig.settings['ancFileDir'],MainConfig.settings["ancFile"]))
-        # ConfigFile.saveConfig(value)
-        # MainConfig.saveConfig(MainConfig.fileName)
+            # Load in the new configuration from file
+            ConfigFile.loadConfig(value)
+
+            # Set all sample data (internal repo) configuration paths to be relative for users
+            for key in ['inDir', 'outDir', 'ancFileDir']:
+                if key in ConfigFile.settings and PATH_TO_DATA in ConfigFile.settings[key]:
+                    ConfigFile.settings[key] = ConfigFile.settings[key].replace(PATH_TO_DATA, './Data')
+
+            # Check existence without breaking relative paths
+            def validate_dir(path_str):
+                if not path_str:
+                    return ''
+                # Convert back to absolute path JUST for the os check, to prevent false negatives
+                check_path = path_str.replace('./Data', PATH_TO_DATA) if path_str.startswith('./Data') else path_str
+                return path_str if os.path.isdir(check_path) else './Data'
+
+            ConfigFile.settings['inDir'] = validate_dir(ConfigFile.settings.get('inDir', './Data'))
+            ConfigFile.settings['outDir'] = validate_dir(ConfigFile.settings.get('outDir', './Data'))
+            ConfigFile.settings['ancFileDir'] = validate_dir(ConfigFile.settings.get('ancFileDir', ''))
+            anc_dir_check = \
+                ConfigFile.settings['ancFileDir'].replace('./Data', PATH_TO_DATA) if \
+                    ConfigFile.settings['ancFileDir'].startswith('./Data') else ConfigFile.settings['ancFileDir']
+            anc_file = ConfigFile.settings.get('ancFile', '')
+            if not os.path.isfile(os.path.join(anc_dir_check, anc_file)):
+                ConfigFile.settings['ancFile'] = ''
+
+            # Update memory
+            MainConfig.settings["inDir"] = ConfigFile.settings['inDir']
+            MainConfig.settings["outDir"] = ConfigFile.settings['outDir']
+            MainConfig.settings["ancFileDir"] = ConfigFile.settings['ancFileDir']
+            MainConfig.settings["ancFile"] = ConfigFile.settings['ancFile']
+            self.inputDirectory = ConfigFile.settings['inDir']
+            self.outputDirectory = ConfigFile.settings['outDir']
+            self.ancFileDir = ConfigFile.settings['ancFileDir']
+            self.ancFile = ConfigFile.settings['ancFile']
+
+            # Update GUI
+            self.inDirButton.setText(self.inputDirectory)
+            self.outDirButton.setText(self.outputDirectory)
+            # anc_to_paint = os.path.join(self.ancFileDir, ConfigFile.settings['ancFile']) if\
+            #      ConfigFile.settings['ancFile'] else ""
+            self.ancFileLineEdit.setText(ConfigFile.settings['ancFile'])
+
+        ConfigFile.saveConfig(value)
+        MainConfig.saveConfig(MainConfig.fileName)
+
+        self._initial_load_done = True
+        self.configComboBox.blockSignals(False)
+        # Sync combobox
+        if index >= 0:
+            self.configComboBox.setCurrentIndex(index)
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config)
+
+    def _unlock_config(self):
+        """Helper to release the lock after echoes have passed."""
+        self._is_updating_config = False
+
 
     def configNewButtonPressed(self):
         # print("New Config Dialogue")
@@ -366,6 +420,10 @@ class Window(QtWidgets.QWidget):
 
     def configDeleteButtonPressed(self):
         # print("Delete Config Dialogue")
+
+        if self._is_updating_config:
+            return
+
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join(CODE_HOME, "Config", configFileName)
         if os.path.isfile(configPath):
@@ -387,68 +445,113 @@ class Window(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Error", message)
         # MainConfig.saveConfig(MainConfig.fileName)
 
+        QtCore.QTimer.singleShot(100, self._unlock_config) # Sets _is_updating_config to False
+
     def inDirButtonPressed(self):
-        temp = self.inputDirectory
-        self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Choose Directory.", self.inputDirectory
+        newDir = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Choose Directory.", self.inputDirectory,options=QtWidgets.QFileDialog.ShowDirsOnly
         )
-        if self.inputDirectory == "":
-            self.inputDirectory = temp
-        if self.inputDirectory == "":
-            self.inputDirectory = os.path.join(CODE_HOME, "/Data")
-        print("Data input directory changed: ", self.inputDirectory)
+
+        if self._is_updating_config or not newDir:
+            return
+
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
+        if PATH_TO_DATA in newDir:
+            newDir = newDir.replace(PATH_TO_DATA,'./Data')
+        self.inputDirectory = newDir
+        MainConfig.settings["inDir"] = newDir
+        ConfigFile.settings["inDir"] = newDir
+
+        current_config_file = self.configComboBox.currentText()
+        ConfigFile.saveConfig(current_config_file)
+        MainConfig.saveConfig(MainConfig.fileName)
+
         self.inDirButton.setText(self.inputDirectory)
-        MainConfig.settings["inDir"] = self.inputDirectory
-        ConfigFile.settings["inDir"] = self.inputDirectory
-        # MainConfig.saveConfig(MainConfig.fileName)
+
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config) # Sets _is_updating_config to False
+
         return self.inputDirectory
 
     def outDirButtonPressed(self):
-        temp = self.outputDirectory
-        self.outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
+        newDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
             self.outputDirectory,
-            # options=self.options
+            options=QtWidgets.QFileDialog.ShowDirsOnly
         )
-        if self.outputDirectory == "":
-            self.outputDirectory = temp
-        if self.outputDirectory == "":
-            self.outputDirectory = os.path.join(CODE_HOME, "Data", "Sample_Data")
+
+        if self._is_updating_config or not newDir:
+            return
+
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
+        if PATH_TO_DATA in newDir:
+            newDir = newDir.replace(PATH_TO_DATA,'./Data')
+        self.outputDirectory = newDir
+        MainConfig.settings["outDir"] = newDir
+        ConfigFile.settings["outDir"] = newDir
+
         print("Data output directory changed: ", self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
         print("      automatically, unless they already exist.")
+        current_config_file = self.configComboBox.currentText()
+        ConfigFile.saveConfig(current_config_file)
+        MainConfig.saveConfig(MainConfig.fileName)
+
         self.outDirButton.setText(self.outputDirectory)
-        MainConfig.settings["outDir"] = self.outputDirectory
-        ConfigFile.settings["outDir"] = self.outputDirectory
-        # MainConfig.saveConfig(MainConfig.fileName)
-        # ConfigFile.saveConfig(ConfigFile.filename)
+
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config)
+
         return self.outputDirectory
 
     def outInDirButtonPressed(self):
+
+        if self._is_updating_config:
+            return
+
         self.outputDirectory = self.inputDirectory
         print("Data output directory changed: ", self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
         print("      automatically, unless they already exist.")
-        self.outDirButton.setText(self.outputDirectory)
+
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
         MainConfig.settings["outDir"] = self.outputDirectory
         ConfigFile.settings["outDir"] = self.outputDirectory
-        # MainConfig.saveConfig(MainConfig.fileName)
-        # ConfigFile.saveConfig(ConfigFile.filename)
+        current_config_file = self.configComboBox.currentText()
+        ConfigFile.saveConfig(current_config_file)
+        MainConfig.saveConfig(MainConfig.fileName)
+
+        self.outDirButton.setText(self.outputDirectory)
+
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config)
+
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
-        # print("Ancillary File Add Dialogue")
+        '''Ancillary File Add Dialogue")'''
+
+        if self._is_updating_config:
+            return
+        
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
         if self.ancFileDir == "":
-            self.ancFileDir = (
-                self.inputDirectory
-            )  # Reverts to Input directory first
+            # Reverts to Input directory first
+            self.ancFileDir = self.inputDirectory
+            # Falls back to ./Data/Sample_Data
             if self.ancFileDir == "":
-                self.ancFileDir = os.path.join(
-                    CODE_HOME, "Data", "Sample_Data"
-                )  # Falls back to ./Data/Sample_Data
-        MainConfig.settings["ancFileDir"] = self.ancFileDir
-        ConfigFile.settings["ancFileDir"] = self.ancFileDir
+                self.ancFileDir = os.path.join(PATH_TO_DATA, "Sample_Data")
+        # MainConfig.settings["ancFileDir"] = self.ancFileDir
+        # ConfigFile.settings["ancFileDir"] = self.ancFileDir
 
         fnames = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select Ancillary Data File", self.ancFileDir,
@@ -456,23 +559,45 @@ class Window(QtWidgets.QWidget):
         )
         if any(fnames):
             print(fnames)
-            if len(fnames[0]) == 1:
-                self.ancFileLineEdit.setText(fnames[0][0])
-            MainConfig.settings["ancFile"] = fnames[0][0]  # unclear why this sometimes does not "take" the first time
-            ConfigFile.settings["ancFile"] = fnames[0][0]
-        # MainConfig.saveConfig(MainConfig.fileName)
-        # ConfigFile.saveConfig(ConfigFile.filename)
+            ancDir = os.path.split(fnames[0][0])[0]
+            ancFile = os.path.split(fnames[0][0])[1]
+            if PATH_TO_DATA in ancDir:
+                ancDir = ancDir.replace(PATH_TO_DATA,'./Data')
+            MainConfig.settings["ancFileDir"] = ancDir
+            MainConfig.settings["ancFile"] = ancFile
+            ConfigFile.settings["ancFileDir"] = ancDir
+            ConfigFile.settings["ancFile"] = ancFile
+            MainConfig.saveConfig(MainConfig.fileName)
+            ConfigFile.saveConfig(ConfigFile.filename)
+            self.ancFileDir = ancDir
+            self.ancFile = ancFile
+
+            self.ancFileLineEdit.setText(ancFile)
+
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config)
 
     def ancRemoveButtonPressed(self):
         # print("Wind File Remove Dialogue")
-        self.ancFileLineEdit.setText("")
+
+        if self._is_updating_config:
+            return
+
+        # Secondary echo loop guard
+        self._is_updating_config = True
+
         MainConfig.settings["ancFile"] = ""
         ConfigFile.settings["ancFile"] = ""
         self.ancFileDir = ""
         MainConfig.settings["ancFileDir"] = ""
         ConfigFile.settings["ancFileDir"] = ""
-        # MainConfig.saveConfig(MainConfig.fileName)
-        # ConfigFile.saveConfig(ConfigFile.filename)
+        MainConfig.saveConfig(MainConfig.fileName)
+        ConfigFile.saveConfig(ConfigFile.filename)
+
+        self.ancFileLineEdit.setText("")
+
+        # Unlock it after a tiny delay so the file system echo gets ignored
+        QtCore.QTimer.singleShot(100, self._unlock_config)
 
     def processSingle(self, lvl):
         # print("Process Single-Level")
@@ -480,8 +605,8 @@ class Window(QtWidgets.QWidget):
         t0Single = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        MainConfig.settings["cfgPath"] = os.path.join(
-            CODE_HOME, "Config", configFileName)
+        #NOTE: Unline ancillary path/file, cfgPath is a full path WITH filename
+        MainConfig.settings["cfgPath"] = os.path.join("./Config", configFileName)
         if not os.path.isfile(MainConfig.settings["cfgPath"]):
             message = "Not valid Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
@@ -554,8 +679,7 @@ class Window(QtWidgets.QWidget):
 
     def closeEvent(self, event):
         configFileName = self.configComboBox.currentText()
-        MainConfig.settings["cfgPath"] = os.path.join(
-            CODE_HOME, "Config", configFileName)
+        # MainConfig.settings["cfgPath"] = os.path.join("./Config", configFileName)
         MainConfig.saveConfig(MainConfig.fileName)
         ConfigFile.saveConfig(configFileName)
         event.accept()
@@ -581,7 +705,7 @@ class Window(QtWidgets.QWidget):
         t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join(CODE_HOME, "Config", configFileName)
+        configPath = os.path.join("./Config", configFileName)
         MainConfig.settings["cfgPath"] = configPath
         if not os.path.isfile(configPath):
             message = "Not valid Config File: " + configFileName
@@ -667,7 +791,8 @@ class Command:
         self.inputDirectory = os.path.join(dataDirectory, from_level)
         self.outputDirectory = dataDirectory
         self.level = to_level
-        self.ancFile = anc
+        self.ancFileDir = os.path.split(anc)[0]
+        self.ancFile = os.path.split(anc)[1]
 
         super().__init__()
 
@@ -700,6 +825,7 @@ class Command:
         MainConfig.settings["cfgPath"] = configFP
         MainConfig.settings["version"] = VERSION
         MainConfig.settings["ancFile"] = self.ancFile
+        MainConfig.settings["ancFileDir"] = self.ancFileDir
         MainConfig.settings["outDir"] = self.outputDirectory
 
         if isinstance(iFile,list):
@@ -845,7 +971,7 @@ if __name__ == "__main__":
     inputFile = args.inputFile
     outputDirectory = args.outputDirectory
     level = args.level
-    ancFile = args.ancFile
+    ancFile = args.ancFile #Full path file
     multiLevel = args.multiLevel
 
     # If the cmd argument is given, run the Command class without the GUI

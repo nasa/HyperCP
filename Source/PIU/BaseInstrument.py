@@ -139,7 +139,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     f"{path.splitext(ConfigFile.filename)[0]}_Calibration"
                 )
 
-                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileName']]
+                cf = CalibrationFileReader.read(calPath)[gp.attributes['CalFileNameFactory']]
                 cal_int_time = np.array(
                     [float(cd.coefficients[3]) if len(cd.coefficients) >= 4 else np.nan for cd in cf.data]
                 )
@@ -904,7 +904,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rrsDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Rrs)
         nlwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_nLw)
 
-        UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
+        # UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
+        UNCS["rhoUNC_HYPER"] = {f'{wvl:.3f}': val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"]  = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
         UNCS["nlwUNC"] = nlwDelta

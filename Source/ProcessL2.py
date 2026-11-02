@@ -1286,7 +1286,7 @@ class ProcessL2:
 
         slice_std = {k: {str(wl): [std_interp[0]*np.average(data_slice[k][wl])] for wl, std_interp in stats[k]['Signal_std_Interpolated'].items()}
                     for k, sliceData in data_slice.items()}  # standard deviation is relative to signal - i.e. in %
-        
+
         satellite_slice_std = {satellite: {k: convolve_to_satellite[satellite](sliceData)
                                 for k, sliceData in slice_std.items()}
                                 for satellite in convolve_to_satellite}
@@ -1361,7 +1361,7 @@ class ProcessL2:
             satellite_bands_subset[sat] = b[(350 <= b) & (b <= 1000)].tolist()
 
         # %% Format data and Propagate Uncertainties
-        # ** unpacks the values from dictionaries 
+        # ** unpacks the values from dictionaries
         x_slice = {
             **{k.lower(): v for k, v in slice_mean.items()},
             **{k.lower() + 'Median': v for k, v in slice_median.items()},
@@ -1983,7 +1983,11 @@ class ProcessL2:
                             node.attributes[f'{sensorType}_STOP_PIXEL'] = grp.datasets[ds].attributes['CAL_STOP']
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                testGroup = '_LIGHT_L1AQC'
+            else:
+                testGroup = '_L1AQC'
+            if grp.id.endswith(testGroup): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
