@@ -592,7 +592,7 @@ can be found in the /Data directory.
 The **Bulgarelli et al. 2026** model (B26) provides spectral glint correction factors for typical inland, coastal and
 open-ocean waters, accounting for spectral and atmospheric dependencies. They are computed for the measurement geometry
 applied in AERONET-OC ($\phi$ = 90°, $\theta$ = 40°, as endorsed by the ocean color community to support satellite data
-validation) and tabulated by wavelength (340-1020 nm), solar zenith angle (10°-80°), wind speed (0-10 m s$^{-1}$) and
+validation) and tabulated by wavelength (340-1020 nm), solar zenith angle (10°-80°), wind speed (0-10 m/s) and
 aerosol optical depth at 560 nm (0.05-0.50). Environmental parameters are supplied as for Z17. Users can select the aerosol
 type, which has only a minor effect: maritime (MA, open ocean), continental (CO, inland waters) or mixed (MX, coastal zones;
 default). Unlike M99, which uses only the total sky radiance, B26 offers factors computed from either the total sky radiance
