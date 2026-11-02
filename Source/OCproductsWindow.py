@@ -597,7 +597,7 @@ class OCproductsWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2WeightMODISA"] = 1
 
         ConfigFile.saveConfig(ConfigFile.filename)
-        print(f'Departing ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
+        # print(f'Departing ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
         self.close()
 
     def cancelButtonPressed(self):

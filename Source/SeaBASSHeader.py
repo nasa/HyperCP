@@ -30,6 +30,10 @@ class SeaBASSHeader:
         print("data_file_name", SeaBASSHeader.settings["data_file_name"])
         print("original_file_name", SeaBASSHeader.settings["original_file_name"])
         print("documents", SeaBASSHeader.settings["documents"])
+
+        print("associated_archives", SeaBASSHeader.settings["associated_archives"])
+        print("associated_archive_types", SeaBASSHeader.settings["associated_archive_types"])
+        
         print("calibration_files", SeaBASSHeader.settings["calibration_files"])
 
         print("instrument_manufacturer", SeaBASSHeader.settings["instrument_manufacturer"])
@@ -80,9 +84,13 @@ class SeaBASSHeader:
 
         SeaBASSHeader.settings["documents"] = 'README.md'
 
+        SeaBASSHeader.settings["associated_archives"] = 'cruise_experiment_L2_HDF_associated.tgz,cruise_experiment_Reports_associated.tgz'
+        SeaBASSHeader.settings["associated_archive_types"] = 'hypercp_l2_hdf,metadata'
+
         SeaBASSHeader.settings["instrument_manufacturer"] = ''
         SeaBASSHeader.settings["instrument_model"] = ''
         SeaBASSHeader.settings["calibration_date"] = ''
+        SeaBASSHeader.settings["calibration_files"] = ''
         SeaBASSHeader.refreshCalibrationFiles()
 
         SeaBASSHeader.settings["data_type"] = 'above_water'
@@ -324,10 +332,20 @@ class SeaBASSHeader:
     @staticmethod
     def refreshCalibrationFiles():
         # print("SeaBASSHeader - refreshCalibrationFiles")
-        calibrationPath = ConfigFile.getCalibrationDirectory()
-        files = os.listdir(calibrationPath)
-        if ConfigFile.settings['fL1bCal'] != 3:
-            # Only keep the full characterization files if running Full FRM
-            files = [item for item in files if not item.startswith('CP')]
 
+        # Include here the factory-type files that intialize the configuration. L1b will add FidRadDB RADCAL files as needed
+        # if ConfigFile.settings['fL1bCal'] == 1:
+        extensions = {'.cal','.dat','.ini'}
+        calibrationPath = ConfigFile.getCalibrationDirectory()
+        files = [file for file in
+                 os.listdir(calibrationPath) if os.path.splitext(file)[1].lower() in extensions]
         SeaBASSHeader.settings["calibration_files"] = ','.join(files)
+        # else:
+            # SeaBASSHeader.settings["calibration_files"] = ''
+        # SeaBASSHeader object updated in ProcessL1b to reflect FidRadDB fileset rather than factory.
+            # Only keep the full characterization files if running Full FRM
+            # files = [item for item in files if not item.startswith('CP')]
+            # files = []
+            # for sensors in ConfigFile.settings['neededCalCharsFRM']:
+            #     files.append(f'{RADCALFILE}')
+        

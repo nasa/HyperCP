@@ -41,7 +41,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.photoDT = None
 
         #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
-        self.ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
+        self.ancillaryData = Controller.processAncData(
+            os.path.join(MainConfig.settings["ancFileDir"],MainConfig.settings["ancFile"]))
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')

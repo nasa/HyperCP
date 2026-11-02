@@ -400,7 +400,7 @@ class Controller:
             print('No such input file: ' + inFilePath)
             return None
 
-        # Process the data
+        # Read in the L1AQC file
         logging.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
@@ -409,6 +409,7 @@ class Controller:
             logging.errorWindow("File Error", msg)
             logging.writeLogFileAndPrint(msg)
             return None
+        
         if ConfigFile.settings["SensorType"].lower() in ["sorad", "trios", "trios es only"]:
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
@@ -502,7 +503,7 @@ class Controller:
             if (
                 ConfigFile.settings['bL2UncertaintyBreakdownPlot']  # unc selected in config
                 and plotDeltaBool  # we can do plots
-                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc plots not implemented for ES only
+                and ConfigFile.settings["SensorType"].lower() != "trios es only"  # unc breakdown plots not implemented for ES only
             ):
                 plotting.plotUncertainties(node, filename)
 
@@ -530,7 +531,6 @@ class Controller:
                     plotting.plotRadiometry(node, filename, rType='LT', plotDelta = plotDeltaBool)
 
             # IOPs
-            # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
             if ConfigFile.products["bL2PlotProd"] == 1 and ConfigFile.settings["SensorType"].lower() != "trios es only":
                 print('Plotting L2 Derived Products')
                 if ConfigFile.products["bL2ProdadgQaa"]:
@@ -540,7 +540,7 @@ class Controller:
                 if ConfigFile.products["bL2ProdbbpQaa"]:
                     plotting.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
-                # This puts ag, Sg, and DOC on the same plot
+                # Puts ag, Sg, and DOC on the same plot
                 if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                     and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
                     plotting.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
@@ -563,9 +563,9 @@ class Controller:
             logging.writeLogFileAndPrint(msg)
             return None
 
-    # Process every file in a list of files 1 level
+
+
     @staticmethod
-    # def processSingleLevel(pathOut, inFilePath, calibrationMap, level, flag_Trios):
     def processSingleLevel(pathOut, inFilePath, calibrationMap, level):
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
@@ -636,7 +636,8 @@ class Controller:
                     Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
-                ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
+                ancillaryData = Controller.processAncData(
+                    os.path.join(MainConfig.settings["ancFileDir"],MainConfig.settings["ancFile"]))
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
@@ -734,6 +735,33 @@ class Controller:
                     f"uncertainty pathway in configuration. Currently set to {currentRegime} regime.")
                 return False
 
+            # Update SeaBassHeaders
+            if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                # Update SeaBASS headers
+                # We have up to three calibration dates, but SB only has one header. Use Es.
+                # if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    # NOTE: Now pulling from L1BQC file
+                    # CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
+                CalDate = root.getGroup('IRRADIANCE').datasets['ES'].attributes['CalibrationDate'][0:8]
+                # else:
+                #     CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                SeaBASSHeader.settings['calibration_date'] = CalDate
+                # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
+                # SeaBASSHeader.settings['original_file_name'] = os.path.split(root.attributes['RAW_FILE_NAME'][-1])
+                SeaBASSHeader.settings['original_file_name'] = root.attributes['RAW_FILE_NAME']
+                if SeaBASSHeader.settings['version'] == 'R0':
+                    SeaBASSHeader.settings['data_status'] = 'preliminary'
+                else:
+                    SeaBASSHeader.settings['data_status'] = 'final'
+                if ConfigFile.settings['bL2WriteReport']:
+                    SeaBASSHeader.settings['associated_archives'] = \
+                        f"{SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_L2_HDF_associated.tgz," \
+                            + f"{SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_Reports_associated.tgz"
+                else:
+                    SeaBASSHeader.settings['associated_archives'] = \
+                        f"{SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_L2_HDF_associated.tgz"
+                SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+
 
             ##### Loop over this whole section for each station in the file where appropriate ####
             if ConfigFile.settings["bL2Stations"]:
@@ -778,32 +806,35 @@ class Controller:
 
                                 # Write SeaBASS
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                                    # Update SeaBASS headers
-                                    # We have up to three calibration dates, but SB only has one header. Use Es.
-                                    if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                                        CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
-                                    else:
-                                        CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
-                                    SeaBASSHeader.settings['calibration_date'] = CalDate
-                                    # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
-                                    if SeaBASSHeader.settings['version'] == 'R0':
-                                        SeaBASSHeader.settings['data_status'] = 'preliminary'
-                                    else:
-                                        SeaBASSHeader.settings['data_status'] = 'final'
-                                    SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-
-
+                                    # # Update SeaBASS headers
+                                    # # We have up to three calibration dates, but SB only has one header. Use Es.
+                                    # if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                                    #     CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
+                                    # else:
+                                    #     CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                                    # SeaBASSHeader.settings['calibration_date'] = CalDate
+                                    # # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
+                                    # if SeaBASSHeader.settings['version'] == 'R0':
+                                    #     SeaBASSHeader.settings['data_status'] = 'preliminary'
+                                    # else:
+                                    #     SeaBASSHeader.settings['data_status'] = 'final'
+                                    # if ConfigFile.settings['bL2WriteReport']:
+                                    #     SeaBASSHeader.settings['associated_archives'] = \
+                                    #         f"{SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_L2_HDF_associated.tgz,\
+                                    #             {SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_Reports_associated.tgz"
+                                    # else:
+                                    #     SeaBASSHeader.settings['associated_archives'] = \
+                                    #         f"{SeaBASSHeader.settings['experiment']}_{SeaBASSHeader.settings['cruise']}_L2_HDF_associated.tgz"
+                                    # SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
                                     logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePathStation}')
                                     sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePathStation)
 
-                                    # If this is being output to SeaBASS later, add a root attribute
-                                    # with the SeaBASS filename base (i.e., not rrs or es)
+                                    # If this is being output to SeaBASS later, add a root attribute with the SeaBASS filename base (i.e., not Rrs or Es)
                                     baseName = sbFileName[0:sbFileName.find('L2')-1]
                                     # Need to reopen the station L2 to update the attribute
                                     stationRoot = HDFRoot.readHDF5(outFilePathStation)
                                     stationRoot.attributes['SeaBASS_File_Name_Base'] = baseName
                                     stationRoot.writeHDF5(outFilePathStation)
-                                # return True
 
                         # Write L2 report for each station, regardless of pass/fail
                         if ConfigFile.settings["bL2WriteReport"] == 1:
@@ -828,25 +859,23 @@ class Controller:
 
                         # Write SeaBASS
                         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                            # Update SeaBASS headers
-                            # We have up to three calibration dates, but SB only has one header. Use Es.
-                            if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                                CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
-                            else:
-                                CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
-                            SeaBASSHeader.settings['calibration_date'] = CalDate
-                            # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
-                            if SeaBASSHeader.settings['version'] == 'R0':
-                                SeaBASSHeader.settings['data_status'] = 'preliminary'
-                            else:
-                                SeaBASSHeader.settings['data_status'] = 'final'
-                            SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-
+                            # # Update SeaBASS headers
+                            # # We have up to three calibration dates, but SB only has one header. Use Es.
+                            # if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                            #     CalDate = root.attributes['ES_LIGHT_L1AQC_CalibrationDate'][0:8]
+                            # else:
+                            #     CalDate = root.attributes['ES_L1AQC_CalibrationDate'][0:8]
+                            # SeaBASSHeader.settings['calibration_date'] = CalDate
+                            # # SeaBASSHeader.settings['original_file_name'] = root.attributes['L0_FILENAME']
+                            # if SeaBASSHeader.settings['version'] == 'R0':
+                            #     SeaBASSHeader.settings['data_status'] = 'preliminary'
+                            # else:
+                            #     SeaBASSHeader.settings['data_status'] = 'final'
+                            # SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
                             logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePath}')
                             sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePath)
 
-                            # If this is being output to SeaBASS later, add a root attribute
-                            # with the SeaBASS filename base (i.e., not rrs or es)
+                            # Add a root attribute with the SeaBASS filename base (i.e., not Rrs or Es)
                             baseName = sbFileName[0:sbFileName.find('L2')-1]
                             root.attributes['SeaBASS_File_Name_Base'] = baseName
                             root.writeHDF5(outFilePath)

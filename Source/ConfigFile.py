@@ -31,8 +31,8 @@ class ConfigFile:
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
-        ConfigFile.settings["inDir"] = './Data'
-        ConfigFile.settings["outDir"] = './Data'
+        ConfigFile.settings["inDir"] = './Data/Sample_Data'
+        ConfigFile.settings["outDir"] = './Data/Sample_Data'
         ConfigFile.settings["ancFileDir"] = './Data/Sample_Data'
         ConfigFile.settings["ancFile"] = ""
         ConfigFile.settings["CalibrationFiles"] = {}
@@ -230,11 +230,10 @@ class ConfigFile:
     def saveConfig(filename):
         # import traceback
         # print("saveConfig was called from:")
-        # traceback.print_stack() 
-        # print(f"ConfigFile - Save Config: {filename}")
+        # traceback.print_stack()
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
-        # params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
+
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
         lock = threading.Lock()
@@ -288,7 +287,6 @@ class ConfigFile:
         else:
             print(f'####### Configuration {filename} not found. Using defaults. No cals.############')
 
-
     # Deletes a config
     @staticmethod
     def deleteConfig(filename):
@@ -300,12 +298,12 @@ class ConfigFile:
             if os.path.isfile(seabassPath):
                 os.remove(seabassPath)
         if os.path.isfile(configPath):
-            shutil.rmtree(ConfigFile.getCalibrationDirectory())
-            # Tricky, because the MainConfig pulldown change will save the old config before opening the new one, by default
-            ConfigFile.filename = ''#filename
-            MainConfig.settings['cfgFile'] = ''
+            # Block saving ConfigFile on combo box change:
             MainConfig.settings['deleteConfig'] = True
+            ConfigFile.filename = '' # Blanks out the fields ready for new choice of configs
+            MainConfig.settings['cfgFile'] = ''
             os.remove(configPath)
+            shutil.rmtree(ConfigFile.getCalibrationDirectory())
 
     @staticmethod
     def getCalibrationDirectory():
