@@ -136,7 +136,7 @@ class SeaBASSHeader:
             cleanRotFilt = "On"
         else:
             cleanRotFilt = "Off"
-        if ConfigFile.settings["bL1aqcCleanSunAngle"]:
+        if ConfigFile.settings["bL1aqcFilterRelAz"]:
             cleanRelAzFilt = "On"
         else:
             cleanRelAzFilt = "Off"
@@ -228,8 +228,8 @@ class SeaBASSHeader:
             f'! Rotator Min = {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'+\
             f'! Rotator Max = {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'+\
             f'! Rel Azimuth Filter = {cleanRelAzFilt}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcRelAzMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcRelAzMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
             f'! ES Dark Window = {ConfigFile.settings["fL1aqcESWindowDark"]}\n'+\
             f'! ES Light Window = {ConfigFile.settings["fL1aqcESWindowLight"]}\n'+\

@@ -208,9 +208,9 @@ class ProcessL1aqc:
         if ConfigFile.settings['bL1aqcRotatorAngle']:
             node.attributes['ROT_ANGLE_MIN'] = ConfigFile.settings['fL1aqcRotatorAngleMin']
             node.attributes['ROT_ANGLE_MAX'] = ConfigFile.settings['fL1aqcRotatorAngleMax']
-        if ConfigFile.settings['bL1aqcCleanSunAngle']:
-            node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1aqcSunAngleMin']
-            node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1aqcSunAngleMax']
+        if ConfigFile.settings['bL1aqcFilterRelAz']:
+            node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1aqcRelAzMin']
+            node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1aqcRelAzMax']
 
         # Reorganize groups with new names
         for gp in node.groups:
@@ -954,12 +954,12 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        if node is not None and int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
+        if node is not None and int(ConfigFile.settings["bL1aqcFilterRelAz"]) == 1:
             logging.writeLogFileAndPrint("Filtering file for bad Relative Solar Azimuth")
             logging.writeLogFileAndPrint(f"    Source of Relative Solar Azimuth data: {relAzSource}")
 
-            relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
-            relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
+            relAzimuthMin = float(ConfigFile.settings["fL1aqcRelAzMin"])
+            relAzimuthMax = float(ConfigFile.settings["fL1aqcRelAzMax"])
 
             i = 0
             start = -1
