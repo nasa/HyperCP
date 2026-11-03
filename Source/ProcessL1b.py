@@ -407,7 +407,8 @@ class ProcessL1b:
 
     @staticmethod
     def read_unc_coefficient_frm(root, classbased_dir):
-        ''' SeaBird or TriOS.  ProcessL1bTriOS also redirects here. '''
+        ''' SeaBird or TriOS or Dalec.  ProcessL1bTriOS also redirects here. '''
+        ''' And hopefully Dalec too'''
         # Read Uncertainties_new_char from provided files
         # gp = root.addGroup("RAW_UNCERTAINTIES")
         # gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later

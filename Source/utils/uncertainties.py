@@ -78,12 +78,12 @@ class unc_management:
     @staticmethod
     def interpUncertainties_Factory(node):
 
-        grp = node.getGroup("RAW_UNCERTAINTIES")
+        unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         sensor_list = []
         # Only add sensors we have in case of ES-ONLY
-        for grp in node.groups:
+        for g in node.groups:
             for s in ['ES', 'LI', 'LT']:
-                if s in grp.id and not s in sensor_list:
+                if s in g.id and not s in sensor_list:
                     sensor_list.append(s)
 
         for sensor in sensor_list:
@@ -98,7 +98,7 @@ class unc_management:
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
             for data_type in ["_RADCAL_UNC"]:
-                ds = grp.getDataset(sensor+data_type)
+                ds = unc_grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 x = ds.columns['wvl']
                 y = ds.columns['unc']
@@ -114,7 +114,7 @@ class unc_management:
                 ]:
                 # "_STRAYDATA_CAL"
                 try:
-                    ds = grp.getDataset(f"{sensor}{dtype}")
+                    ds = unc_grp.getDataset(f"{sensor}{dtype}")
                     ds.datasetToColumns()
                 except AttributeError:
                     pass
@@ -134,11 +134,11 @@ class unc_management:
         
         :param node: HDF root containing uncertainties group
         """
-        grp = node.getGroup("RAW_UNCERTAINTIES")
+        unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         sensor_list = []
-        for grp in node.groups:
+        for g in node.groups:
             for s in ['ES', 'LI', 'LT']:
-                if s in grp.id and not s in sensor_list:
+                if s in g.id and not s in sensor_list:
                     sensor_list.append(s)#
 
         for sensor in sensor_list:
@@ -154,7 +154,7 @@ class unc_management:
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(node.getGroup(grp_name).getDataset(sensor).data).columns, dtype=float)
             # RADCAL data does not need interpolation, just removing the first line
-            ds = grp.getDataset(f"{sensor}_RADCAL_CAL")
+            ds = unc_grp.getDataset(f"{sensor}_RADCAL_CAL")
             ds.datasetToColumns()
             for indx in range(len(ds.columns)):
                 indx_name = str(indx)
@@ -171,7 +171,7 @@ class unc_management:
                 "_ANGDATA_COSERROR", "_ANGDATA_COSERROR_RANGE60-90"
                 ]:
                 try:
-                    ds = grp.getDataset(f"{sensor}{dtype}")
+                    ds = unc_grp.getDataset(f"{sensor}{dtype}")
                     ds.datasetToColumns()
                 except AttributeError:
                     pass
@@ -207,35 +207,80 @@ class unc_management:
             ds.columns['1'] = x_new
 
     @staticmethod
+    def _interp_columns_to_wvl(ds, x_new):
+        """
+        Interpolate every data column of ds (columns '1'...'n') onto x_new, using
+        column '0' as the original wavelength axis, then replace column '0' by x_new.
+        """
+        ds.datasetToColumns()
+        x = ds.columns['0']
+        for indx in range(1, len(ds.columns)):
+            y = ds.columns[str(indx)]
+            ds.columns[str(indx)] = np.interp(x_new, x, y)
+        ds.columns['0'] = x_new
+        ds.columnsToDataset()
+
+    @staticmethod
     def interpUncertainties_FullChar(node):
         """
         For full char, all input comes already with a wavelength columns,
         except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.
         """
 
+        # grp = node.getGroup("RAW_UNCERTAINTIES")
+        # # sensorId = unc_management.get_sensor_dict(node)
+        # # grp.datasets
+        # sensor_list = []
+        # for grp in node.groups:
+        #     for s in ['ES', 'LI', 'LT']:
+        #         if s in grp.id and not s in sensor_list:
+        #             sensor_list.append(s)
+
+        unc_grp = node.getGroup("RAW_UNCERTAINTIES")
+        print("Datasets in RAW_UNCERTAINTIES:", list(unc_grp.datasets.keys()))
+        print("Sensor dict:", unc_management.get_sensor_dict(node))
+
         sensor_list = []
-        for grp in node.groups:
+        for g in node.groups:
             for s in ['ES', 'LI', 'LT']:
-                if s in grp.id and not s in sensor_list:
+                if s in g.id and s not in sensor_list:
                     sensor_list.append(s)
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         for sensor in sensor_list:
-            ds = grp.getDataset(sensor+"_RADCAL_CAL")
+            ds = unc_grp.getDataset(sensor + "_RADCAL_CAL")
+            if ds is None:
+                print(f"ERROR: {sensor}_RADCAL_CAL not found. Available: {list(unc_grp.datasets.keys())}")
+                return False            
             ds.datasetToColumns()
-            bands = np.array(ds.columns['1'][1:]) # Drop 0th pixel from _RADCAL file of 256 from local variable
-            # coeff = np.array(ds.columns['2'][1:])
-            valid = bands>0 # Flag unreported bands from _RADCAL file of 255
+            #bands = np.array(ds.columns['1'][1:]) # Drop 0th pixel from _RADCAL file of 256 from local variable
+            ## coeff = np.array(ds.columns['2'][1:])
+            #valid = bands>0 # Flag unreported bands from _RADCAL file of 255
+            col = np.array(ds.columns['1'], dtype=float)
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
             data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only"]:
+            elif ConfigFile.settings['SensorType'].lower() in ["sorad", "trios", "trios es only", "dalec"]:
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Wavelengths of reported sensor data:
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
+
+            bands = None
+            for candidate in (col[1:], col):
+                if np.count_nonzero(candidate > 0) == len(x_new):
+                    bands = candidate
+                    break
+            if bands is None:
+                print(f"ERROR: Reported bands in _RADCAL file do not match sensor data bands ({sensor})")
+                print("RADCAL rows:", len(col), "| reported (>0) after dropping 0th:", np.count_nonzero(col[1:] > 0),
+                      "| reported (>0) without dropping:", np.count_nonzero(col > 0))
+                print("Sensor bands:", len(x_new))
+                return False
+
+            valid = bands > 0 # Flag unreported bands from _RADCAL file of 255
 
             # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
@@ -246,7 +291,7 @@ class unc_management:
 
             ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
-                ds = grp.getDataset(sensor+data_type)
+                ds = unc_grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 x = ds.columns['0']
                 for indx in range(1,len(ds.columns)):
@@ -259,7 +304,7 @@ class unc_management:
             ## RADCAL_PANEL: interplation only for Li & Lt
             if sensor != "ES":
                 for data_type in ["_RADCAL_PANEL"]:
-                    ds = grp.getDataset(sensor+data_type)
+                    ds = unc_grp.getDataset(sensor+data_type)
                     ds.datasetToColumns()
                     x = ds.columns['0']
                     for indx in range(1,len(ds.columns)):
@@ -274,6 +319,15 @@ class unc_management:
     @staticmethod
     def get_sensor_dict(node):
         sensorID = {}
+        sensor_type = ConfigFile.settings['SensorType'].lower()
+
+        if sensor_type == 'dalec':
+        # 'DAL_0011_159825_RADCAL' -> 'DAL_0011_159825'
+            for sensor, tags in ConfigFile.settings['neededCalCharsFRM'].items():
+                if tags:
+                    sensorID[tags[0].rsplit('_', 1)[0]] = sensor
+            return sensorID
+    
         for grp in node.groups:
             # if "CalFileName" in grp.attributes:
             if ConfigFile.settings['SensorType'].lower() == 'seabird':

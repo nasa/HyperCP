@@ -34,9 +34,15 @@ def UncTempCorrection(node):
 
         # CAPSONTEMP only available for TriOS.
         sigmaT = None
-        if ConfigFile.settings['SensorType'].lower() == "seabird" or \
-            ConfigFile.settings['SensorType'].lower() == "dalec":
-            sensorGroup = node.getGroup(f'{sensor}_LIGHT')
+        sensor_type = ConfigFile.settings['SensorType'].lower()
+
+        if sensor_type == "seabird" or sensor_type == "dalec":
+            # SeaBird groups are named ES_LIGHT etc.; DALEC groups are named ES, LI, LT
+            grpName = f'{sensor}_LIGHT' if sensor_type == "seabird" else sensor
+            sensorGroup = node.getGroup(grpName)
+            if sensorGroup is None:
+                logging.writeLogFileAndPrint(f"{sensor}: group {grpName} not found")
+                return False
             if "SPECTEMP" in sensorGroup.datasets:
                 specTEMP = sensorGroup.getDataset("SPECTEMP")
                 meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
