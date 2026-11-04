@@ -166,17 +166,19 @@ class ProcessL1aSoRad:
 
             elif gp.id.split('_')[0] == 'sorad':
                 #  Need to convert to f8 format (f32 in Sorad L0 HDF)
-                gp.datasets["LATITUDE"].data = np.array((gp.datasets["LATITUDE"].data).astype(int), dtype=[('NONE', '<f8')])
-                gp.datasets["LONGITUDE"].data = np.array((gp.datasets["LONGITUDE"].data).astype(int), dtype=[('NONE', '<f8')])
-                gp.datasets["TILT_STD"].data = np.array((gp.datasets["TILT_STD"].data).astype(int), dtype=[('NONE', '<f8')])
-                # NOTE: Unclear why TILT is off by 90 degrees on So-Rad
-                # gp.datasets["TILT"].data = np.array((gp.datasets["TILT"].data).astype(int), dtype=[('NONE', '<f8')])
-                gp.datasets["TILT"].data = np.array(
-                    abs(90-(gp.datasets["TILT"].data)).astype(int), dtype=[('NONE', '<f8')])
-                gp.datasets["REL_AZ"].data = np.array((gp.datasets["REL_AZ"].data).astype(int), dtype=[('NONE', '<f8')])
-                gp.datasets["GPS_SPEED"].data = np.array((gp.datasets["GPS_SPEED"].data).astype(int), dtype=[('NONE', '<f8')])
+                gp.datasets["LATITUDE"].data = np.array(gp.datasets["LATITUDE"].data, dtype=[('NONE', '<f8')])
+                gp.datasets["LONGITUDE"].data = np.array(gp.datasets["LONGITUDE"].data, dtype=[('NONE', '<f8')])
+                gp.datasets["TILT_STD"].data = np.array(gp.datasets["TILT_STD"].data, dtype=[('NONE', '<f8')])
+                # NOTE: Unclear why TILT is sometimes off by 90 degrees on So-Rad                
+                if np.mean([gp.datasets["TILT"].data.min(), gp.datasets["TILT"].data.max()]) > 45:
+                    gp.datasets["TILT"].data = np.array(
+                        abs(90-(gp.datasets["TILT"].data)), dtype=[('NONE', '<f8')])
+                else:
+                    gp.datasets["TILT"].data = np.array(gp.datasets["TILT"].data, dtype=[('NONE', '<f8')])
+                gp.datasets["REL_AZ"].data = np.array(gp.datasets["REL_AZ"].data, dtype=[('NONE', '<f8')])
+                gp.datasets["GPS_SPEED"].data = np.array(gp.datasets["GPS_SPEED"].data, dtype=[('NONE', '<f8')])
 
-            # write file (FPP snytax has been re-used, even though it us not needed here)   
+            # write file (FPP snytax has been re-used, even though it us not needed here)
             # file_name = input_path.split('/')[-1][:-6]
             # outFFP = []
             # outFFP.append(os.path.join(output_path, f'{file_name}_L1A.hdf'))
