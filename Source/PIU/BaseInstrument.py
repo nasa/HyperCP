@@ -14,7 +14,7 @@ import comet_maths as cm
 # Source
 from Source.ConfigFile import ConfigFile
 from Source.HDFGroup import HDFGroup
-from Source.HDFRoot import HDFRoot
+# from Source.HDFRoot import HDFRoot
 from Source.Weight_RSR import Weight_RSR
 
 # PIU
@@ -230,7 +230,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     {k: [darkData[k][i] for i in y] for k in darkData} if (y is not None) and (darkData is not None) else darkData,
                     s_type,
                 ]  # stores arguments for lightdarkstats method - this is necessary because abstract methods may have different input arguments
-                stats[s_type] = self.lightDarkStats(*[a for a in args if a is not None])  # calls self.lightDarkStats - 
+                stats[s_type] = self.lightDarkStats(*[a for a in args if a is not None])  # calls self.lightDarkStats -
                 # should call abstracted method will return error if used directly from BaseInstrument and not child class
             except (ValueError, IndexError, KeyError):
                 # catches errors and reports it to pdf
@@ -254,8 +254,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return False
 
     def ClassBasedL1A(
-            self, 
-            uncGrp: HDFGroup, 
+            self,
+            uncGrp: HDFGroup,
             PDS: PIUDataStore,
             stats: dict[str, np.array],
         ) -> Union[Tuple[dict[str, dict], dict[str, dict]], Tuple[bool, None]]:
@@ -311,7 +311,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ones, ones, ones,
         ]
 
-        # list of numpy arrays containing the input uncertainties for calulating combined total uncertainty for ES, LI, & LT 
+        # list of numpy arrays containing the input uncertainties for calulating combined total uncertainty for ES, LI, & LT
         uncertainties = [
             stats['ES']['std_Light'][PDS.l1ACommonCalPix],
             stats['ES']['std_Dark'][PDS.l1ACommonCalPix],
@@ -464,7 +464,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 ) for k,v in BD_UNCS['LT'].items()
             }
 
-        # interpolation step is used to put uncertainties to common wavebands used for outputting all other L2 products. 
+        # interpolation step is used to put uncertainties to common wavebands used for outputting all other L2 products.
         # We want the uncertainties (and breakdowns) to match the output spectrally to be meaningful
         return out, BD_UNCS
 
@@ -710,7 +710,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         BD_UNCS['Lw']  = {k: um.convertToRelative(BD_UNCS['Lw'][k],  lw)     for k in BD_UNCS['Lw']}  # convert all to relative units
         BD_UNCS['Rrs'] = {k: um.convertToRelative(BD_UNCS['Rrs'][k], rrs)    for k in BD_UNCS['Rrs']}
         BD_UNCS['nLw'] = {k: um.convertToRelative(BD_UNCS['nLw'][k], rrs*f0) for k in BD_UNCS['nLw']}
-       
+
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
         esUNC_band = np.array([i[0] for i in xSlice['esUnc'].values()])
@@ -904,7 +904,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rrsDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_Rrs)
         nlwDelta = UNC_Obj_FRM.MCP.process_samples(None, sample_nLw)
 
-        # UNCS["rhoUNC_HYPER"] = {str(wvl): val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["rhoUNC_HYPER"] = {f'{wvl:.3f}': val for wvl, val in zip(waveSubset, rhoDelta)}
         UNCS["lwUNC"]  = lwDelta  # Multiply by large number to reduce round off error
         UNCS["rrsUNC"] = rrsDelta
@@ -1095,10 +1094,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
             # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
             # be returned to ProcessingL2 and used to update xSlice/xUNC
-            # Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
-            # Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
-            # Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
-            # Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
             Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, esDeltaBand)}
             Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, liDeltaBand)}
             Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, ltDeltaBand)}

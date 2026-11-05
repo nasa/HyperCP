@@ -1,6 +1,4 @@
 
-import logging
-
 import numpy as np
 import xarray as xr
 import Source.ocbrdf.ocbrdf_main as oc_brdf
@@ -184,9 +182,9 @@ class ProcessL2BRDF():
                                             np.array(list(brdf_unc[f"{meas}_hyper"].values()))[:, station], # BRDF unc in refltectance units
                                             platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                         )
-                                    ## This clause only covers satellite, so can use simple str(k)
-                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = \
+                                        {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength  # 1 x 165
@@ -201,7 +199,6 @@ class ProcessL2BRDF():
                                         meas_uncs[station, :] = np.sqrt(np.array(OC_BRDF.brdf_unc.isel(n=station).values)**2 * hyperspec[f"{meas}_hyper"][station, :]**2)
                                     brdf_unc[f"{meas}_hyper"] = {
                                         f'{k:.3f}': list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
-                                        # str(k): list(v) for k, v in zip(wavelength, np.array(meas_uncs).T)
                                     }  # turn BRDF uncs into dict so we can convolve uncs
 
                         for k in Rrs:
@@ -247,7 +244,7 @@ class ProcessL2BRDF():
                                 if 'BRDF_method' not in bd_grp.attributes or not bd_grp.attributes['BRDF_method']:
                                     bd_grp.attributes['BRDF_method'] = [BRDF_option]
                                 elif BRDF_option not in bd_grp.attributes['BRDF_method']:
-                                    bd_grp.attributes['BRDF_method'].append(BRDF_option)                                
+                                    bd_grp.attributes['BRDF_method'].append(BRDF_option)
 
                                 bd_rrs = bd_grp.addDataset(f"{ds}_BRDF")
                                 bd_rrs.columns = {k: v if isinstance(v, list) else [v] for k,v in brdf_unc["Rrs_hyper"].items()}

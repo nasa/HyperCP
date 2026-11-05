@@ -502,7 +502,6 @@ class Propagate:
     def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for S3A using Source.Weight_RSR"""
 
-        # hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
         hyperspec_as_dict = {f'{k:.3f}': [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processSentinel3Bands(
             hyperspec_as_dict, sensor='A'
