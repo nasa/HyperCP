@@ -1008,7 +1008,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             # in def_sensor_mfunc.
 
             Band_Convolved_UNC[f"esUNC_{sensor_name}"] = {
-                str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)
+                f'{k:.3f}': [val] for k, val in zip(RSR_Bands, esDeltaBand)
             }
 
             liDeltaBand = prop_Band_CB.band_Conv_Uncertainty(
@@ -1017,7 +1017,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 sensor_key
             )
             Band_Convolved_UNC[f"liUNC_{sensor_name}"] = {
-                str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)
+                f'{k:.3f}': [val] for k, val in zip(RSR_Bands, liDeltaBand)
             }
 
             ltDeltaBand = prop_Band_CB.band_Conv_Uncertainty(
@@ -1026,7 +1026,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 sensor_key
             )
             Band_Convolved_UNC[f"ltUNC_{sensor_name}"] = {
-                str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)
+                f'{k:.3f}': [val] for k, val in zip(RSR_Bands, ltDeltaBand)
             }
 
             rhoDeltaBand = prop_Band_CB.band_Conv_Uncertainty(
@@ -1035,7 +1035,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 sensor_key
             )
             Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {
-                str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)
+                f'{k:.3f}': [val] for k, val in zip(RSR_Bands, rhoDeltaBand)
             }
 
             Band_Convolved_UNC[f"lwUNC_{sensor_name}"] = prop_Band_CB.Propagate_Lw_Convolved(
@@ -1095,10 +1095,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
             # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
             # be returned to ProcessingL2 and used to update xSlice/xUNC
-            Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
-            Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
-            Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
-            Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
+            # Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+            # Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, liDeltaBand)}
+            # Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {str(k): [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
+            # Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {str(k): [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
+            Band_Convolved_UNC[f"esUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, esDeltaBand)}
+            Band_Convolved_UNC[f"liUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, liDeltaBand)}
+            Band_Convolved_UNC[f"ltUNC_{sensor_name}"]  = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, ltDeltaBand)}
+            Band_Convolved_UNC[f"rhoUNC_{sensor_name}"] = {f'{k:.3f}': [val] for k, val in zip(RSR_Bands, rhoDeltaBand)}
             # L2 uncertainty products can be reported as np arrays
             Band_Convolved_UNC[f"lwUNC_{sensor_name}"]  = MCP_obj.MCP.process_samples(None, sample_lw_conv)
             Band_Convolved_UNC[f"rrsUNC_{sensor_name}"] = MCP_obj.MCP.process_samples(None, sample_rrs_conv)

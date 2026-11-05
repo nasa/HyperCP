@@ -461,7 +461,8 @@ class ProcessL2:
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
             rhoUNC = xUNC[f'rhoUNC_{sensor}']
             for i, wvl in enumerate(waveSubset):
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                # k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k =  f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # More robust (able to handle sensor and hyper bands
@@ -476,7 +477,8 @@ class ProcessL2:
         else:
             # factory case
             for wvl in waveSubset:
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                # k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k =  f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # old version had issues with '.0'
@@ -490,7 +492,8 @@ class ProcessL2:
         deleteKey = []
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
             # k = str(wvl)
-            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            # k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            k =  f'{wvl:.3f}'
             if (any(wvl == float(x) for x in esXSlice) and
                 any(wvl == float(x) for x in liXSlice) and
                 any(wvl == float(x) for x in ltXSlice)):
@@ -556,14 +559,20 @@ class ProcessL2:
                             newNIRnLwData.columns['NIR_offset'] = []
 
                 # At this waveband (k); still using complete wavelength set
-                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
+                try:
+                    es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
+                except:
+                    print('error')
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
                 esRemaining = np.asarray(esXRemaining[k]) # array of remaining ensemble values in this band
                 liRemaining = np.asarray(liXRemaining[k])
                 ltRemaining = np.asarray(ltXRemaining[k])
-                f0 = F0[k]
-                f0UNC = F0_unc[k]
+                try:
+                    f0 = F0[k]
+                    f0UNC = F0_unc[k]
+                except:
+                    print('error')
 
                 esMedian = esXmedian[k][0]
                 liMedian = liXmedian[k][0]
@@ -826,12 +835,14 @@ class ProcessL2:
         else:
             # factory case
             for wvl in waveSubset:
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                # k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k = f'{wvl:.3f}'
                 if any([wvl == float(x) for x in esXSlice]):
                     esUNC[k] = 0
 
         for wvl in waveSubset:
-            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            # k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            k =  f'{wvl:.3f}'
             if any([wvl == float(x) for x in esXSlice]):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
@@ -1468,7 +1479,8 @@ class ProcessL2:
                             for i, v in enumerate(satellite_bands_subset[satellite[:-1]]):
                                 if str(v) in vals['ES'].keys():
                                     # we must ensure the band is included in radiometry selection
-                                    f0_band[i] = satellite_f0[satellite[:-1]][str(v)]
+                                    # f0_band[i] = satellite_f0[satellite[:-1]][str(v)]
+                                    f0_band[i] = satellite_f0[satellite[:-1]][f'{v:.3f}']
                             nlw_band = rrs_band * f0_band
                         except ValueError:
                             print("here")

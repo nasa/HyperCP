@@ -184,9 +184,9 @@ class ProcessL2BRDF():
                                             np.array(list(brdf_unc[f"{meas}_hyper"].values()))[:, station], # BRDF unc in refltectance units
                                             platform=ds.split('_')[1]  # which satellite's bands we are integratng to
                                         )
-                                    # This clause only covers satellite, so can use simple str(k)
-                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
-                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    ## This clause only covers satellite, so can use simple str(k)
+                                    # brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {str(k): v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
+                                    brdf_unc[f"{meas}_{ds.split('_')[1].lower()}"] = {f'{k:.3f}': v if not isinstance(v, np.ndarray) else list(v) for k, v in zip(wavelength, brdf_unc_vals.T)}  # put in dictionary
                             else:
                                 # hyperspectral case must come first
                                 hyperspec["wvl_hyper"] = wavelength  # 1 x 165
