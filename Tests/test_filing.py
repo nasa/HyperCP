@@ -63,7 +63,7 @@ class TestZhangDownloads(unittest.TestCase):
         download(self.target, force=True)
         self.assertEqual(
             self.session.get.call_args.args[0],
-            f"https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/{self.target.name}",
+            f"https://oceancolor.gsfc.nasa.gov/fileshare/h4P9sT2cX7mN/{self.target.name}",
         )
 
     def set_target(self, filename):
