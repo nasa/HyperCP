@@ -419,7 +419,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonM99.setAutoExclusive(False)
         if ConfigFile.settings["bL2M99Rho"]==1:
             self.RhoRadioButtonM99.setChecked(True)
-        self.RhoRadioButtonM99.clicked.connect(self.l2RhoRadioButtonDefaultClicked)
+        self.RhoRadioButtonM99.clicked.connect(self.l2RhoRadioButtonM99Clicked)
 
         self.RhoRadioButtonZ17 = QtWidgets.QRadioButton("Zhang et al. (2017) ρ")
         self.RhoRadioButtonZ17.setAutoExclusive(False)
@@ -440,7 +440,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonB26.setDisabled(0)
         if ConfigFile.settings["bL2B26Rho"]==1:
             self.RhoRadioButtonB26.setChecked(True)
-        self.RhoRadioButtonB26.clicked.connect(self.l2RhoRadioButtonBulgarelliClicked)
+        self.RhoRadioButtonB26.clicked.connect(self.l2RhoRadioButtonB26Clicked)
 
         # Initialization of ancillary buttons NB: placed here because must come after Zhang button definition!
         # NB : the following are NOT "elif" blocks because bL1bGetAnc can change after each block.
@@ -1711,20 +1711,28 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2EnablePercentLt"] = 1
 
-    def l2RhoRadioButton3CClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to 3C")
-        self.RhoRadioButton3C.setChecked(True)
-        self.RhoRadioButtonZ17.setChecked(False)
-        self.RhoRadioButtonM99.setChecked(False)
-        self.RhoRadioButtonB26.setChecked(False)
-        ConfigFile.settings["bL23CRho"] = 1
-        ConfigFile.settings["bL2Z17Rho"] = 0
-        ConfigFile.settings["bL2M99Rho"] = 0
-        ConfigFile.settings["bL2B26Rho"] = 0
-        self.l2RhoUpdate()
+    def l2RhoRadioButtonM99Clicked(self):
+            # If switching from B26, restore RelAz L1AQC thresholds to defaults
+            if ConfigFile.settings["bL2B26Rho"] ==1:
+                ConfigFile.settings["fL1aqcRelAzMin"] = 87
+                ConfigFile.settings["fL1aqcRelAzMax"] = 138
+                self.l1aqcRelAzMinLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMin"]))
+                self.l1aqcRelAzMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMax"]))
+            self.RhoRadioButton3C.setChecked(False)
+            self.RhoRadioButtonZ17.setChecked(False)
+            self.RhoRadioButtonM99.setChecked(True)
+            self.RhoRadioButtonB26.setChecked(False)
+            ConfigFile.settings["bL23CRho"] = 0
+            ConfigFile.settings["bL2Z17Rho"] = 0
+            ConfigFile.settings["bL2M99Rho"] = 1
+            ConfigFile.settings["bL2B26Rho"] = 0
+            self.l2RhoUpdate()
 
     def l2RhoRadioButtonZhangClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to Zhang et al. 2017")
+        # If switching from B26, restore RelAz L1AQC thresholds to defaults
+        if ConfigFile.settings["bL2B26Rho"] ==1:
+            ConfigFile.settings["fL1aqcRelAzMin"] = 87
+            ConfigFile.settings["fL1aqcRelAzMax"] = 138
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZ17.setChecked(True)
         self.RhoRadioButtonM99.setChecked(False)
@@ -1739,19 +1747,22 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
         self.l2RhoUpdate()
 
-    def l2RhoRadioButtonDefaultClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to Mobley 1999")
-        self.RhoRadioButton3C.setChecked(False)
+    def l2RhoRadioButton3CClicked(self):
+        # If switching from B26, restore RelAz L1AQC thresholds to defaults
+        if ConfigFile.settings["bL2B26Rho"] ==1:
+            ConfigFile.settings["fL1aqcRelAzMin"] = 87
+            ConfigFile.settings["fL1aqcRelAzMax"] = 138
+        self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButtonZ17.setChecked(False)
-        self.RhoRadioButtonM99.setChecked(True)
+        self.RhoRadioButtonM99.setChecked(False)
         self.RhoRadioButtonB26.setChecked(False)
-        ConfigFile.settings["bL23CRho"] = 0
+        ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2Z17Rho"] = 0
-        ConfigFile.settings["bL2M99Rho"] = 1
+        ConfigFile.settings["bL2M99Rho"] = 0
         ConfigFile.settings["bL2B26Rho"] = 0
         self.l2RhoUpdate()
 
-    def l2RhoRadioButtonBulgarelliClicked(self):
+    def l2RhoRadioButtonB26Clicked(self):
         # print("ConfigWindow - l2RhoCorrection set to Bulgarelli et al. 2026")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZ17.setChecked(False)
