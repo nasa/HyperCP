@@ -189,7 +189,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRelAzMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMax"]))
         self.l1aqcRelAzMaxLineEdit.setValidator(doubleValidator)
         self.l1aqcFilterRelAzCheckBoxUpdate()
-        
 
         self.l1aqcSunTrackerCheckBox.clicked.connect(self.l1aqcSunTrackerCheckBoxUpdate)
         self.l1aqcRotatorDelayCheckBox.clicked.connect(self.l1aqcRotatorDelayCheckBoxUpdate)
@@ -1426,7 +1425,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aqcRotatorAngle"] = 1
 
     def l1aqcFilterRelAzCheckBoxUpdate(self):
-        # print("ConfigWindow - l1aqcFilterRelAzCheckBoxUpdate")
+        # Force off for Es-Only
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            ConfigFile.settings["bL1aqcFilterRelAz"] = 0
+            self.l1aqcFilterRelAzCheckBox.setChecked(False)
 
         disabled = not self.l1aqcFilterRelAzCheckBox.isChecked()
         self.l1aqcRelAzMinLabel.setDisabled(disabled)
