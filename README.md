@@ -40,15 +40,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Contents:
 ### [Requirements and Installation](#requirements-and-installation)
+### [Alternative Bundle Installation](README_bundle.md)
 ### [Launch the Program](#3-launch-hypercp-for-the-first-time)
 ### [Quick Start Guide](#quick-start-overview)
 ### [Main Window](#main-window-description)
-### [Configuration Window (README_configuration.md)](README_configuration.md)
+### [Configuration Window](README_configuration.md)
 
 
 ## Requirements and Installation
 
-### 1. Get the HyperCP repository
+### 1. Get the HyperCP repository (see above for bundled releases)
 
 Clone this repository (branch: "master") to a convenient directory on your computer:
 
@@ -56,7 +57,7 @@ Clone this repository (branch: "master") to a convenient directory on your compu
 prompt$ git clone --depth 1 https://github.com/nasa/HyperCP.git /path/to/convenient/directory
 ```
 
-If you are, or plan to be, a HyperCP Team collaborator, or if you are interested in early release branches, drop '--depth 1' from the clone command. If you are unfamiliar with git or having difficulty with the anaconda environment, [bundled releases](https://github.com/nasa/HyperCP/releases) are available for Mac, Windows, and Linux. Go to the latest release (named for the Version above) and under Assets download and unzip the version for your operating system.
+If you are, or plan to be, a HyperCP Team collaborator, or if you are interested in early release branches, drop '--depth 1' from the clone command. If you are unfamiliar with git or having difficulty with the anaconda environment, [bundled releases](https://github.com/nasa/HyperCP/releases) are available for Mac, Windows, and Linux. Guide for bundled release is [here](README_bundle.md). Go to the latest release (named for the Version above) and under Assets download and unzip the version for your operating system.
 
 ### 2. Get the HyperCP environment
 
