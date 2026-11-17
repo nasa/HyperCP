@@ -209,8 +209,9 @@ class ProcessL1aSeaBird:
                         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
 
                         # NOTE: It would be good to add local time as a printed output with SZA
+                        # NOTE: Discards entire file for a single failing value.
                         if (90-np.nanmax(elevation)) > szaLimit:
-                            logging.writeLogFileAndPrint(f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}')
+                            logging.writeLogFileAndPrint(f'SZA too high. Discarding entire file. {round(90-np.nanmax(elevation))}')
                             return None
                         else:
                             if np.isnan(elevation).all():

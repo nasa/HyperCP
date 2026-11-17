@@ -523,11 +523,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                             and key not in omitList:
                         SeaBASSHeader.settings[key] = value
 
-        if ConfigFile.settings["SensorType"].lower() in ["trios es only"]:
+        if ConfigFile.settings["SensorType"].lower() in ["trios","trios es only","sorad"]:
             # Keep So-Rad as the instrument manufacturer, but change model to RAMSES
             SeaBASSHeader.settings['instrument_manufacturer'] = 'TriOS'
-        else:
-            SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
+        elif ConfigFile.settings["SensorType"].lower() in ["seabird"]:
+            SeaBASSHeader.settings['instrument_manufacturer'] = "Sea-Bird"
+        elif ConfigFile.settings["SensorType"].lower() in ["dalec"]:
+                    SeaBASSHeader.settings['instrument_manufacturer'] = "IMO"
+                    
         if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only','sorad']:
             SeaBASSHeader.settings['instrument_model'] = 'RAMSES'
         if ConfigFile.settings['SensorType'].lower() == 'seabird':

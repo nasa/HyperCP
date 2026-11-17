@@ -82,12 +82,10 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["cruise"] = name.split('.')[0] # I generally name configuration files after cruise.
         SeaBASSHeader.settings["platform_id"] = ''
 
-        
         if ConfigFile.settings['ancFile']:
             SeaBASSHeader.settings["documents"] = f"README.md,{ConfigFile.settings['ancFile']}"
         else:
             SeaBASSHeader.settings["documents"] = 'README.md'
-            
 
         SeaBASSHeader.settings["associated_archives"] = 'cruise_experiment_L2_HDF_associated.tgz,cruise_experiment_Reports_associated.tgz'
         SeaBASSHeader.settings["associated_archive_types"] = 'hypercp_l2_hdf,metadata'
@@ -320,7 +318,7 @@ class SeaBASSHeader:
                         time.sleep(1)
                         fullCollection = json.loads(f.read(), object_pairs_hook=collections.OrderedDict)
                     for key, value in fullCollection.items():
-                        if key in goodSettingsKeys:
+                        if key in goodSettingsKeys and value:
                             SeaBASSHeader.settings[key] = value
                     # SeaBASSHeader.createCalibrationFolder()
 
