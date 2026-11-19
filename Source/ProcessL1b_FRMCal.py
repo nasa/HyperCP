@@ -620,4 +620,48 @@ class ProcessL1b_FRMCal:
                 ds.columnsToDataset()
 
         return True
+
+# TODO: finish function
+
+    # def processL1b_DALEC(node, calibrationMap): 
     
+    #     esUnits = None
+    #     liUnits = None
+    #     ltUnits = None
+    #     pyrUnits = None
+
+    #     now = dt.now()
+    #     timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+    #     node.attributes["FILE_CREATION_TIME"] = timestr
+    #     loggingHCP.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
+
+    #     loggingHCP.writeLogFileAndPrint("Applying factory calibrations.")
+
+    #     for gp in node.groups:
+    #         # if 'L1AQC' not in gp.id and 'SATTHS' not in gp.id:
+    #         if gp.id in ['ES','LI','LT']: # May need to add additional calibrated instruments
+    #             loggingHCP.writeLogFileAndPrint(f'  Group: {gp.id}')
+    #             if "CalFileName" in gp.attributes:
+    #                 if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
+    #                     cf = calibrationMap[gp.attributes["CalFileNameFactory"]]
+    #                     #print(gp.id, gp.attributes)
+    #                     # loggingHCP.writeLogFileAndPrint(f'    File: {cf.id}')
+
+    #                     if esUnits is None:
+    #                         esUnits = cf.getUnits("ES")
+    #                     if liUnits is None:
+    #                         liUnits = cf.getUnits("LI")
+    #                     if ltUnits is None:
+    #                         ltUnits = cf.getUnits("LT")
+
+    #     # setup node attrs
+    #     node.attributes["LI_UNITS"] = liUnits
+    #     node.attributes["LT_UNITS"] = ltUnits
+    #     node.attributes["ES_UNITS"] = esUnits
+    #     node.attributes["L1AQC_UNITS"] = 'count'
+
+    #     unc_grp = node.getGroup('RAW_UNCERTAINTIES')
+
+    #     sensors = ['ES', 'LI', 'LT']
+
+    #     return True
