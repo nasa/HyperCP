@@ -3,8 +3,9 @@ import os
 import datetime as dt
 import numpy as np
 import pandas as pd
+from scipy import interpolate
 
-from Source import PATH_TO_CONFIG
+from Source import PATH_TO_DATA, PACKAGE_DIR as CODE_HOME
 from Source.ProcessL1b import ProcessL1b
 # from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
@@ -101,6 +102,210 @@ class ProcessL1bDALEC:
                 gp_l1aqc.attributes[key] = abc0
 
     @staticmethod
+    def _to_pixel_grid(v, valid):
+        ''' Put a vector on the 255-pixel RADCAL grid. LAMP/PANEL may come back from
+            um.interpUncertainties_FullChar as reported bands only (190) or as the full grid (255). '''
+        v = np.asarray(v, dtype=float)
+        out = np.zeros(len(valid))
+        if len(v) == len(valid):
+            return v
+        if len(v) == valid.sum():
+            out[valid] = v
+            return out
+        writeLogFileAndPrint(f'ProcessL1bDALEC: WARNING unexpected LAMP/PANEL length {len(v)}; padding with zeros like SeaBird.')
+        out[:len(v)] = v
+        return out
+
+    @staticmethod
+    def _thermal_temps(unc_grp, s):
+        ''' (T_ref, T_cal) for the Tartu thermal characterisation, or None if they are not in RAW_UNCERTAINTIES.
+            T_ref = REFERENCE_TEMP of the THERMAL file (cT is defined relative to it).
+            T_cal = AMBIENT_TEMP of the RADCAL file (temperature at which the lamp calibration was made),
+                    falling back to AMBIENT_TEMP of the THERMAL file.
+            Looks in the dataset attributes, then the group attributes (case-insensitive). '''
+        def find(holders, key):
+            for h in holders:
+                if h is None:
+                    continue
+                for k, v in h.attributes.items():
+                    if str(k).strip().upper() == key:
+                        try:
+                            return float(str(v).strip())
+                        except ValueError:
+                            pass
+            return None
+        th = unc_grp.datasets.get(s + '_TEMPDATA_CAL')
+        rc = unc_grp.datasets.get(s + '_RADCAL_CAL')
+        t_ref = find([th, unc_grp], 'REFERENCE_TEMP')
+        t_cal = find([rc], 'AMBIENT_TEMP')
+        if t_cal is None:
+            t_cal = find([th, unc_grp], 'AMBIENT_TEMP')
+        return None if (t_ref is None or t_cal is None) else (t_ref, t_cal)
+
+    @staticmethod
+    def processL1b_FRM(node, sensortype, delta_t_correction=True, thermal_temps=None):
+        ''' Full-FRM calibration of one DALEC sensor (ES, LI or LT), L1AQC -> L1B.
+            Same pattern as ProcessL1bTriOS.processDarkCorrection_FRM: one call per sensor, with the shared
+            maths (Zong straylight, cosine error) taken from ProcessL1b_FRMCal.
+
+            Expects in the node: RAW_UNCERTAINTIES (ProcessL1b.read_unc_coefficient_frm), CAL_COEF,
+            ES_L1AQC, and, for ES, SIXS_MODEL. The ES/LI/LT data are dark-UNcorrected counts with
+            DARK_CNT (dark-pixel mean, per spectrum), INTTIME and SPECTEMP datasets.
+
+            Order: dark -> non-linearity -> straylight* -> calibration -> thermal -> cosine* (ES)
+            (*) only when the characterisation datasets are in RAW_UNCERTAINTIES; otherwise skipped with a log line.
+
+            Thermal: if the Tartu thermal file (cT per pixel, relative to REFERENCE_TEMP) is loaded and its temperatures
+            can be found (or are passed as thermal_temps=(T_ref, T_cal)), each spectrum is corrected to the calibration
+            temperature with its own SPECTEMP: divide by (1+cT*(T-T_ref))/(1+cT*(T_cal-T_ref)).
+            Otherwise the manufacturer coefficients of the factory branch are used (with a log line).
+
+            NOTE: 
+                delta_t_correction == True uses the integration time offsets from the factory calibration in the full-FRM path.
+                delta_t_correction == False sets this offset to zero
+                --> According to latest email from Riho this should always be used!
+        '''
+        s = sensortype
+        names = {'ES': ('Delta_T_Ed', 'Tempco_Ed'),
+                 'LT': ('Delta_T_Lu', 'Tempco_Lu'),
+                 'LI': ('Delta_T_Lsky', 'Tempco_Lsky')}
+        writeLogFileAndPrint(f'FRM Processing: {s}')
+
+        unc_grp = node.getGroup('RAW_UNCERTAINTIES')
+        gpc = node.getGroup('CAL_COEF')
+        sixS_grp = node.getGroup('SIXS_MODEL')
+        grp = node.getGroup(s)
+        if unc_grp is None or gpc is None or grp is None or (s == 'ES' and sixS_grp is None):
+            writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: missing RAW_UNCERTAINTIES, CAL_COEF, {s} (or SIXS_MODEL for ES).')
+            return False
+        tref = float(gpc.attributes['Tref'])
+
+        # ---------- L1AQC data: counts, NOT dark corrected ----------
+        raw = np.asarray(grp.getDataset(s).data.tolist(), dtype=float)          # (nmes, npix)
+        dark = np.asarray(grp.getDataset('DARK_CNT').data[s], dtype=float)      # (nmes,)
+        int_time = np.asarray(grp.getDataset('INTTIME').data[s], dtype=float)
+        temp = np.asarray(grp.getDataset('SPECTEMP').data['NONE'], dtype=float)
+        nmes, npix = raw.shape
+
+        # ---------- FRM characterisation (RADCAL columns as in SeaBird/TriOS code) ----------
+        cal = pd.DataFrame(unc_grp.getDataset(s + '_RADCAL_CAL').data)
+        t1 = float(cal['6'].iloc[0])           # row 0 holds integration times, not pixel data
+        t2 = float(cal['8'].iloc[0])
+        radcal_wvl = cal['1'].to_numpy(dtype=float)[1:]                         # 255 pixels
+        gain0 = cal['2'].to_numpy(dtype=float)[1:]
+        S1 = cal['6'].to_numpy(dtype=float)[1:]
+        S2 = cal['8'].to_numpy(dtype=float)[1:]
+
+        valid = (gain0 > 0) & np.isfinite(gain0) & (radcal_wvl > 0)             # calibrated pixels (DALEC: 11..200)
+        if valid.sum() != npix:
+            writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: {s} has {npix} L1AQC bands but RADCAL has {valid.sum()} calibrated pixels.')
+            return False
+
+        LAMP = ProcessL1bDALEC._to_pixel_grid(pd.DataFrame(unc_grp.getDataset(s + '_RADCAL_LAMP').data)['2'], valid)
+        if s != 'ES':
+            PANEL = ProcessL1bDALEC._to_pixel_grid(pd.DataFrame(unc_grp.getDataset(s + '_RADCAL_PANEL').data)['2'], valid)
+
+        dT = float(gpc.attributes[names[s][0]]) if delta_t_correction else 0.0
+
+        # ---------- non-linearity (FRM; there is no class-based fallback for DALEC) ----------
+        k = t1 / (t2 - t1)
+        S12 = (1 + k) * S1 - k * S2
+        alpha = np.zeros_like(S12)
+        ok = valid & (S12 > 0)                                                 # avoid divide-by-zero, as in TriOS
+        alpha[ok] = (S1[ok] - S12[ok]) / S12[ok] ** 2
+        if ok.sum() != valid.sum():
+            writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: {s} non-linearity undefined for {valid.sum() - ok.sum()} pixels; set to 0.')
+
+        # ---------- straylight (Zong) if the LSF file was loaded ----------
+        C_zong = None
+        S12_sl = S12
+        if s + '_STRAYDATA_LSF' in unc_grp.datasets:
+            mZ = np.asarray(pd.DataFrame(unc_grp.getDataset(s + '_STRAYDATA_LSF').data))[1:, 1:]
+            if mZ.shape[0] != len(valid):
+                writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: {s} LSF is {mZ.shape}, expected {len(valid)} pixels.')
+                return False
+            C_full = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
+            S12_sl = C_full @ S12
+            C_zong = C_full[np.ix_(valid, valid)]          # same sub-selection as the SeaBird code
+        else:
+            writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: no {s}_STRAYDATA_LSF found, straylight correction skipped.')
+
+        # ---------- calibration factor per pixel (lamp-referenced) ----------
+        # SeaBird/TriOS: gain = (S12_sl/LAMP)*(t0/t1) and data*(t0/int)/gain, where t0 (cal_int or back. int.) cancels:
+        #   E = (counts/int) / (S12_sl/t1) * LAMP/10            L = ... * PANEL/pi          (/10: mW/m2 -> uW/cm2)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ref = (LAMP / 10.0) * ((t1 + dT) / S12_sl)
+        if s != 'ES':
+            ref = ref * PANEL / np.pi
+        ref = ref[valid]
+
+        # ---------- apply, vectorised over all spectra ----------
+        data = raw - dark[:, None]                                       # dark pixels, per spectrum
+        data = data * (1 - alpha[valid][None, :] * data)                 # non-linearity
+        if C_zong is not None:
+            data = data @ C_zong.T                                       # straylight
+        data = data / (int_time + dT)[:, None] * ref[None, :]            # calibration
+
+        # thermal
+        temps = thermal_temps or ProcessL1bDALEC._thermal_temps(unc_grp, s)
+        cT = None
+        if (s + '_TEMPDATA_CAL') in unc_grp.datasets:
+            th = pd.DataFrame(unc_grp.getDataset(s + '_TEMPDATA_CAL').data)
+            if '2' in th.columns and len(th) == len(valid) + 1:
+                cT = th['2'].to_numpy(dtype=float)[1:][valid]              # px, wl, cT, ucT -> column '2'
+                if not np.isfinite(cT).all() or np.abs(cT).max() > 0.1:
+                    writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: {s} thermal coefficients look wrong (max |cT| {np.nanmax(np.abs(cT))}).')
+                    cT = None
+        if cT is not None and temps is not None:
+            t_ref, t_cal = temps
+            factor = (1 + cT[None, :] * (temp[:, None] - t_ref)) / (1 + cT[None, :] * (t_cal - t_ref))
+            data = data / factor
+        else:
+            writeLogFileAndPrint(f'ProcessL1bDALEC.processL1b_FRM: {s} Tartu thermal correction not applicable '
+                                 f'(dataset found: {cT is not None}, temperatures found: {temps is not None}); using manufacturer Tempco.')
+            tempco = np.asarray(gpc.datasets['Cal_' + s].data[names[s][1]], dtype=float)
+            data = data / (tempco[None, :] * (temp[:, None] - tref) + 1)
+
+        wvl = radcal_wvl[valid]
+        str_wvl = np.asarray([str(x) for x in wvl])
+        ds_dt = np.dtype({'names': str_wvl, 'formats': [np.float64] * len(str_wvl)})
+
+        # ---------- ES: 6S -> FRM wavelengths, then cosine correction ----------
+        if s == 'ES':
+            wvl_l1aqc = np.asarray([float(x) for x in node.getGroup('ES_L1AQC').getDataset('ES').data.dtype.names])
+
+            def on_frm_grid(name):
+                old = np.asarray(sixS_grp.getDataset(name).data.tolist(), dtype=float)
+                return interpolate.interp1d(wvl_l1aqc, old, axis=1, fill_value='extrapolate')(wvl)
+
+            direct_ratio = on_frm_grid('direct_ratio')
+            diffuse_ratio = on_frm_grid('diffuse_ratio')
+            model_irr = on_frm_grid('sixS_irradiance')
+            solar_zenith = np.asarray(sixS_grp.getDataset('solar_zenith').data['solar_zenith'], dtype=float)
+
+            if 'ES_ANGDATA_COSERROR' in unc_grp.datasets and 'ES_ANGDATA_COSERROR_AZ90' in unc_grp.datasets:
+                avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, 'ES')
+                idx = np.argmin(np.abs(zenith_ang[None, :] - solar_zenith[:, None]), axis=1)   # per-spectrum SZA, as SeaBird
+                cos_corr = (1 - avg_coserror[:, idx] / 100)[valid, :].T                       # (nmes, npix)
+                Fhcorr = (1 - full_hemi_coserror / 100)[valid][None, :]
+                data = direct_ratio * data * cos_corr + (1 - direct_ratio) * data * Fhcorr
+            else:
+                writeLogFileAndPrint('ProcessL1bDALEC.processL1b_FRM: no ES cosine-error characterisation found, cosine correction skipped.')
+
+            # relabel SIXS_MODEL on the FRM wavelengths (values already interpolated)
+            for name, arr in [('sixS_irradiance', model_irr), ('direct_ratio', direct_ratio),
+                              ('diffuse_ratio', diffuse_ratio)]:
+                sixS_grp.getDataset(name).data = np.rec.fromarrays(np.array(arr).transpose(), dtype=ds_dt)
+
+        # ---------- write back ----------
+        grp.getDataset(s).data = np.rec.fromarrays(np.array(data).transpose(), dtype=ds_dt)
+        for g in (grp, node.getGroup(s + '_L1AQC')):
+            g.attributes['CAL_START'] = str(0)
+            g.attributes['CAL_STOP'] = str(npix - 1)
+
+        return True
+
+    @staticmethod
     def processL1b(node, outFilePath):
         '''
         Non-TriOS path. ProcessL1b_Interp.processL1b_Interp will be common to both platforms
@@ -138,37 +343,9 @@ class ProcessL1bDALEC:
             elif gp.id == 'LT':
                 ltGroup.copy(gp)
 
-        ######### PLACEHOOLDER: when DALEC class-based and full-FRM become available #########
-        # classbased_dir needed for FRM whilst pol is handled in class-based way
-        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType'] + "_initial")
-        #
-        # # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
-        # radcal_dir = ConfigFile.settings['calibrationPath']
-        #
-        # # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
-        # if ConfigFile.settings['fL1bCal'] == 1:
-        #     print("Factory DALEC - no uncertainty computation")
-        #
-        # # Add Class-based characterization files + RADCAL files
-        # elif ConfigFile.settings['fL1bCal'] == 2:
-        #
-        #     print("Class-Based - uncertainty computed from class-based and RADCAL")
-        #     print('Class-Based:', classbased_dir)
-        #     print('RADCAL:', radcal_dir)
-        #     node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
-        #     if node is None:
-        #         logging.writeLogFileAndPrint('Error running class based uncertainties.')
-        #         return None
-        #
-        # # Or add Full characterization files (RAW_UNCERTAINTIES)
-        # elif ConfigFile.settings['fL1bCal'] == 3:
-        #
-        #     node = ProcessL1b.read_unc_coefficient_frm(node)
-        #     if node is None:
-        #         logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
-        #         return None
-        ############################################################################################################
-
+        # Interpolate only the Ancillary group, and then fold in model data.
+        # As in the SeaBird and TriOS pathways, this runs BEFORE the cal/char files are read: the thermal
+        # coefficients generated in read_unc_coefficient_* need the filled-in ancillary data.
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             logging.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
@@ -199,6 +376,43 @@ class ProcessL1bDALEC:
         # either field or GMAO or GUI default values. The remaining ancillary data
         # are culled from datasets in groups in L1B
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
+
+        ######### PLACEHOOLDER: when DALEC class-based and full-FRM become available #########
+        # classbased_dir needed for FRM whilst pol is handled in class-based way
+        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType'] + "_initial")
+
+        # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
+        # radcal_dir = ConfigFile.settings['calibrationPath']
+        sensor_type = ConfigFile.settings['SensorType']
+        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB', sensor_type)
+
+        # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
+        if ConfigFile.settings['fL1bCal'] == 1:
+            print("Factory DALEC - no uncertainty computation")
+
+        # Add Class-based characterization files + RADCAL files
+        elif ConfigFile.settings['fL1bCal'] == 2:
+
+            print("Class-Based - uncertainty computed from class-based and RADCAL")
+            print('Class-Based:', classbased_dir)
+            print('RADCAL:', radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
+            if node is None:
+                logging.writeLogFileAndPrint('Error running class based uncertainties.')
+                return None
+
+        # Or add Full characterization files (RAW_UNCERTAINTIES)
+        elif ConfigFile.settings['fL1bCal'] == 3:
+            needed = ConfigFile.settings.get('neededCalCharsFRM', {})
+            if not all(needed.get(s) for s in ['ES', 'LI', 'LT']):
+                writeLogFileAndPrint('DALEC module IDs missing from config. Open Edit > Cal/Char options.')
+                return None
+            print("Sensor-Specific - uncertainty and corrections computed from complete FidRadDB files")
+            node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
+            if node is None:
+                logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+                return None
+        ############################################################################################################
 
         # Calculate 6S model
         print('Running sixS')
@@ -259,21 +473,17 @@ class ProcessL1bDALEC:
                 # ProcessL1bDALEC.processLI(node)
 
         elif ConfigFile.settings['fL1bCal'] == 2:
-            # NOTE: Under development
-            pass
-        elif ConfigFile.settings['fL1bCal'] == 3:
-            # NOTE: Under development
-            # calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            # calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-            # print("Read CalibrationFile ", calPath)
-            # calibrationMap = CalibrationFileReader.read(calPath)
-            # if not ProcessL1b_FRMCal.processL1b_SeaBird(node, calibrationMap):
-            #     msg = 'Error in ProcessL1b.process_FRM_calibration'
-            #     writeLogFileAndPrint(msg)
-            #     return None
-            writeLogFileAndPrint('FRM Sensor-Specific Processing for DALEC is currently under development. Halting. *****')
+            # NOTE: Class-based processing is not available for DALEC. Previously this branch fell through with
+            #   uncalibrated counts labelled as 'FRM-Class'.
+            writeLogFileAndPrint('FRM-Class processing for DALEC is not available. Use Factory or FRM-Full. Halting. *****')
             return None
-            # pass
+        elif ConfigFile.settings['fL1bCal'] == 3:
+            # FRM sensor-specific calibration, one sensor at a time as in ProcessL1bTriOS.
+            # SIXS_MODEL (above) provides the direct/diffuse ratio for the ES cosine correction.
+            for sensor in ['ES','LI','LT']:
+                if not ProcessL1bDALEC.processL1b_FRM(node, sensor):
+                    writeLogFileAndPrint(f'Error in ProcessL1bDALEC.processL1b_FRM: {sensor}')
+                    return None
 
         # Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
