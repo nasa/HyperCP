@@ -462,13 +462,61 @@ class CalCharWindow(QtWidgets.QDialog):
                     ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
 
         # DALEC
-        elif ConfigFile.settings['SensorType'] == 'Dalec':
-            # TODO
-            # Not yet implemented, and not needed for now, as FRM regimes are not available still for DALEC.
-            pass
+        elif ConfigFile.settings['SensorType'].lower() == 'dalec':
 
-        if ConfigFile.settings['SensorType'] == 'Dalec':
-            # FRM regimes not yet implemented, forcing factory mode.
+            # Force use of thermistor
+            ConfigFile.settings["fL1bThermal"] = 1
+
+            # Map of .cal header entries to HyperCP sensor types (Ed=ES, Lu=LT, Lsky=LI)
+            module_tags = {'ES': 'Ed', 'LT': 'Lu', 'LI': 'Lsky'}
+
+            for k in ConfigFile.settings['CalibrationFiles'].keys():
+
+                # Only the DALEC factory calibration file contains serial and module numbers
+                if not (k.upper().startswith('DALEC') and k.lower().endswith('.cal')):
+                    continue
+
+                # Read the header of the factory calibration file
+                try:
+                    with open(os.path.join(ConfigFile.getCalibrationDirectory(), k), 'r', encoding='latin-1') as f:
+                        text = f.read()
+                except OSError as e:
+                    print('Unable to read DALEC calibration file %s: %s' % (k, e))
+                    continue
+
+                # Serial number, e.g. "DALEC serial number: 11" -> 0011
+                # (fall back to the file name, e.g. DALEC_0012_2024_05_07_V3b.cal, if absent from the header)
+                sn_match = re.search(r'DALEC serial number:\s*(\d+)', text, re.IGNORECASE)
+                if sn_match is None:
+                    sn_match = re.match(r'^DALEC_(\d+)_', k, re.IGNORECASE)
+                if sn_match is None:
+                    print('DALEC serial number could not be inferred from %s' % k)
+                    continue
+                dalec_sn = '%04d' % int(sn_match.group(1))
+
+                for sensorType, tag in module_tags.items():
+
+                    # Module number, e.g. "Ed spectrometer module: 159825"
+                    mod_match = re.search(r'%s spectrometer module:\s*(\d+)' % tag, text, re.IGNORECASE)
+                    if mod_match is None:
+                        print('No module number found for DALEC %s (%s) in %s' % (dalec_sn, sensorType, k))
+                        continue
+
+                    # FidRadDB device tag: DAL_<serial>_<module>
+                    serialNumber = 'DAL_%s_%06d' % (dalec_sn, int(mod_match.group(1)))
+                    ConfigFile.settings['serialNumber'][sensorType] = serialNumber
+
+                    # cal/char tags are created based on serial number and char. type (e.g. STRAY) for each sensor type
+                    if sensorType in ['LI', 'LT']:
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                    elif sensorType == 'ES':
+                        ConfigFile.settings['neededCalCharsFRM'][sensorType] = ['%s_%s' % (serialNumber, c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+                break  # Only one factory cal file expected
+            
+
+        if ConfigFile.settings['SensorType'].lower() == 'dalec' and ConfigFile.settings["fL1bCal"] == 2:
+            # Class-based regime not available for DALEC: fall back to factory
             ConfigFile.settings["fL1bCal"] = 1
 
         #num_of_sensors
@@ -749,6 +797,8 @@ class CalCharWindow(QtWidgets.QDialog):
         # Re-enable UI functionalities
         self.FullCalRadioButton.setDisabled(False)
         self.ClassCalRadioButton.setDisabled(False)
+        # Class-based regime stays disabled for DALEC
+        self.ClassCalRadioButton.setDisabled(ConfigFile.settings['SensorType'].lower() == 'dalec')
         self.DefaultCalRadioButton.setDisabled(False)
         self.FidRadDBdownload.setDisabled(False)
         self.addCalCharFilesButton.setDisabled(False)
