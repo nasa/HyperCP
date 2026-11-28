@@ -461,7 +461,7 @@ class ProcessL2:
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
             rhoUNC = xUNC[f'rhoUNC_{sensor}']
             for i, wvl in enumerate(waveSubset):
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k =  f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # More robust (able to handle sensor and hyper bands
@@ -471,12 +471,11 @@ class ProcessL2:
                     else:  # apply the sensor specific Lw and Rrs uncertainties
                         lwUNC[k] = xUNC[f'lwUNC_{sensor}'][i]
                         rrsUNC[k] = xUNC[f'rrsUNC_{sensor}'][i]
-            #print(sensor+" rrsUNC")
-            #print(rrsUNC)
+
         else:
             # factory case
             for wvl in waveSubset:
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k =  f'{wvl:.3f}'
                 if (any([wvl == float(x) for x in esXSlice]) and
                         any([wvl == float(x) for x in liXSlice]) and
                         any([wvl == float(x) for x in ltXSlice])):  # old version had issues with '.0'
@@ -489,8 +488,7 @@ class ProcessL2:
 
         deleteKey = []
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
-            # k = str(wvl)
-            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            k =  f'{wvl:.3f}'
             if (any(wvl == float(x) for x in esXSlice) and
                 any(wvl == float(x) for x in liXSlice) and
                 any(wvl == float(x) for x in ltXSlice)):
@@ -707,6 +705,7 @@ class ProcessL2:
                 if sensor == 'HYPER':
                     del newRhoHyper.columns[key]
 
+        # TODO: tidy this up
         newESData.columnsToDataset()
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
@@ -770,7 +769,6 @@ class ProcessL2:
         """
         esXSlice = xSlice['es']  # mean
         esXmedian = xSlice['esMedian']
-        # esXRemaining = xSlice['esRemaining']
         esXstd = xSlice['esSTD']
 
         dateTime = timeObj['dateTime']
@@ -826,12 +824,12 @@ class ProcessL2:
         else:
             # factory case
             for wvl in waveSubset:
-                k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+                k = f'{wvl:.3f}'
                 if any([wvl == float(x) for x in esXSlice]):
                     esUNC[k] = 0
 
         for wvl in waveSubset:
-            k =  str(wvl) if isinstance(wvl,int) else f'{wvl:.3f}'
+            k =  f'{wvl:.3f}'
             if any([wvl == float(x) for x in esXSlice]):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
@@ -842,9 +840,6 @@ class ProcessL2:
 
                 # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0]  # Always the zeroth element; i.e. XSlice data are independent of past slices and node
-                # esRemaining = np.asarray(esXRemaining[k])  # array of remaining ensemble values in this band
-                # f0 = F0[k]
-                # f0UNC = F0_unc[k]
 
                 esMedian = esXmedian[k][0]
                 esSTD = esXstd[k][0]
@@ -1236,7 +1231,7 @@ class ProcessL2:
                 #  so the percent Lt estimation becomes highly questionable and is overridden here.
                 if nSpecStart <= 5 or nSpecEnd == 0:
                     nSpecEnd = nSpecStart  # if only 5 or fewer records retained, use them all...
-                if nSpecEnd > 3:
+                if nSpecEnd > 1:
                     lt780 = ProcessL2.interpolateColumn(data_slice['LT'], 780.0)
                     index = np.argsort(lt780)
                     y = index[:nSpecEnd]
@@ -1250,10 +1245,13 @@ class ProcessL2:
             stats = sensor.generateSensorStats(node, sensor_type, raw_groups, raw_slices, wavelengths, y)
 
             if isinstance(stats, bool):
-                logging.writeLogFileAndPrint("***Warning***")
-                logging.writeLogFileAndPrint(f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
                 percent_lt += 10
+                percentLtattr[attrEnsInd-1] = str(percent_lt)
+                logging.writeLogFileAndPrint("***Warning***")
+                logging.writeLogFileAndPrint(
+                    f"ProcessL2.ensemblesReflectance: too few scans after glitter removal - iterating percent_lt to {percent_lt}")
             else:
+                percentLtattr[attrEnsInd-1] = str(percent_lt)
                 for sensor_name, sensor_stats in stats.items():
                     if np.any(sensor_stats['ave_Light'] < 0):
                         print(f'WARNING: negative {sensor_name} stats')
@@ -1465,7 +1463,7 @@ class ProcessL2:
                             for i, v in enumerate(satellite_bands_subset[satellite[:-1]]):
                                 if str(v) in vals['ES'].keys():
                                     # we must ensure the band is included in radiometry selection
-                                    f0_band[i] = satellite_f0[satellite[:-1]][str(v)]
+                                    f0_band[i] = satellite_f0[satellite[:-1]][f'{v:.3f}']
                             nlw_band = rrs_band * f0_band
                         except ValueError:
                             print("here")
@@ -1658,7 +1656,6 @@ class ProcessL2:
         if rhoVector is not None:
             rhoVec = {}
             for i, k in enumerate(wavelengths):
-                # rhoVec[str(k)] = rhoVector[i]
                 rhoVec[f'{k:.3f}'] = rhoVector[i]
         else:
             rhoVec = None

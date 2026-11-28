@@ -170,9 +170,9 @@ class PDF(FPDF):
                     if ConfigFile.settings['bL1aqcRotatorAngle']:
                         metaData += f'Rotator Min: {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'
                         metaData += f'Rotator Max: {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'
-                if ConfigFile.settings['bL1aqcCleanSunAngle']:
-                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'
-                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'
+                if ConfigFile.settings['bL1aqcFilterRelAz']:
+                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1aqcRelAzMin"]}\n'
+                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1aqcRelAzMax"]}\n'
 
                 if ConfigFile.settings['bL1aqcDeglitch']:
                     metaData += f'ES Dark Window: {ConfigFile.settings["fL1aqcESWindowDark"]}\n'

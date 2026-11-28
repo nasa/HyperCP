@@ -40,7 +40,7 @@ class ConfigFile:
         ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS SoRad DALEC EsOnly (not case sensitive)
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 1
-        ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1aCleanSZAMax"] = 80.0 # Discards entire L1A file for a single failed value.
         ConfigFile.settings["bL1aCOD"] = 0 # Caps-on darks; TriOS only
 
         ConfigFile.settings["bL1aqcSunTracker"] = 1
@@ -53,9 +53,9 @@ class ConfigFile:
         ConfigFile.settings["bL1aqcRotatorAngle"] = 0
         ConfigFile.settings["fL1aqcRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1aqcRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1aqcCleanSunAngle"] = 1
-        ConfigFile.settings["fL1aqcSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["fL1aqcSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["bL1aqcFilterRelAz"] = 1
+        ConfigFile.settings["fL1aqcRelAzMin"] = 87.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["fL1aqcRelAzMax"] = 138.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
 
         ConfigFile.settings["bL1aqcDeglitch"] = 1
         ConfigFile.settings["bL1aqcPlotDeglitch"] = 0

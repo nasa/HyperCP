@@ -142,12 +142,13 @@ class ProcessL1aDALEC:
         gp.datasets["REL_AZ"].data = np.array(np.abs(data_good['RelAz']).tolist(), dtype=[('REL_AZ', '<f8')])
 
         # Apply SZA filter; Currently only works with SunTracker data at L1A (again possible in L2 for all types)
+        # NOTE: Discards entire file for a single failing value.
         if ConfigFile.settings["bL1aCleanSZA"]:
             root.attributes['SZA_FILTER_L1A'] = ConfigFile.settings["fL1aCleanSZAMax"]
         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
         szaMin=np.nanmin(data_good['SolarZenith'].tolist())
         if szaMin > szaLimit:
-            logging.writeLogFileAndPrint(f'SZA too low. Discarding entire file. {round(szaMin)}')
+            logging.writeLogFileAndPrint(f'SZA too high. Discarding entire file. {round(szaMin)}')
             return None
         else:
             logging.writeLogFileAndPrint(f'SZA passed filter: {round(szaMin)}')

@@ -14,6 +14,8 @@ from Source.GetAnc_credentials import GetAnc_credentials
 from Source.OCproductsWindow import OCproductsWindow
 from Source.CalCharWindow import CalCharWindow
 
+from Source.utils import loggingHCP as logging
+
 class ConfigWindow(QtWidgets.QDialog):
     ''' Configuration window object '''
     def __init__(self, name, inputDir, parent=None):
@@ -174,25 +176,25 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorAngleCheckBoxUpdate()
 
         #   Relative Solar Azimuth
-        self.l1aqcCleanSunAngleLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
-        self.l1aqcCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
-            self.l1aqcCleanSunAngleCheckBox.setChecked(True)
-        self.l1aqcSunAngleMinLabel = QtWidgets.QLabel("       Rel Angle Min", self)
-        self.l1aqcSunAngleMinLineEdit = QtWidgets.QLineEdit(self)
-        self.l1aqcSunAngleMinLineEdit.setText(str(ConfigFile.settings["fL1aqcSunAngleMin"]))
-        self.l1aqcSunAngleMinLineEdit.setValidator(doubleValidator)
-        self.l1aqcSunAngleMaxLabel = QtWidgets.QLabel("       Rel Angle Max", self)
-        self.l1aqcSunAngleMaxLineEdit = QtWidgets.QLineEdit(self)
-        self.l1aqcSunAngleMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcSunAngleMax"]))
-        self.l1aqcSunAngleMaxLineEdit.setValidator(doubleValidator)
-        self.l1aqcCleanSunAngleCheckBoxUpdate()
+        self.l1aqcFilterRelAzLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
+        self.l1aqcFilterRelAzCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1aqcFilterRelAz"]) == 1:
+            self.l1aqcFilterRelAzCheckBox.setChecked(True)
+        self.l1aqcRelAzMinLabel = QtWidgets.QLabel("       Rel Angle Min", self)
+        self.l1aqcRelAzMinLineEdit = QtWidgets.QLineEdit(self)
+        self.l1aqcRelAzMinLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMin"]))
+        self.l1aqcRelAzMinLineEdit.setValidator(doubleValidator)
+        self.l1aqcRelAzMaxLabel = QtWidgets.QLabel("       Rel Angle Max", self)
+        self.l1aqcRelAzMaxLineEdit = QtWidgets.QLineEdit(self)
+        self.l1aqcRelAzMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMax"]))
+        self.l1aqcRelAzMaxLineEdit.setValidator(doubleValidator)
+        self.l1aqcFilterRelAzCheckBoxUpdate()
 
         self.l1aqcSunTrackerCheckBox.clicked.connect(self.l1aqcSunTrackerCheckBoxUpdate)
         self.l1aqcRotatorDelayCheckBox.clicked.connect(self.l1aqcRotatorDelayCheckBoxUpdate)
         self.l1aqcCleanPitchRollCheckBox.clicked.connect(self.l1aqcCleanPitchRollCheckBoxUpdate)
         self.l1aqcRotatorAngleCheckBox.clicked.connect(self.l1aqcRotatorAngleCheckBoxUpdate)
-        self.l1aqcCleanSunAngleCheckBox.clicked.connect(self.l1aqcCleanSunAngleCheckBoxUpdate)
+        self.l1aqcFilterRelAzCheckBox.clicked.connect(self.l1aqcFilterRelAzCheckBoxUpdate)
 
         #   Deglitcher
         self.l1aqcDeglitchLabel = QtWidgets.QLabel("  Deglitch Data", self)
@@ -416,7 +418,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonM99.setAutoExclusive(False)
         if ConfigFile.settings["bL2M99Rho"]==1:
             self.RhoRadioButtonM99.setChecked(True)
-        self.RhoRadioButtonM99.clicked.connect(self.l2RhoRadioButtonDefaultClicked)
+        self.RhoRadioButtonM99.clicked.connect(self.l2RhoRadioButtonM99Clicked)
 
         self.RhoRadioButtonZ17 = QtWidgets.QRadioButton("Zhang et al. (2017) ρ")
         self.RhoRadioButtonZ17.setAutoExclusive(False)
@@ -437,7 +439,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonB26.setDisabled(0)
         if ConfigFile.settings["bL2B26Rho"]==1:
             self.RhoRadioButtonB26.setChecked(True)
-        self.RhoRadioButtonB26.clicked.connect(self.l2RhoRadioButtonBulgarelliClicked)
+        self.RhoRadioButtonB26.clicked.connect(self.l2RhoRadioButtonB26Clicked)
 
         # Initialization of ancillary buttons NB: placed here because must come after Zhang button definition!
         # NB : the following are NOT "elif" blocks because bL1bGetAnc can change after each block.
@@ -531,6 +533,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_O25CheckBox.setChecked(True)
 
         self.l2BRDFCheckBoxUpdate()
+        self.l2RhoUpdate()
 
 
         l2ProductLabel = QtWidgets.QLabel("L2 Products", self)
@@ -752,18 +755,18 @@ class ConfigWindow(QtWidgets.QDialog):
         # VBox2.setAlignment(QtCore.Qt.AlignBottom)
 
         #   L1AQC Relative Solar Azimuth
-        CleanSunAngleHBox = QtWidgets.QHBoxLayout()
-        CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleLabel)
-        CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
-        VBox2.addLayout(CleanSunAngleHBox)
-        SunAngleMinHBox = QtWidgets.QHBoxLayout()
-        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLabel)
-        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLineEdit)
-        VBox2.addLayout(SunAngleMinHBox)
-        SunAngleMaxHBox = QtWidgets.QHBoxLayout()
-        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLabel)
-        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLineEdit)
-        VBox2.addLayout(SunAngleMaxHBox)
+        CleanRelAzHBox = QtWidgets.QHBoxLayout()
+        CleanRelAzHBox.addWidget(self.l1aqcFilterRelAzLabel)
+        CleanRelAzHBox.addWidget(self.l1aqcFilterRelAzCheckBox)
+        VBox2.addLayout(CleanRelAzHBox)
+        RelAzMinHBox = QtWidgets.QHBoxLayout()
+        RelAzMinHBox.addWidget(self.l1aqcRelAzMinLabel)
+        RelAzMinHBox.addWidget(self.l1aqcRelAzMinLineEdit)
+        VBox2.addLayout(RelAzMinHBox)
+        RelAzMaxHBox = QtWidgets.QHBoxLayout()
+        RelAzMaxHBox.addWidget(self.l1aqcRelAzMaxLabel)
+        RelAzMaxHBox.addWidget(self.l1aqcRelAzMaxLineEdit)
+        VBox2.addLayout(RelAzMaxHBox)
 
         #   L1AQC Deglitcher
         deglitchHBox = QtWidgets.QHBoxLayout()
@@ -1110,7 +1113,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Enable items only disabled for Es-Only
         self.l1aqcSunTrackerLabel.setDisabled(False)
         self.l1aqcSunTrackerCheckBox.setDisabled(False)
-        self.l1aqcCleanSunAngleLabel.setDisabled(False)
+        self.l1aqcFilterRelAzLabel.setDisabled(False)
         self.l1aqcSunTrackerCheckBox.setDisabled(False)
         self.l1aqcRotatorAngleLabel.setDisabled(False)
         self.l1bqcLtUVNIRLabel.setDisabled(False)
@@ -1176,7 +1179,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcSunTrackerCheckBox.setChecked(False)
             self.l1aqcSunTrackerCheckBox.setDisabled(True)
             self.l1aqcSunTrackerCheckBox.setDisabled(True)
-            self.l1aqcCleanSunAngleLabel.setDisabled(True)
+            self.l1aqcFilterRelAzLabel.setDisabled(True)
             self.l1aqcRotatorAngleLabel.setDisabled(True)
             self.l1bqcLtUVNIRLabel.setDisabled(True)
             self.l1bqcMaxWindLabel.setDisabled(True)
@@ -1421,18 +1424,21 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1aqcRotatorAngle"] = 1
 
-    def l1aqcCleanSunAngleCheckBoxUpdate(self):
-        # print("ConfigWindow - l1aqcCleanSunAngleCheckBoxUpdate")
+    def l1aqcFilterRelAzCheckBoxUpdate(self):
+        # Force off for Es-Only
+        if ConfigFile.settings['SensorType'].lower() == 'trios es only':
+            ConfigFile.settings["bL1aqcFilterRelAz"] = 0
+            self.l1aqcFilterRelAzCheckBox.setChecked(False)
 
-        disabled = not self.l1aqcCleanSunAngleCheckBox.isChecked()
-        self.l1aqcSunAngleMinLabel.setDisabled(disabled)
-        self.l1aqcSunAngleMinLineEdit.setDisabled(disabled)
-        self.l1aqcSunAngleMaxLabel.setDisabled(disabled)
-        self.l1aqcSunAngleMaxLineEdit.setDisabled(disabled)
+        disabled = not self.l1aqcFilterRelAzCheckBox.isChecked()
+        self.l1aqcRelAzMinLabel.setDisabled(disabled)
+        self.l1aqcRelAzMinLineEdit.setDisabled(disabled)
+        self.l1aqcRelAzMaxLabel.setDisabled(disabled)
+        self.l1aqcRelAzMaxLineEdit.setDisabled(disabled)
         if disabled:
-            ConfigFile.settings["bL1aqcCleanSunAngle"] = 0
+            ConfigFile.settings["bL1aqcFilterRelAz"] = 0
         else:
-            ConfigFile.settings["bL1aqcCleanSunAngle"] = 1
+            ConfigFile.settings["bL1aqcFilterRelAz"] = 1
 
     def l1aqcDeglitchCheckBoxUpdate(self):
         # print("ConfigWindow - l1aqcDeglitchCheckBoxUpdate")
@@ -1707,20 +1713,28 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2EnablePercentLt"] = 1
 
-    def l2RhoRadioButton3CClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to 3C")
-        self.RhoRadioButton3C.setChecked(True)
-        self.RhoRadioButtonZ17.setChecked(False)
-        self.RhoRadioButtonM99.setChecked(False)
-        self.RhoRadioButtonB26.setChecked(False)
-        ConfigFile.settings["bL23CRho"] = 1
-        ConfigFile.settings["bL2Z17Rho"] = 0
-        ConfigFile.settings["bL2M99Rho"] = 0
-        ConfigFile.settings["bL2B26Rho"] = 0
-        self.l2RhoUpdate()
+    def l2RhoRadioButtonM99Clicked(self):
+            # If switching from B26, restore RelAz L1AQC thresholds to defaults
+            if ConfigFile.settings["bL2B26Rho"] ==1:
+                ConfigFile.settings["fL1aqcRelAzMin"] = 87
+                ConfigFile.settings["fL1aqcRelAzMax"] = 138
+                self.l1aqcRelAzMinLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMin"]))
+                self.l1aqcRelAzMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMax"]))
+            self.RhoRadioButton3C.setChecked(False)
+            self.RhoRadioButtonZ17.setChecked(False)
+            self.RhoRadioButtonM99.setChecked(True)
+            self.RhoRadioButtonB26.setChecked(False)
+            ConfigFile.settings["bL23CRho"] = 0
+            ConfigFile.settings["bL2Z17Rho"] = 0
+            ConfigFile.settings["bL2M99Rho"] = 1
+            ConfigFile.settings["bL2B26Rho"] = 0
+            self.l2RhoUpdate()
 
     def l2RhoRadioButtonZhangClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to Zhang et al. 2017")
+        # If switching from B26, restore RelAz L1AQC thresholds to defaults
+        if ConfigFile.settings["bL2B26Rho"] ==1:
+            ConfigFile.settings["fL1aqcRelAzMin"] = 87
+            ConfigFile.settings["fL1aqcRelAzMax"] = 138
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZ17.setChecked(True)
         self.RhoRadioButtonM99.setChecked(False)
@@ -1735,19 +1749,22 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
         self.l2RhoUpdate()
 
-    def l2RhoRadioButtonDefaultClicked(self):
-        # print("ConfigWindow - l2RhoCorrection set to Mobley 1999")
-        self.RhoRadioButton3C.setChecked(False)
+    def l2RhoRadioButton3CClicked(self):
+        # If switching from B26, restore RelAz L1AQC thresholds to defaults
+        if ConfigFile.settings["bL2B26Rho"] ==1:
+            ConfigFile.settings["fL1aqcRelAzMin"] = 87
+            ConfigFile.settings["fL1aqcRelAzMax"] = 138
+        self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButtonZ17.setChecked(False)
-        self.RhoRadioButtonM99.setChecked(True)
+        self.RhoRadioButtonM99.setChecked(False)
         self.RhoRadioButtonB26.setChecked(False)
-        ConfigFile.settings["bL23CRho"] = 0
+        ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2Z17Rho"] = 0
-        ConfigFile.settings["bL2M99Rho"] = 1
+        ConfigFile.settings["bL2M99Rho"] = 0
         ConfigFile.settings["bL2B26Rho"] = 0
         self.l2RhoUpdate()
 
-    def l2RhoRadioButtonBulgarelliClicked(self):
+    def l2RhoRadioButtonB26Clicked(self):
         # print("ConfigWindow - l2RhoCorrection set to Bulgarelli et al. 2026")
         self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZ17.setChecked(False)
@@ -1763,6 +1780,12 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2B26Rho"] == 1:
             # Based on the recommendation of Davide et al., we deactivate both glitter and NIR residual corrections
             ConfigFile.settings["bL2EnablePercentLt"] = 0
+            self.l2NIRCorrectionLabel.setDisabled(True)
+            self.l2NIRCorrectionCheckBox.setChecked(False)
+            self.l2NIRCorrectionCheckBox.setDisabled(True)
+            ConfigFile.settings["bL2PerformNIRCorrection"] = 0
+            self.SimpleNIRRadioButton.setChecked(False)
+            self.SimSpecNIRRadioButton.setChecked(False)
             ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0
             self.l2NIRCorrectionLabel.setDisabled(True)
@@ -1775,14 +1798,32 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2PercentLtLabel.setDisabled(True)
             self.l2EnablePercentLtCheckBox.setChecked(False)
             self.l2PercentLtLineEdit.setDisabled(True)
+
+            # Impose RelAz guardrails
+            self.l1aqcFilterRelAzCheckBox.setChecked(True)
+            ConfigFile.settings["bL1aqcFilterRelAz"] = 1
+            self.l1aqcFilterRelAzCheckBox.setDisabled(True)
+            ConfigFile.settings["fL1aqcRelAzMin"] = 87
+            ConfigFile.settings["fL1aqcRelAzMax"] = 93
+            self.l1aqcRelAzMinLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMin"]))
+            self.l1aqcRelAzMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRelAzMax"]))
+            self.l1aqcRelAzMinLineEdit.setDisabled(True)
+            self.l1aqcRelAzMaxLineEdit.setDisabled(True)
+            logging.writeLogFileAndPrint("Relative Azimuth Filter thresholds changed in L1AQC processing for B26 to 90 deg.")
+
         else:
             self.l2NIRCorrectionLabel.setDisabled(False)
+            self.l2NIRCorrectionCheckBox.setDisabled(False)
             self.SimpleNIRRadioButton.setDisabled(False)
             self.SimSpecNIRRadioButton.setDisabled(False)
 
             self.l2EnablePercentLtLabel.setDisabled(False)
             self.l2PercentLtLabel.setDisabled(False)
             self.l2PercentLtLineEdit.setDisabled(False)
+
+            self.l1aqcFilterRelAzCheckBox.setDisabled(False)
+            self.l1aqcRelAzMinLineEdit.setDisabled(False)
+            self.l1aqcRelAzMaxLineEdit.setDisabled(False)
 
 
     def l2RhoUnc10CheckBoxUpdate(self):
@@ -1995,9 +2036,9 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1aqcRotatorAngle"] = int(self.l1aqcRotatorAngleCheckBox.isChecked())
         ConfigFile.settings["fL1aqcRotatorAngleMin"] = float(self.l1aqcRotatorAngleMinLineEdit.text())
         ConfigFile.settings["fL1aqcRotatorAngleMax"] = float(self.l1aqcRotatorAngleMaxLineEdit.text())
-        ConfigFile.settings["bL1aqcCleanSunAngle"] = int(self.l1aqcCleanSunAngleCheckBox.isChecked())
-        ConfigFile.settings["fL1aqcSunAngleMin"] = float(self.l1aqcSunAngleMinLineEdit.text())
-        ConfigFile.settings["fL1aqcSunAngleMax"] = float(self.l1aqcSunAngleMaxLineEdit.text())
+        ConfigFile.settings["bL1aqcFilterRelAz"] = int(self.l1aqcFilterRelAzCheckBox.isChecked())
+        ConfigFile.settings["fL1aqcRelAzMin"] = float(self.l1aqcRelAzMinLineEdit.text())
+        ConfigFile.settings["fL1aqcRelAzMax"] = float(self.l1aqcRelAzMaxLineEdit.text())
         ConfigFile.settings["bL1aqcDeglitch"] = int(self.l1aqcDeglitchCheckBox.isChecked())
 
         if self.l1bGetAncCheckBox1.isChecked():

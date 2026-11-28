@@ -77,7 +77,7 @@ def downloadZhangLUT(fpfZhangLUT, force=False):
         'Z17_LUT_40.nc': 'd9197436125f97c3bd8f00c6ee0185be',
     }
     if YNReply:
-        url = f"https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/{lut_name}"
+        url = f"https://oceancolor.gsfc.nasa.gov/fileshare/h4P9sT2cX7mN/{lut_name}"
         _download_zhang_file(fpfZhangLUT, url, expected_hash[lut_name])
 
 def downloadZhangDB(fpfZhang, force=False):
@@ -86,7 +86,7 @@ def downloadZhangDB(fpfZhang, force=False):
     YNReply = True if force else YNWindow("Database Download", infoText) == QMessageBox.Ok
     if YNReply:
 
-        url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db_expanded.mat"
+        url = "https://oceancolor.gsfc.nasa.gov/fileshare/h4P9sT2cX7mN/Zhang_rho_db_expanded.mat"
         _download_zhang_file(fpfZhang, url, "e4c155f8ce92dcfa012a450a56b64e28")
 
 def YNWindow(winText,infoText):

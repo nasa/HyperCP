@@ -31,7 +31,7 @@ import Source.utils.filing as filing
 
 # import traceback
 
-VERSION = "1.2.19"
+VERSION = "1.2.20"
 
 
 class Window(QtWidgets.QWidget):

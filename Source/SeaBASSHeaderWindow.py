@@ -523,11 +523,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                             and key not in omitList:
                         SeaBASSHeader.settings[key] = value
 
-        if ConfigFile.settings["SensorType"].lower() in ["trios es only"]:
+        if ConfigFile.settings["SensorType"].lower() in ["trios","trios es only","sorad"]:
             # Keep So-Rad as the instrument manufacturer, but change model to RAMSES
             SeaBASSHeader.settings['instrument_manufacturer'] = 'TriOS'
-        else:
-            SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
+        elif ConfigFile.settings["SensorType"].lower() in ["seabird"]:
+            SeaBASSHeader.settings['instrument_manufacturer'] = "Sea-Bird"
+        elif ConfigFile.settings["SensorType"].lower() in ["dalec"]:
+                    SeaBASSHeader.settings['instrument_manufacturer'] = "IMO"
+                    
         if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only','sorad']:
             SeaBASSHeader.settings['instrument_model'] = 'RAMSES'
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -543,7 +546,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             cleanRotFilt = "On"
         else:
             cleanRotFilt = "Off"
-        if ConfigFile.settings["bL1aqcCleanSunAngle"]:
+        if ConfigFile.settings["bL1aqcFilterRelAz"]:
             cleanRelAzFilt = "On"
         else:
             cleanRelAzFilt = "Off"
@@ -635,8 +638,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Rotator Min = {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'+\
             f'! Rotator Max = {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'+\
             f'! Rel Azimuth Filter = {cleanRelAzFilt}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcRelAzMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcRelAzMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
             f'! ES Dark Window = {ConfigFile.settings["fL1aqcESWindowDark"]}\n'+\
             f'! ES Light Window = {ConfigFile.settings["fL1aqcESWindowLight"]}\n'+\

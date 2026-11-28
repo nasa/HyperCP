@@ -60,7 +60,7 @@ class Weight_RSR:
         wvInterp = wvInterp[0].tolist()
 
         weightedBandData = collections.OrderedDict()
-        fields = Weight_RSR.MODISBands()
+        fields = Weight_RSR.MODISBands()        
 
         # Read in the RSRs from NASA
         if sensor == 'A':
@@ -92,8 +92,10 @@ class Weight_RSR:
             fn = InterpolatedUnivariateSpline(wavelength,rsr[:,i].tolist(),k=order)
             rsrInterp[:,i] = fn(wvInterp)
 
+        # Convert bands to 3-decimal place strings
+        fields = [f"{num:.3f}" for num in fields]
         for i in np.arange(0, len(fields)):
-            weightedBandData[str(fields[i])] = \
+            weightedBandData[fields[i]] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
 
         return weightedBandData
@@ -146,8 +148,10 @@ class Weight_RSR:
             fn = InterpolatedUnivariateSpline(wavelength,rsr[:,i].tolist(),k=order)
             rsrInterp[:,i] = fn(wvInterp)
 
+        # Convert bands to 3-decimal place strings
+        fields = [f"{num:.3f}" for num in fields]
         for i in np.arange(0, len(fields)):
-            weightedBandData[str(fields[i])] = \
+            weightedBandData[fields[i]] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
 
         return weightedBandData
@@ -204,8 +208,10 @@ class Weight_RSR:
             fn = InterpolatedUnivariateSpline(wavelength,rsr[:,i].tolist(),k=order)
             rsrInterp[:,i] = fn(wvInterp)
 
+        # Convert bands to 3-decimal place strings
+        fields = [f"{num:.3f}" for num in fields]
         for i in np.arange(0, len(fields)):
-            weightedBandData[str(fields[i])] = \
+            weightedBandData[fields[i]] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
 
         return weightedBandData

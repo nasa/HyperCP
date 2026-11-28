@@ -37,13 +37,13 @@ class ProcessL2OCproducts():
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
             ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
             ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
-            Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412']
-            Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443']
-            Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488']
-            Rrs531 = Reflectance.datasets["Rrs_MODISA"].columns['531']
-            Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
-            Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
-            Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
+            Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412.000']
+            Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443.000']
+            Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488.000']
+            Rrs531 = Reflectance.datasets["Rrs_MODISA"].columns['531.000']
+            Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551.000'] # 551 in name only
+            Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555.000']
+            Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667.000'].copy()
 
         # waveSat = [412, 443, 488, 532, 547, 555, 667]
 
