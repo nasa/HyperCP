@@ -240,6 +240,24 @@ class RhoCorrections:
 
 
     @staticmethod
+    def read_B26_LUT(filename, lut_id):
+        # load in the LUT HDF file
+        inFilePath = os.path.join(PATH_TO_DATA, filename)
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except Exception as err:
+            raise IOError(f"Unable to open B26 glint correction LUT. {err}")
+        # Load the LUT
+        for dataset in root.datasets:
+            if dataset.id == lut_id:
+                lut = dataset.data.astype(float)
+                break
+        else:
+            raise ValueError(f'Unkonwn B26 glint correction LUT id: "{lut_id}".')
+        return root, lut
+
+
+    @staticmethod
     def BulgarelliCorr(wavelengths, sza, relAz, wind_speed, tau560, Propagate=None, db=None,
                        lut_id='rho_dif', aerosol_type='MX', interp_method='pchip'):
         """
@@ -253,30 +271,25 @@ class RhoCorrections:
         """
         logging.writeLogFileAndPrint('Calculating B26 glint correction (rho) factors')
 
-        # load in the LUT HDF file
-        inFilePath = os.path.join(PATH_TO_DATA, 'B26_rho_factors.h5')
+        # Read the LUT from the rho-factors HDF file
         try:
-            root = HDFRoot.readHDF5(inFilePath)
+            rhoRoot, rhoLut = RhoCorrections.read_B26_LUT('B26_rho_factors.h5', lut_id)
         except Exception as err:
-            msg = f"Unable to open B26 glint correction LUT. {err}"
-            logging.writeLogFileAndPrint(msg)
-            logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(str(err))
+            logging.errorWindow("File Error", str(err))
             return None, None
 
-        # Load the LUT
-        for dataset in root.datasets:
-            if dataset.id == lut_id:
-                lut = dataset.data.astype(float)
-                break
-        else:
-            msg = f'Unkonwn B26 glint correction LUT id: "{lut_id}".'
-            logging.writeLogFileAndPrint(msg)
-            logging.errorWindow("File Error", msg)
+        # Read the LUT from the uncertainties HDF file
+        try:
+            uncRoot, uncLut = RhoCorrections.read_B26_LUT('B26_uncertainties.h5', lut_id)
+        except Exception as err:
+            logging.writeLogFileAndPrint(str(err))
+            logging.errorWindow("File Error", str(err))
             return None, None
 
         # Load LUT coordinates
-        assert(root.groups[0].id == "coordinates")
-        coordinates = root.groups[0].datasets
+        assert(rhoRoot.groups[0].id == "coordinates")
+        coordinates = rhoRoot.groups[0].datasets
         coord_sza = coordinates['SZA'].data
         coord_tau560 = coordinates['tau560'].data
         coord_aerosol_type = list(v.decode('utf-8') for v in coordinates['tropospheric_aerosol_type'].data)
@@ -330,7 +343,7 @@ class RhoCorrections:
                 coord_sza,
                 coord_wind_speed,
             ),
-            values=lut[aerosol_type_idx, :, :, :, :],
+            values=rhoLut[aerosol_type_idx, :, :, :, :],
             xi=(
                 new_tau560,
                 new_wavelengths,
@@ -341,8 +354,28 @@ class RhoCorrections:
         )
         logging.writeLogFileAndPrint(f'Interpolating B26 glint correction (rho) factors using the "{interp_method}" method')
 
-        # TODO: Check this placeholder for forced 10% Rho uncertainty:
-        rhoDelta = 0.10 * rhoVector
+        # Rho-factor uncertainties
+        if not ConfigFile.settings["bL2RhoUnc10"]:
+            # Uncertainties LUT interpolation
+            rhoDelta = spin.interpn(
+                points=(
+                    coord_tau560,
+                    coord_wavelength,
+                    coord_sza,
+                    coord_wind_speed,
+                ),
+                values=uncLut[aerosol_type_idx, :, :, :, :],
+                xi=(
+                    new_tau560,
+                    new_wavelengths,
+                    new_sza,
+                    new_wind_speed
+                ),
+                method=interp_method,
+            )
+        else:
+            # Forced 10% rho-factor uncertainties
+            rhoDelta = 0.10 * rhoVector
 
         return rhoVector, rhoDelta
 
